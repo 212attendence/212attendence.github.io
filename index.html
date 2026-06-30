@@ -1,375 +1,1110 @@
-#include <WiFi.h>
-#include <WiFiManager.h>
-#include <WiFiClientSecure.h>
-#include <HTTPClient.h>
-#include <PubSubClient.h>
-#include <ArduinoJson.h>
-
-/****************************************************
- * WiFiManager
- ****************************************************/
-
-const char* AP_NAME = "ESP32-Attendance-2-12";
-const char* AP_PASS = "12345678";
-
-/****************************************************
- * Google Apps Script
- ****************************************************/
-
-const char* GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
-
-const char* DEVICE_ID = "2-12";
-const char* TOKEN = "ATTEND_2_12_SECRET";
-
-/****************************************************
- * HiveMQ Cloud
- ****************************************************/
-
-const char* MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
-const int MQTT_PORT = 8883;
-
-const char* MQTT_USER = "jiukeum";
-const char* MQTT_PASS = "Ojh1532591!";
-
-const char* TOPIC_STATUS = "attendance/2-12/status";
-const char* TOPIC_EVENT = "attendance/2-12/event";
-const char* TOPIC_HEARTBEAT = "attendance/2-12/heartbeat";
-
-/****************************************************
- * 객체
- ****************************************************/
-
-WiFiClientSecure mqttSecureClient;
-PubSubClient mqttClient(mqttSecureClient);
-
-/****************************************************
- * 유틸
- ****************************************************/
-
-String getClientId() {
-  uint64_t chipid = ESP.getEfuseMac();
-  String id = "esp32s3-attendance-";
-  id += String((uint32_t)(chipid >> 32), HEX);
-  id += String((uint32_t)chipid, HEX);
-  return id;
-}
-
-String wifiStatusText() {
-  if (WiFi.status() == WL_CONNECTED) return "CONNECTED";
-  return "DISCONNECTED";
-}
-
-/****************************************************
- * WiFi 연결
- ****************************************************/
-
-void connectWiFi() {
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("[WiFi] WiFiManager 시작");
-  Serial.println("====================================");
-
-  WiFiManager wm;
-
-  // 자동 리셋 없음
-  // 저장된 WiFi 있으면 자동 연결
-  // 없으면 설정용 AP 오픈
-  wm.setConfigPortalTimeout(0);
-
-  Serial.println("[WiFi] 저장된 WiFi로 자동 연결 시도");
-  Serial.print("[WiFi] 설정 AP: ");
-  Serial.println(AP_NAME);
-
-  bool connected = wm.autoConnect(AP_NAME, AP_PASS);
-
-  if (!connected) {
-    Serial.println("[WiFi] 연결 실패");
-    return;
-  }
-
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("[WiFi] 연결 성공");
-  Serial.print("[WiFi] SSID: ");
-  Serial.println(WiFi.SSID());
-  Serial.print("[WiFi] IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("[WiFi] RSSI: ");
-  Serial.println(WiFi.RSSI());
-  Serial.println("====================================");
-}
-
-/****************************************************
- * MQTT 연결
- ****************************************************/
-
-bool connectMQTT() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[MQTT] WiFi 연결 안 됨");
-    return false;
-  }
-
-  if (mqttClient.connected()) {
-    return true;
-  }
-
-  mqttSecureClient.setInsecure();
-
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-  mqttClient.setBufferSize(1024);
-
-  String clientId = getClientId();
-
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("[MQTT] HiveMQ 연결 시도");
-  Serial.print("[MQTT] Host: ");
-  Serial.println(MQTT_HOST);
-  Serial.print("[MQTT] Client ID: ");
-  Serial.println(clientId);
-  Serial.println("====================================");
-
-  bool ok = mqttClient.connect(
-    clientId.c_str(),
-    MQTT_USER,
-    MQTT_PASS,
-    TOPIC_STATUS,
-    1,
-    true,
-    "offline"
-  );
-
-  if (!ok) {
-    Serial.print("[MQTT] 연결 실패, state=");
-    Serial.println(mqttClient.state());
-    return false;
-  }
-
-  Serial.println("[MQTT] 연결 성공");
-
-  mqttClient.publish(TOPIC_STATUS, "online", true);
-
-  publishHeartbeat();
-
-  return true;
-}
-
-/****************************************************
- * MQTT 발행
- ****************************************************/
-
-void publishHeartbeat() {
-  if (!mqttClient.connected()) {
-    return;
-  }
-
-  StaticJsonDocument<256> doc;
-
-  doc["deviceId"] = DEVICE_ID;
-  doc["type"] = "heartbeat";
-  doc["wifi"] = wifiStatusText();
-  doc["ssid"] = WiFi.SSID();
-  doc["ip"] = WiFi.localIP().toString();
-  doc["rssi"] = WiFi.RSSI();
-  doc["millis"] = millis();
-
-  char buffer[256];
-  size_t n = serializeJson(doc, buffer);
-
-  mqttClient.publish(TOPIC_HEARTBEAT, buffer, n);
-  Serial.println("[MQTT] heartbeat 발행");
-}
-
-void publishAttendanceEvent(int fingerId, const char* status, const char* message) {
-  if (!connectMQTT()) {
-    Serial.println("[MQTT] 이벤트 발행 실패");
-    return;
-  }
-
-  StaticJsonDocument<512> doc;
-
-  doc["deviceId"] = DEVICE_ID;
-  doc["type"] = "attendance";
-  doc["status"] = status;
-  doc["fingerId"] = fingerId;
-  doc["name"] = "";
-  doc["message"] = message;
-  doc["confidence"] = 99;
-  doc["test"] = true;
-  doc["wifi"] = wifiStatusText();
-  doc["rssi"] = WiFi.RSSI();
-  doc["millis"] = millis();
-
-  char buffer[512];
-  size_t n = serializeJson(doc, buffer);
-
-  bool ok = mqttClient.publish(TOPIC_EVENT, buffer, n);
-
-  if (ok) {
-    Serial.println("[MQTT] 출석 이벤트 발행 성공");
-    Serial.print("[MQTT] Topic: ");
-    Serial.println(TOPIC_EVENT);
-    Serial.print("[MQTT] Payload: ");
-    Serial.println(buffer);
-  } else {
-    Serial.println("[MQTT] 출석 이벤트 발행 실패");
-  }
-}
-
-/****************************************************
- * Google Apps Script POST
- ****************************************************/
-
-bool postGoogleAttendance(int fingerId) {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[Google] WiFi 연결 안 됨");
-    return false;
-  }
-
-  WiFiClientSecure httpsClient;
-  httpsClient.setInsecure();
-
-  HTTPClient https;
-
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("[Google] Apps Script POST 시작");
-  Serial.print("[Google] fingerId: ");
-  Serial.println(fingerId);
-  Serial.println("====================================");
-
-  bool beginOk = https.begin(httpsClient, GOOGLE_SCRIPT_URL);
-
-  if (!beginOk) {
-    Serial.println("[Google] HTTPS begin 실패");
-    return false;
-  }
-
-  https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  https.addHeader("Content-Type", "application/json");
-
-  StaticJsonDocument<512> doc;
-
-  doc["token"] = TOKEN;
-  doc["deviceId"] = DEVICE_ID;
-  doc["fingerId"] = fingerId;
-  doc["confidence"] = 99;
-  doc["test"] = true;
-
-  String payload;
-  serializeJson(doc, payload);
-
-  Serial.print("[Google] Request: ");
-  Serial.println(payload);
-
-  int httpCode = https.POST(payload);
-
-  Serial.print("[Google] HTTP Code: ");
-  Serial.println(httpCode);
-
-  String response = https.getString();
-
-  Serial.print("[Google] Response: ");
-  Serial.println(response);
-
-  https.end();
-
-  if (httpCode >= 200 && httpCode < 300) {
-    Serial.println("[Google] POST 성공");
-    return true;
-  }
-
-  Serial.println("[Google] POST 실패");
-  return false;
-}
-
-/****************************************************
- * 테스트 실행
- ****************************************************/
-
-void sendTestAttendance(int fingerId) {
-  Serial.println();
-  Serial.println("####################################");
-  Serial.print("[TEST] fingerId ");
-  Serial.print(fingerId);
-  Serial.println(" 테스트 출석 전송");
-  Serial.println("####################################");
-
-  bool googleOk = postGoogleAttendance(fingerId);
-
-  if (googleOk) {
-    publishAttendanceEvent(fingerId, "테스트", "Google Sheets 테스트 출석 기록 완료");
-  } else {
-    publishAttendanceEvent(fingerId, "오류", "Google Sheets POST 실패");
-  }
-}
-
-/****************************************************
- * setup / loop
- ****************************************************/
-
-unsigned long lastHeartbeat = 0;
-
-void setup() {
-  Serial.begin(115200);
-  delay(3000);
-
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("ESP32-S3 Attendance Network Test");
-  Serial.println("WiFi + Google Apps Script + HiveMQ");
-  Serial.println("지문센서 없이 테스트");
-  Serial.println("====================================");
-
-  connectWiFi();
-
-  if (WiFi.status() == WL_CONNECTED) {
-    connectMQTT();
-  }
-
-  Serial.println();
-  Serial.println("====================================");
-  Serial.println("사용법");
-  Serial.println("Serial Monitor 입력창에 숫자 입력 후 Enter");
-  Serial.println("예: 1 입력 → fingerId 1 테스트 출석");
-  Serial.println("예: 2 입력 → fingerId 2 테스트 출석");
-  Serial.println("h 입력 → heartbeat 발행");
-  Serial.println("====================================");
-}
-
-void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
-    if (!mqttClient.connected()) {
-      connectMQTT();
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>2-12 지문 출석 대시보드</title>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
+    :root {
+      --bg: #070b16;
+      --card: #11182d;
+      --card2: #151d35;
+      --border: #26314f;
+      --text: #eef3ff;
+      --muted: #9aa7c7;
+      --blue: #5ea1ff;
+      --purple: #a78bfa;
+      --green: #37d67a;
+      --yellow: #ffd166;
+      --red: #ff5c7a;
     }
 
-    mqttClient.loop();
-
-    if (millis() - lastHeartbeat > 30000) {
-      lastHeartbeat = millis();
-      publishHeartbeat();
+    * {
+      box-sizing: border-box;
     }
-  }
 
-  if (Serial.available()) {
-    String input = Serial.readStringUntil('\n');
-    input.trim();
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(94, 161, 255, 0.25), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 35%),
+        var(--bg);
+    }
 
-    if (input.length() > 0) {
-      if (input == "h" || input == "H") {
-        publishHeartbeat();
-      } else {
-        int fingerId = input.toInt();
+    button,
+    input {
+      font-family: inherit;
+    }
 
-        if (fingerId > 0) {
-          sendTestAttendance(fingerId);
-        } else {
-          Serial.println("[입력 오류] 숫자 fingerId 또는 h 를 입력하세요.");
-        }
+    .hidden {
+      display: none !important;
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .login-card,
+    .card,
+    .modal-card {
+      background: rgba(17, 24, 45, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(16px);
+    }
+
+    .login-card {
+      width: min(430px, 100%);
+      padding: 28px;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      font-weight: 950;
+      margin-bottom: 16px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: -0.05em;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      margin: 0 0 7px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #0b1225;
+      color: var(--text);
+      padding: 12px 13px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-bottom: 13px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      padding: 10px 14px;
+      font-weight: 850;
+      color: var(--text);
+      background: #23304f;
+      border: 1px solid var(--border);
+    }
+
+    button:hover {
+      background: #2b3a60;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3f8cff, #8b5cf6);
+      border: 0;
+    }
+
+    .btn-green {
+      background: rgba(55, 214, 122, 0.16);
+      color: #8effbc;
+      border: 1px solid rgba(55, 214, 122, 0.35);
+    }
+
+    .btn-red {
+      background: rgba(255, 92, 122, 0.14);
+      color: #ff9bad;
+      border: 1px solid rgba(255, 92, 122, 0.3);
+    }
+
+    .btn-full {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .error {
+      min-height: 22px;
+      color: var(--red);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .topbar p {
+      margin: 7px 0 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-line {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      background: #1b2440;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .pill.ok {
+      color: #8effbc;
+      border-color: rgba(55, 214, 122, 0.35);
+    }
+
+    .pill.warn {
+      color: #ffe19a;
+      border-color: rgba(255, 209, 102, 0.3);
+    }
+
+    .pill.bad {
+      color: #ff9bad;
+      border-color: rgba(255, 92, 122, 0.3);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: 30px;
+      font-weight: 950;
+      letter-spacing: -0.06em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+    }
+
+    .card {
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .card-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .event {
+      background: #0b1225;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 13px;
+    }
+
+    .event-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .event-name {
+      font-weight: 900;
+      font-size: 16px;
+    }
+
+    .event-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: #b7c4e5;
+      word-break: break-all;
+    }
+
+    .logbox {
+      background: #050915;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 220px;
+      max-height: 360px;
+      overflow: auto;
+      white-space: pre-wrap;
+      color: #b7c4e5;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px;
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(38, 49, 79, 0.7);
+    }
+
+    .kv:last-child {
+      border-bottom: 0;
+    }
+
+    .kv .k {
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .kv .v {
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 20px;
+      z-index: 99;
+    }
+
+    .modal-card {
+      width: min(560px, 100%);
+      padding: 22px;
+    }
+
+    iframe {
+      width: 0;
+      height: 0;
+      border: 0;
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
       }
     }
-  }
+  </style>
+</head>
 
-  delay(10);
-}
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="logo">2-12</div>
+      <h1>2-12 지문 출석 대시보드</h1>
+      <p>관리자 인증 후 HiveMQ 실시간 출석 이벤트를 확인합니다.</p>
+
+      <div class="field">
+        <label>관리자 ID</label>
+        <input id="loginId" autocomplete="username" placeholder="예: alpaca" />
+      </div>
+
+      <div class="field">
+        <label>관리자 비밀번호</label>
+        <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호" />
+      </div>
+
+      <button class="btn-primary btn-full" onclick="submitLogin()">로그인</button>
+
+      <div id="loginMsg" class="error"></div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="wrap">
+      <div class="topbar">
+        <div>
+          <h1>2-12 지문 출석 대시보드</h1>
+          <p id="loginInfo">로그인됨</p>
+
+          <div class="status-line">
+            <span id="mqttStatus" class="pill bad">MQTT 미연결</span>
+            <span id="espStatus" class="pill bad">ESP32 오프라인</span>
+            <span id="lastHeartbeat" class="pill">Heartbeat 없음</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button onclick="connectMqtt()">MQTT 연결</button>
+          <button onclick="disconnectMqtt()">MQTT 해제</button>
+          <button onclick="openSettings()">설정</button>
+          <button onclick="openAdminPage()">관리자 페이지</button>
+          <button class="btn-red" onclick="logout()">로그아웃</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat">
+          <div class="label">오늘 이벤트</div>
+          <div id="statTotal" class="value">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">출석/테스트</div>
+          <div id="statPresent" class="value">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">지각</div>
+          <div id="statLate" class="value">0</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">오류/기타</div>
+          <div id="statEtc" class="value">0</div>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h2>실시간 출석 이벤트</h2>
+              <button onclick="clearEvents()">목록 지우기</button>
+            </div>
+
+            <div class="card-body">
+              <div id="eventList" class="event-list">
+                <div class="event">
+                  <div class="event-top">
+                    <div class="event-name">대기 중</div>
+                    <span class="pill">이벤트 없음</span>
+                  </div>
+                  <div class="event-meta">ESP32에서 MQTT 이벤트가 들어오면 여기에 표시됩니다.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h2>장치 상태</h2>
+              <span id="deviceIdView" class="pill">2-12</span>
+            </div>
+
+            <div class="card-body">
+              <div class="kv">
+                <div class="k">Broker</div>
+                <div id="brokerView" class="v">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">Status Topic</div>
+                <div id="statusTopicView" class="v">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">Event Topic</div>
+                <div id="eventTopicView" class="v">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">Heartbeat</div>
+                <div id="heartbeatTopicView" class="v">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">ESP IP</div>
+                <div id="espIpView" class="v">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">RSSI</div>
+                <div id="rssiView" class="v">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>시스템 로그</h2>
+              <button onclick="clearSystemLog()">지우기</button>
+            </div>
+
+            <div class="card-body">
+              <div id="systemLog" class="logbox"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>MQTT 설정</h2>
+      <p>HiveMQ Cloud WebSocket 정보를 입력합니다. 비밀번호는 이 브라우저에만 저장됩니다.</p>
+
+      <div class="field">
+        <label>WebSocket URL</label>
+        <input id="mqttUrlInput" />
+      </div>
+
+      <div class="field">
+        <label>Username</label>
+        <input id="mqttUserInput" />
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input id="mqttPassInput" type="password" />
+      </div>
+
+      <div class="field">
+        <label>Status Topic</label>
+        <input id="statusTopicInput" />
+      </div>
+
+      <div class="field">
+        <label>Event Topic</label>
+        <input id="eventTopicInput" />
+      </div>
+
+      <div class="field">
+        <label>Heartbeat Topic</label>
+        <input id="heartbeatTopicInput" />
+      </div>
+
+      <div class="actions">
+        <button class="btn-green" onclick="saveSettings()">저장</button>
+        <button onclick="closeSettings()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <form id="loginForm" method="POST" target="loginFrame" class="hidden">
+    <input name="action" value="dashboardLogin" />
+    <input id="formAdminId" name="adminId" />
+    <input id="formAdminPw" name="adminPw" />
+    <input id="formNonce" name="nonce" />
+    <input id="formDeviceName" name="deviceName" />
+    <input id="formScreenSize" name="screenSize" />
+    <input id="formClientTime" name="clientTime" />
+    <input id="formClientTimezone" name="clientTimezone" />
+    <input id="formUserAgent" name="userAgent" />
+  </form>
+
+  <iframe id="loginFrame" name="loginFrame"></iframe>
+
+  <script>
+    /****************************************************
+     * 기본 설정
+     ****************************************************/
+
+    const GOOGLE_ADMIN_URL =
+      "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+
+    const DEFAULT_MQTT_URL =
+      "wss://793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud:8884/mqtt";
+
+    const DEFAULT_MQTT_USER = "jiukeum";
+
+    const DEFAULT_TOPICS = {
+      status: "attendance/2-12/status",
+      event: "attendance/2-12/event",
+      heartbeat: "attendance/2-12/heartbeat"
+    };
+
+    let mqttClient = null;
+    let loginNonce = "";
+    let eventCount = 0;
+    let presentCount = 0;
+    let lateCount = 0;
+    let etcCount = 0;
+    let lastHeartbeatAt = 0;
+
+    /****************************************************
+     * 초기화
+     ****************************************************/
+
+    window.addEventListener("load", function () {
+      initSettingsView();
+      restoreSession();
+      renderTopicViews();
+      log("사이트 로드 완료");
+    });
+
+    window.addEventListener("message", function (event) {
+      const data = event.data;
+
+      if (!data || data.source !== "attendance-dashboard-login") {
+        return;
+      }
+
+      const payload = data.payload || {};
+
+      if (payload.nonce !== loginNonce) {
+        return;
+      }
+
+      handleLoginResult(payload);
+    });
+
+    setInterval(function () {
+      updateHeartbeatAge();
+    }, 1000);
+
+    /****************************************************
+     * 로그인
+     ****************************************************/
+
+    function submitLogin() {
+      const adminId = document.getElementById("loginId").value.trim();
+      const adminPw = document.getElementById("loginPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        setLoginMsg("아이디와 비밀번호를 입력하세요.");
+        return;
+      }
+
+      loginNonce = String(Date.now()) + "-" + Math.random().toString(16).slice(2);
+
+      document.getElementById("loginForm").action = GOOGLE_ADMIN_URL;
+
+      document.getElementById("formAdminId").value = adminId;
+      document.getElementById("formAdminPw").value = adminPw;
+      document.getElementById("formNonce").value = loginNonce;
+      document.getElementById("formDeviceName").value = navigator.platform || "";
+      document.getElementById("formScreenSize").value = screen.width + "x" + screen.height;
+      document.getElementById("formClientTime").value = new Date().toISOString();
+      document.getElementById("formClientTimezone").value =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      document.getElementById("formUserAgent").value = navigator.userAgent || "";
+
+      setLoginMsg("로그인 확인 중...");
+
+      document.getElementById("loginForm").submit();
+
+      setTimeout(function () {
+        if (!sessionStorage.getItem("attendanceDashboardLoggedIn")) {
+          setLoginMsg("로그인 응답이 없습니다. Apps Script URL 또는 배포 상태를 확인하세요.");
+        }
+      }, 12000);
+    }
+
+    function handleLoginResult(payload) {
+      if (!payload.ok) {
+        setLoginMsg(payload.message || "로그인 실패");
+        return;
+      }
+
+      sessionStorage.setItem("attendanceDashboardLoggedIn", "true");
+      sessionStorage.setItem("attendanceAdminId", payload.adminId || "");
+      sessionStorage.setItem("attendanceAdminRole", payload.role || "");
+
+      showApp(payload.adminId || "", payload.role || "");
+      connectMqtt();
+    }
+
+    function restoreSession() {
+      const loggedIn = sessionStorage.getItem("attendanceDashboardLoggedIn") === "true";
+
+      if (!loggedIn) {
+        return;
+      }
+
+      const adminId = sessionStorage.getItem("attendanceAdminId") || "";
+      const role = sessionStorage.getItem("attendanceAdminRole") || "";
+
+      showApp(adminId, role);
+    }
+
+    function showApp(adminId, role) {
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+
+      document.getElementById("loginInfo").textContent =
+        "로그인: " + (adminId || "-") + " / " + (role || "ADMIN");
+
+      log("로그인 성공: " + (adminId || "-"));
+    }
+
+    function logout() {
+      disconnectMqtt();
+
+      sessionStorage.removeItem("attendanceDashboardLoggedIn");
+      sessionStorage.removeItem("attendanceAdminId");
+      sessionStorage.removeItem("attendanceAdminRole");
+
+      location.reload();
+    }
+
+    function setLoginMsg(msg) {
+      document.getElementById("loginMsg").textContent = msg || "";
+    }
+
+    /****************************************************
+     * MQTT 설정
+     ****************************************************/
+
+    function getSettings() {
+      return {
+        mqttUrl: localStorage.getItem("mqttUrl") || DEFAULT_MQTT_URL,
+        mqttUser: localStorage.getItem("mqttUser") || DEFAULT_MQTT_USER,
+        mqttPass: localStorage.getItem("mqttPass") || "",
+        topicStatus: localStorage.getItem("topicStatus") || DEFAULT_TOPICS.status,
+        topicEvent: localStorage.getItem("topicEvent") || DEFAULT_TOPICS.event,
+        topicHeartbeat: localStorage.getItem("topicHeartbeat") || DEFAULT_TOPICS.heartbeat
+      };
+    }
+
+    function initSettingsView() {
+      const s = getSettings();
+
+      document.getElementById("mqttUrlInput").value = s.mqttUrl;
+      document.getElementById("mqttUserInput").value = s.mqttUser;
+      document.getElementById("mqttPassInput").value = s.mqttPass;
+      document.getElementById("statusTopicInput").value = s.topicStatus;
+      document.getElementById("eventTopicInput").value = s.topicEvent;
+      document.getElementById("heartbeatTopicInput").value = s.topicHeartbeat;
+    }
+
+    function saveSettings() {
+      localStorage.setItem("mqttUrl", document.getElementById("mqttUrlInput").value.trim());
+      localStorage.setItem("mqttUser", document.getElementById("mqttUserInput").value.trim());
+      localStorage.setItem("mqttPass", document.getElementById("mqttPassInput").value.trim());
+      localStorage.setItem("topicStatus", document.getElementById("statusTopicInput").value.trim());
+      localStorage.setItem("topicEvent", document.getElementById("eventTopicInput").value.trim());
+      localStorage.setItem("topicHeartbeat", document.getElementById("heartbeatTopicInput").value.trim());
+
+      renderTopicViews();
+      closeSettings();
+
+      log("MQTT 설정 저장 완료");
+
+      if (mqttClient) {
+        disconnectMqtt();
+        connectMqtt();
+      }
+    }
+
+    function openSettings() {
+      initSettingsView();
+      document.getElementById("settingsModal").classList.remove("hidden");
+    }
+
+    function closeSettings() {
+      document.getElementById("settingsModal").classList.add("hidden");
+    }
+
+    function renderTopicViews() {
+      const s = getSettings();
+
+      document.getElementById("brokerView").textContent = s.mqttUrl;
+      document.getElementById("statusTopicView").textContent = s.topicStatus;
+      document.getElementById("eventTopicView").textContent = s.topicEvent;
+      document.getElementById("heartbeatTopicView").textContent = s.topicHeartbeat;
+    }
+
+    /****************************************************
+     * MQTT 연결
+     ****************************************************/
+
+    function connectMqtt() {
+      const s = getSettings();
+
+      if (!s.mqttPass) {
+        setMqttStatus("MQTT 비밀번호 필요", "warn");
+        log("MQTT 비밀번호가 없습니다. 설정에서 입력하세요.");
+        openSettings();
+        return;
+      }
+
+      if (mqttClient && mqttClient.connected) {
+        log("MQTT 이미 연결됨");
+        return;
+      }
+
+      setMqttStatus("MQTT 연결 중...", "warn");
+      log("MQTT 연결 시도: " + s.mqttUrl);
+
+      const clientId =
+        "dashboard-2-12-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+
+      mqttClient = mqtt.connect(s.mqttUrl, {
+        username: s.mqttUser,
+        password: s.mqttPass,
+        clientId: clientId,
+        clean: true,
+        reconnectPeriod: 3000,
+        connectTimeout: 10000
+      });
+
+      mqttClient.on("connect", function () {
+        setMqttStatus("MQTT 연결됨", "ok");
+        log("MQTT 연결 성공");
+
+        mqttClient.subscribe(s.topicStatus);
+        mqttClient.subscribe(s.topicEvent);
+        mqttClient.subscribe(s.topicHeartbeat);
+
+        log("구독: " + s.topicStatus);
+        log("구독: " + s.topicEvent);
+        log("구독: " + s.topicHeartbeat);
+      });
+
+      mqttClient.on("reconnect", function () {
+        setMqttStatus("MQTT 재연결 중...", "warn");
+        log("MQTT 재연결 중");
+      });
+
+      mqttClient.on("close", function () {
+        setMqttStatus("MQTT 미연결", "bad");
+        log("MQTT 연결 종료");
+      });
+
+      mqttClient.on("error", function (err) {
+        setMqttStatus("MQTT 오류", "bad");
+        log("MQTT 오류: " + (err && err.message ? err.message : String(err)));
+      });
+
+      mqttClient.on("message", function (topic, payload) {
+        handleMqttMessage(topic, payload.toString());
+      });
+    }
+
+    function disconnectMqtt() {
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (err) {
+          log("MQTT 해제 오류: " + String(err));
+        }
+      }
+
+      mqttClient = null;
+
+      setMqttStatus("MQTT 미연결", "bad");
+      setEspStatus("ESP32 오프라인", "bad");
+      log("MQTT 수동 해제");
+    }
+
+    function setMqttStatus(text, type) {
+      setPill("mqttStatus", text, type);
+    }
+
+    function setEspStatus(text, type) {
+      setPill("espStatus", text, type);
+    }
+
+    function setPill(id, text, type) {
+      const el = document.getElementById(id);
+
+      el.textContent = text;
+      el.className = "pill " + (type || "");
+    }
+
+    /****************************************************
+     * MQTT 메시지 처리
+     ****************************************************/
+
+    function handleMqttMessage(topic, text) {
+      const s = getSettings();
+
+      log("수신 [" + topic + "] " + text);
+
+      if (topic === s.topicStatus) {
+        handleStatusMessage(text);
+        return;
+      }
+
+      let data = null;
+
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        log("JSON 파싱 실패: " + text);
+        return;
+      }
+
+      if (topic === s.topicHeartbeat) {
+        handleHeartbeat(data);
+        return;
+      }
+
+      if (topic === s.topicEvent) {
+        handleAttendanceEvent(data);
+        return;
+      }
+    }
+
+    function handleStatusMessage(text) {
+      if (text === "online") {
+        setEspStatus("ESP32 온라인", "ok");
+      } else if (text === "offline") {
+        setEspStatus("ESP32 오프라인", "bad");
+      } else {
+        setEspStatus("ESP32 상태: " + text, "warn");
+      }
+    }
+
+    function handleHeartbeat(data) {
+      lastHeartbeatAt = Date.now();
+
+      setEspStatus("ESP32 온라인", "ok");
+      setPill("lastHeartbeat", "Heartbeat 방금 수신", "ok");
+
+      document.getElementById("deviceIdView").textContent = data.deviceId || "2-12";
+      document.getElementById("espIpView").textContent = data.ip || "-";
+      document.getElementById("rssiView").textContent =
+        data.rssi !== undefined ? String(data.rssi) + " dBm" : "-";
+    }
+
+    function updateHeartbeatAge() {
+      if (!lastHeartbeatAt) {
+        return;
+      }
+
+      const sec = Math.floor((Date.now() - lastHeartbeatAt) / 1000);
+
+      if (sec < 40) {
+        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "ok");
+        setEspStatus("ESP32 온라인", "ok");
+      } else if (sec < 90) {
+        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "warn");
+        setEspStatus("ESP32 응답 지연", "warn");
+      } else {
+        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "bad");
+        setEspStatus("ESP32 오프라인 추정", "bad");
+      }
+    }
+
+    function handleAttendanceEvent(data) {
+      eventCount++;
+
+      const status = String(data.status || "");
+      const type = getStatusType(status);
+
+      if (status === "출석" || status === "테스트") {
+        presentCount++;
+      } else if (status === "지각") {
+        lateCount++;
+      } else {
+        etcCount++;
+      }
+
+      renderStats();
+      prependEvent(data, type);
+    }
+
+    function getStatusType(status) {
+      if (status === "출석" || status === "테스트") {
+        return "ok";
+      }
+
+      if (status === "지각" || status === "중복") {
+        return "warn";
+      }
+
+      return "bad";
+    }
+
+    function renderStats() {
+      document.getElementById("statTotal").textContent = eventCount;
+      document.getElementById("statPresent").textContent = presentCount;
+      document.getElementById("statLate").textContent = lateCount;
+      document.getElementById("statEtc").textContent = etcCount;
+    }
+
+    function prependEvent(data, type) {
+      const list = document.getElementById("eventList");
+
+      if (eventCount === 1) {
+        list.innerHTML = "";
+      }
+
+      const div = document.createElement("div");
+      div.className = "event";
+
+      const name =
+        data.name && String(data.name).trim()
+          ? String(data.name)
+          : "fingerId " + String(data.fingerId || "-");
+
+      const status = String(data.status || "-");
+      const message = String(data.message || "");
+      const now = new Date().toLocaleString("ko-KR");
+
+      div.innerHTML =
+        '<div class="event-top">' +
+          '<div class="event-name">' + escapeHtml(name) + '</div>' +
+          '<span class="pill ' + type + '">' + escapeHtml(status) + '</span>' +
+        '</div>' +
+        '<div class="event-meta">' +
+          '수신시각: ' + escapeHtml(now) + '<br>' +
+          'deviceId: ' + escapeHtml(data.deviceId || '-') + ' / ' +
+          'fingerId: ' + escapeHtml(data.fingerId || '-') + ' / ' +
+          'confidence: ' + escapeHtml(data.confidence || '-') + '<br>' +
+          escapeHtml(message) +
+        '</div>' +
+        '<div class="mono" style="margin-top:8px;">' +
+          escapeHtml(JSON.stringify(data)) +
+        '</div>';
+
+      list.prepend(div);
+
+      while (list.children.length > 80) {
+        list.removeChild(list.lastChild);
+      }
+    }
+
+    function clearEvents() {
+      eventCount = 0;
+      presentCount = 0;
+      lateCount = 0;
+      etcCount = 0;
+
+      renderStats();
+
+      document.getElementById("eventList").innerHTML =
+        '<div class="event">' +
+          '<div class="event-top">' +
+            '<div class="event-name">대기 중</div>' +
+            '<span class="pill">이벤트 없음</span>' +
+          '</div>' +
+          '<div class="event-meta">ESP32에서 MQTT 이벤트가 들어오면 여기에 표시됩니다.</div>' +
+        '</div>';
+
+      log("이벤트 목록 초기화");
+    }
+
+    /****************************************************
+     * 기타
+     ****************************************************/
+
+    function openAdminPage() {
+      window.open(GOOGLE_ADMIN_URL, "_blank");
+    }
+
+    function clearSystemLog() {
+      document.getElementById("systemLog").textContent = "";
+    }
+
+    function log(msg) {
+      const el = document.getElementById("systemLog");
+
+      if (!el) {
+        return;
+      }
+
+      const line = "[" + new Date().toLocaleTimeString("ko-KR") + "] " + msg;
+
+      el.textContent = line + "\n" + el.textContent;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
