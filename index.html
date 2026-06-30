@@ -92,10 +92,6 @@
       margin: 80px auto;
     }
 
-    .login-card h2 {
-      margin-top: 0;
-    }
-
     .field {
       margin-bottom: 12px;
     }
@@ -184,7 +180,9 @@
       color: #92400e;
     }
 
-    .pill.오류 {
+    .pill.오류,
+    .pill.미등록,
+    .pill.비활성 {
       background: #fee2e2;
       color: #991b1b;
     }
@@ -192,6 +190,11 @@
     .pill.중복 {
       background: #e0e7ff;
       color: #3730a3;
+    }
+
+    .pill.테스트 {
+      background: #dbeafe;
+      color: #1d4ed8;
     }
 
     .pill.미인식 {
@@ -294,10 +297,6 @@
       justify-content: flex-end;
       gap: 8px;
       margin-top: 16px;
-    }
-
-    iframe {
-      display: none;
     }
   </style>
 </head>
@@ -440,9 +439,6 @@
     </div>
   </div>
 
-  <form id="loginForm" method="POST" target="loginFrame" class="hidden"></form>
-  <iframe id="loginFrame" name="loginFrame"></iframe>
-
   <script>
     const GOOGLE_ADMIN_URL =
       "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
@@ -457,7 +453,6 @@
     };
 
     let currentAdmin = null;
-    let pendingLogin = null;
     let mqttClient = null;
     let mqttConfig = loadSettings();
 
@@ -537,95 +532,6 @@
       connectMQTT();
     }
 
-    function login() {
-      const adminId = $("adminId").value.trim();
-      const adminPw = $("adminPw").value.trim();
-
-      if (!adminId || !adminPw) {
-        $("loginMsg").textContent = "관리자 ID와 비밀번호를 입력하세요.";
-        return;
-      }
-
-      pendingLogin = {
-        adminId: adminId,
-        adminPw: adminPw
-      };
-
-      $("loginBtn").disabled = true;
-      $("loginMsg").textContent = "로그인 확인 중...";
-
-      const form = $("loginForm");
-      form.innerHTML = "";
-      form.action = GOOGLE_ADMIN_URL;
-      form.method = "POST";
-      form.target = "loginFrame";
-
-      addHidden(form, "action", "dashboardLogin");
-      addHidden(form, "adminId", adminId);
-      addHidden(form, "adminPw", adminPw);
-
-      form.submit();
-    }
-
-    function addHidden(form, name, value) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    }
-
-    window.addEventListener("message", function (event) {
-      const data = event.data;
-
-      if (!data || data.source !== "attendance-dashboard-login") {
-        return;
-      }
-
-      const payload = data.payload || {};
-
-      if (!payload.ok) {
-        $("loginBtn").disabled = false;
-        $("loginMsg").textContent = payload.message || "로그인 실패";
-        return;
-      }
-
-      currentAdmin = {
-        adminId: pendingLogin.adminId,
-        adminPw: pendingLogin.adminPw,
-        role: payload.role || "ADMIN"
-      };
-
-      $("loginPage").classList.add("hidden");
-      $("dashboardPage").classList.remove("hidden");
-
-      $("headerSub").textContent =
-        "관리자: " + currentAdmin.adminId + " / 오늘 로그 + 실시간 MQTT";
-
-      loadTodayLogs();
-      connectMQTT();
-    });
-
-    function logout() {
-      currentAdmin = null;
-      pendingLogin = null;
-
-      if (mqttClient) {
-        try {
-          mqttClient.end(true);
-        } catch (e) {}
-      }
-
-      mqttClient = null;
-      todayLogs = [];
-      liveEvents = [];
-
-      $("dashboardPage").classList.add("hidden");
-      $("loginPage").classList.remove("hidden");
-      $("loginBtn").disabled = false;
-      $("loginMsg").textContent = "";
-    }
-
     function jsonp(url, params) {
       return new Promise(function (resolve, reject) {
         const callbackName =
@@ -675,6 +581,77 @@
       });
     }
 
+    async function login() {
+      const adminId = $("adminId").value.trim();
+      const adminPw = $("adminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        $("loginMsg").textContent = "관리자 ID와 비밀번호를 입력하세요.";
+        return;
+      }
+
+      $("loginBtn").disabled = true;
+      $("loginMsg").textContent = "로그인 확인 중...";
+
+      try {
+        const res = await jsonp(GOOGLE_ADMIN_URL, {
+          action: "dashboardLoginJsonp",
+          adminId: adminId,
+          adminPw: adminPw,
+          deviceName: navigator.platform || "",
+          screenSize: screen.width + "x" + screen.height,
+          clientTime: new Date().toLocaleString("ko-KR"),
+          clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          userAgent: navigator.userAgent
+        });
+
+        if (!res.ok) {
+          $("loginBtn").disabled = false;
+          $("loginMsg").textContent = res.message || "로그인 실패";
+          return;
+        }
+
+        currentAdmin = {
+          adminId: adminId,
+          adminPw: adminPw,
+          role: res.role || "ADMIN"
+        };
+
+        $("loginPage").classList.add("hidden");
+        $("dashboardPage").classList.remove("hidden");
+
+        $("headerSub").textContent =
+          "관리자: " + currentAdmin.adminId + " / 오늘 로그 + 실시간 MQTT";
+
+        loadTodayLogs();
+        connectMQTT();
+
+      } catch (err) {
+        $("loginBtn").disabled = false;
+        $("loginMsg").textContent =
+          "로그인 오류: " + err.message;
+      }
+    }
+
+    function logout() {
+      currentAdmin = null;
+
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (e) {}
+      }
+
+      mqttClient = null;
+      todayLogs = [];
+      liveEvents = [];
+
+      $("dashboardPage").classList.add("hidden");
+      $("loginPage").classList.remove("hidden");
+      $("loginBtn").disabled = false;
+      $("loginMsg").textContent = "";
+    }
+
     async function loadTodayLogs() {
       if (!currentAdmin) {
         return;
@@ -712,7 +689,7 @@
       if (!mqttConfig.pass) {
         $("mqttStatus").textContent = "PASSWORD 필요";
         $("mqttStatus").className = "pill offline";
-        logSystem("MQTT 비밀번호를 설정하세요.");
+        logSystem("MQTT 설정에서 비밀번호를 입력하세요.");
         return;
       }
 
@@ -825,27 +802,10 @@
       renderLiveEvents();
 
       if (data && data.type === "attendance") {
-        const log = normalizeEventToLog(data);
-        todayLogs.unshift(log);
-        renderTodayLogs(todayLogs);
-        renderSummary(makeSummaryFromLogs(todayLogs));
+        setTimeout(function () {
+          loadTodayLogs();
+        }, 800);
       }
-    }
-
-    function normalizeEventToLog(data) {
-      const now = new Date();
-
-      return {
-        timestamp: now.toLocaleString("ko-KR"),
-        date: "",
-        time: now.toLocaleTimeString("ko-KR"),
-        status: data.status || "",
-        fingerId: data.fingerId || "",
-        name: data.name || "",
-        deviceId: data.deviceId || "",
-        message: data.message || "",
-        remark: data.test ? "test=true" : ""
-      };
     }
 
     function getDisplayName(item) {
@@ -872,6 +832,9 @@
       if (s === "오류") return "오류";
       if (s === "중복") return "중복";
       if (s === "미인식") return "미인식";
+      if (s === "미등록") return "미등록";
+      if (s === "비활성") return "비활성";
+      if (s === "테스트") return "테스트";
 
       return "";
     }
@@ -928,8 +891,7 @@
         '</div>' +
         '<div class="event-meta">' +
           '시간: ' + escapeHtml(timeText) + '<br>' +
-          '장치: ' + escapeHtml(item.deviceId || '-') + ' / ' +
-          '지문ID: ' + escapeHtml(item.fingerId || '-') + '<br>' +
+          '장치: ' + escapeHtml(item.deviceId || '-') + '<br>' +
           escapeHtml(message || '-') +
         '</div>';
 
@@ -943,7 +905,9 @@
 
       const errorTotal =
         (summary.error || 0) +
-        (summary.unknown || 0);
+        (summary.unknown || 0) +
+        (summary.unregistered || 0) +
+        (summary.inactive || 0);
 
       $("statError").textContent = errorTotal;
     }
@@ -956,6 +920,9 @@
         duplicate: 0,
         error: 0,
         unknown: 0,
+        unregistered: 0,
+        inactive: 0,
+        test: 0,
         other: 0
       };
 
@@ -972,6 +939,12 @@
           summary.error++;
         } else if (status === "미인식") {
           summary.unknown++;
+        } else if (status === "미등록") {
+          summary.unregistered++;
+        } else if (status === "비활성") {
+          summary.inactive++;
+        } else if (status === "테스트") {
+          summary.test++;
         } else {
           summary.other++;
         }
