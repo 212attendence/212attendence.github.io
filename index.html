@@ -4,288 +4,212 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>2-12 지문 출석 대시보드</title>
+  <title>2-12 Attendance Dashboard</title>
 
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
-    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
-
-    :root {
-      --bg: #070b16;
-      --card: #11182d;
-      --card2: #151d35;
-      --border: #26314f;
-      --text: #eef3ff;
-      --muted: #9aa7c7;
-      --blue: #5ea1ff;
-      --purple: #a78bfa;
-      --green: #37d67a;
-      --yellow: #ffd166;
-      --red: #ff5c7a;
-    }
-
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      min-height: 100vh;
-      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(94, 161, 255, 0.25), transparent 32%),
-        radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 35%),
-        var(--bg);
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      background: #f3f5f8;
+      color: #111827;
     }
 
-    button,
-    input {
-      font-family: inherit;
+    header {
+      background: #111827;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
-    .login-screen {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-    }
-
-    .login-card,
-    .card,
-    .modal-card {
-      background: rgba(17, 24, 45, 0.88);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(16px);
-    }
-
-    .login-card {
-      width: min(430px, 100%);
-      padding: 28px;
-    }
-
-    .logo {
-      width: 58px;
-      height: 58px;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--blue), var(--purple));
-      font-weight: 950;
-      margin-bottom: 16px;
-    }
-
-    h1,
-    h2,
-    h3 {
+    header h1 {
       margin: 0;
-      letter-spacing: -0.05em;
+      font-size: 22px;
     }
 
-    p {
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    label {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 850;
-      margin: 0 0 7px;
-    }
-
-    input {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      background: #0b1225;
-      color: var(--text);
-      padding: 12px 13px;
-      outline: none;
-      font-size: 14px;
-    }
-
-    .field {
-      margin-bottom: 13px;
+    header .sub {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-top: 4px;
     }
 
     button {
       border: 0;
-      border-radius: 12px;
-      cursor: pointer;
+      border-radius: 10px;
       padding: 10px 14px;
-      font-weight: 850;
-      color: var(--text);
-      background: #23304f;
-      border: 1px solid var(--border);
+      cursor: pointer;
+      font-weight: 700;
+      background: #2563eb;
+      color: white;
     }
 
-    button:hover {
-      background: #2b3a60;
+    button.secondary {
+      background: #475569;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #3f8cff, #8b5cf6);
-      border: 0;
+    button.danger {
+      background: #dc2626;
     }
 
-    .btn-green {
-      background: rgba(55, 214, 122, 0.16);
-      color: #8effbc;
-      border: 1px solid rgba(55, 214, 122, 0.35);
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
-    .btn-red {
-      background: rgba(255, 92, 122, 0.14);
-      color: #ff9bad;
-      border: 1px solid rgba(255, 92, 122, 0.3);
-    }
-
-    .btn-full {
+    input {
       width: 100%;
-      margin-top: 8px;
-    }
-
-    .error {
-      min-height: 22px;
-      color: var(--red);
-      font-size: 13px;
-      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 15px;
     }
 
     .wrap {
-      width: min(1180px, calc(100% - 28px));
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 22px 0 40px;
+      padding: 20px;
     }
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 14px;
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
       margin-bottom: 16px;
     }
 
-    .topbar p {
-      margin: 7px 0 0;
+    .login-card {
+      max-width: 420px;
+      margin: 80px auto;
     }
 
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+    .login-card h2 {
+      margin-top: 0;
     }
 
-    .status-line {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 12px 0 0;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 850;
-      background: #1b2440;
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .pill.ok {
-      color: #8effbc;
-      border-color: rgba(55, 214, 122, 0.35);
-    }
-
-    .pill.warn {
-      color: #ffe19a;
-      border-color: rgba(255, 209, 102, 0.3);
-    }
-
-    .pill.bad {
-      color: #ff9bad;
-      border-color: rgba(255, 92, 122, 0.3);
+    .field {
+      margin-bottom: 12px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .stat {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 18px;
+      background: white;
+      border-radius: 16px;
       padding: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
 
     .stat .label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 850;
+      color: #64748b;
+      font-size: 13px;
       margin-bottom: 8px;
     }
 
     .stat .value {
       font-size: 30px;
-      font-weight: 950;
-      letter-spacing: -0.06em;
+      font-weight: 800;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 16px;
-    }
-
-    .card {
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .card-head {
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
+    .status-row {
       display: flex;
-      justify-content: space-between;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
     }
 
-    .card-body {
-      padding: 18px;
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .pill.online {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pill.offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .pill.출석 {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pill.지각 {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .pill.오류 {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .pill.중복 {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .pill.미인식 {
+      background: #f1f5f9;
+      color: #334155;
     }
 
     .event-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 520px;
-      overflow: auto;
-      padding-right: 4px;
     }
 
     .event {
-      background: #0b1225;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 13px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
     }
 
     .event-top {
@@ -297,804 +221,251 @@
     }
 
     .event-name {
+      font-size: 20px;
       font-weight: 900;
-      font-size: 16px;
     }
 
     .event-meta {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+      color: #475569;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .small {
+      color: #64748b;
+      font-size: 13px;
     }
 
     .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-family: Consolas, Monaco, monospace;
       font-size: 12px;
-      color: #b7c4e5;
-      word-break: break-all;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
     }
 
-    .logbox {
-      background: #050915;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      min-height: 220px;
-      max-height: 360px;
-      overflow: auto;
-      white-space: pre-wrap;
-      color: #b7c4e5;
-      font-size: 12px;
-      line-height: 1.45;
+    .hidden {
+      display: none !important;
     }
 
-    .kv {
-      display: grid;
-      grid-template-columns: 110px 1fr;
+    .toolbar {
+      display: flex;
       gap: 8px;
-      font-size: 13px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(38, 49, 79, 0.7);
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
     }
 
-    .kv:last-child {
-      border-bottom: 0;
+    .right-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .kv .k {
-      color: var(--muted);
-      font-weight: 850;
-    }
-
-    .kv .v {
-      color: var(--text);
-      word-break: break-all;
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
     }
 
     .modal {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      background: rgba(0, 0, 0, 0.55);
-      padding: 20px;
-      z-index: 99;
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      max-width: 620px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     }
 
-    .modal-card {
-      width: min(560px, 100%);
-      padding: 22px;
+    .modal h3 {
+      margin-top: 0;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
     }
 
     iframe {
-      width: 0;
-      height: 0;
-      border: 0;
-      position: absolute;
-      left: -9999px;
-      top: -9999px;
-    }
-
-    @media (max-width: 900px) {
-      .topbar {
-        flex-direction: column;
-      }
-
-      .actions {
-        justify-content: flex-start;
-      }
-
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .layout {
-        grid-template-columns: 1fr;
-      }
+      display: none;
     }
   </style>
 </head>
 
 <body>
-  <div id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <div class="logo">2-12</div>
-      <h1>2-12 지문 출석 대시보드</h1>
-      <p>관리자 인증 후 HiveMQ 실시간 출석 이벤트를 확인합니다.</p>
+  <div id="loginPage" class="wrap">
+    <div class="card login-card">
+      <h2>2-12 출석 대시보드</h2>
+      <p class="small">관리자 로그인 후 오늘 출석 로그를 불러옵니다.</p>
 
       <div class="field">
-        <label>관리자 ID</label>
-        <input id="loginId" autocomplete="username" placeholder="예: alpaca" />
+        <input id="adminId" placeholder="관리자 ID" autocomplete="username" />
       </div>
 
       <div class="field">
-        <label>관리자 비밀번호</label>
-        <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호" />
+        <input id="adminPw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" />
       </div>
 
-      <button class="btn-primary btn-full" onclick="submitLogin()">로그인</button>
+      <button id="loginBtn" onclick="login()">로그인</button>
 
-      <div id="loginMsg" class="error"></div>
+      <p id="loginMsg" class="small"></p>
     </div>
   </div>
 
-  <div id="app" class="hidden">
+  <div id="dashboardPage" class="hidden">
+    <header>
+      <div>
+        <h1>2-12 출석 대시보드</h1>
+        <div class="sub" id="headerSub">오늘 로그 + 실시간 MQTT</div>
+      </div>
+
+      <div class="right-actions">
+        <button class="secondary" onclick="loadTodayLogs()">오늘 로그 새로고침</button>
+        <button class="secondary" onclick="openSettings()">MQTT 설정</button>
+        <button class="danger" onclick="logout()">로그아웃</button>
+      </div>
+    </header>
+
     <div class="wrap">
-      <div class="topbar">
-        <div>
-          <h1>2-12 지문 출석 대시보드</h1>
-          <p id="loginInfo">로그인됨</p>
+      <div class="card">
+        <div class="toolbar">
+          <div class="status-row">
+            <span>MQTT</span>
+            <span id="mqttStatus" class="pill offline">OFFLINE</span>
 
-          <div class="status-line">
-            <span id="mqttStatus" class="pill bad">MQTT 미연결</span>
-            <span id="espStatus" class="pill bad">ESP32 오프라인</span>
-            <span id="lastHeartbeat" class="pill">Heartbeat 없음</span>
+            <span>ESP32</span>
+            <span id="espStatus" class="pill offline">UNKNOWN</span>
+
+            <span id="todayLabel" class="pill">오늘</span>
           </div>
+
+          <div class="small" id="lastHeartbeat">heartbeat 없음</div>
         </div>
 
-        <div class="actions">
-          <button onclick="connectMqtt()">MQTT 연결</button>
-          <button onclick="disconnectMqtt()">MQTT 해제</button>
-          <button onclick="openSettings()">설정</button>
-          <button onclick="openAdminPage()">관리자 페이지</button>
-          <button class="btn-red" onclick="logout()">로그아웃</button>
-        </div>
+        <div class="mono" id="systemLog">시스템 준비</div>
       </div>
 
       <div class="grid">
         <div class="stat">
-          <div class="label">오늘 이벤트</div>
-          <div id="statTotal" class="value">0</div>
+          <div class="label">오늘 전체 로그</div>
+          <div class="value" id="statTotal">0</div>
         </div>
 
         <div class="stat">
-          <div class="label">출석/테스트</div>
-          <div id="statPresent" class="value">0</div>
+          <div class="label">출석</div>
+          <div class="value" id="statPresent">0</div>
         </div>
 
         <div class="stat">
           <div class="label">지각</div>
-          <div id="statLate" class="value">0</div>
+          <div class="value" id="statLate">0</div>
         </div>
 
         <div class="stat">
-          <div class="label">오류/기타</div>
-          <div id="statEtc" class="value">0</div>
+          <div class="label">오류/미인식</div>
+          <div class="value" id="statError">0</div>
         </div>
       </div>
 
-      <div class="layout">
-        <div>
-          <div class="card">
-            <div class="card-head">
-              <h2>실시간 출석 이벤트</h2>
-              <button onclick="clearEvents()">목록 지우기</button>
-            </div>
-
-            <div class="card-body">
-              <div id="eventList" class="event-list">
-                <div class="event">
-                  <div class="event-top">
-                    <div class="event-name">대기 중</div>
-                    <span class="pill">이벤트 없음</span>
-                  </div>
-                  <div class="event-meta">ESP32에서 MQTT 이벤트가 들어오면 여기에 표시됩니다.</div>
-                </div>
-              </div>
-            </div>
+      <div class="grid-2" style="margin-top:16px;">
+        <div class="card">
+          <div class="toolbar">
+            <h3 style="margin:0;">오늘 출석 로그</h3>
+            <span class="small" id="logCount">0개</span>
           </div>
+
+          <div id="todayLogs" class="event-list"></div>
         </div>
 
-        <div>
-          <div class="card">
-            <div class="card-head">
-              <h2>장치 상태</h2>
-              <span id="deviceIdView" class="pill">2-12</span>
-            </div>
-
-            <div class="card-body">
-              <div class="kv">
-                <div class="k">Broker</div>
-                <div id="brokerView" class="v">-</div>
-              </div>
-              <div class="kv">
-                <div class="k">Status Topic</div>
-                <div id="statusTopicView" class="v">-</div>
-              </div>
-              <div class="kv">
-                <div class="k">Event Topic</div>
-                <div id="eventTopicView" class="v">-</div>
-              </div>
-              <div class="kv">
-                <div class="k">Heartbeat</div>
-                <div id="heartbeatTopicView" class="v">-</div>
-              </div>
-              <div class="kv">
-                <div class="k">ESP IP</div>
-                <div id="espIpView" class="v">-</div>
-              </div>
-              <div class="kv">
-                <div class="k">RSSI</div>
-                <div id="rssiView" class="v">-</div>
-              </div>
-            </div>
+        <div class="card">
+          <div class="toolbar">
+            <h3 style="margin:0;">실시간 수신 이벤트</h3>
+            <span class="small">사이트가 켜진 이후</span>
           </div>
 
-          <div class="card">
-            <div class="card-head">
-              <h2>시스템 로그</h2>
-              <button onclick="clearSystemLog()">지우기</button>
-            </div>
-
-            <div class="card-body">
-              <div id="systemLog" class="logbox"></div>
-            </div>
-          </div>
+          <div id="liveEvents" class="event-list"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="settingsModal" class="modal hidden">
-    <div class="modal-card">
-      <h2>MQTT 설정</h2>
-      <p>HiveMQ Cloud WebSocket 정보를 입력합니다. 비밀번호는 이 브라우저에만 저장됩니다.</p>
+  <div id="settingsModal" class="modal-bg">
+    <div class="modal">
+      <h3>MQTT 설정</h3>
 
       <div class="field">
-        <label>WebSocket URL</label>
+        <label class="small">WebSocket URL</label>
         <input id="mqttUrlInput" />
       </div>
 
       <div class="field">
-        <label>Username</label>
+        <label class="small">MQTT Username</label>
         <input id="mqttUserInput" />
       </div>
 
       <div class="field">
-        <label>Password</label>
+        <label class="small">MQTT Password</label>
         <input id="mqttPassInput" type="password" />
       </div>
 
       <div class="field">
-        <label>Status Topic</label>
-        <input id="statusTopicInput" />
+        <label class="small">Status Topic</label>
+        <input id="topicStatusInput" />
       </div>
 
       <div class="field">
-        <label>Event Topic</label>
-        <input id="eventTopicInput" />
+        <label class="small">Event Topic</label>
+        <input id="topicEventInput" />
       </div>
 
       <div class="field">
-        <label>Heartbeat Topic</label>
-        <input id="heartbeatTopicInput" />
+        <label class="small">Heartbeat Topic</label>
+        <input id="topicHeartbeatInput" />
       </div>
 
-      <div class="actions">
-        <button class="btn-green" onclick="saveSettings()">저장</button>
-        <button onclick="closeSettings()">닫기</button>
+      <div class="modal-actions">
+        <button class="secondary" onclick="closeSettings()">닫기</button>
+        <button onclick="saveSettings()">저장 후 재연결</button>
       </div>
     </div>
   </div>
 
-  <form id="loginForm" method="POST" target="loginFrame" class="hidden">
-    <input name="action" value="dashboardLogin" />
-    <input id="formAdminId" name="adminId" />
-    <input id="formAdminPw" name="adminPw" />
-    <input id="formNonce" name="nonce" />
-    <input id="formDeviceName" name="deviceName" />
-    <input id="formScreenSize" name="screenSize" />
-    <input id="formClientTime" name="clientTime" />
-    <input id="formClientTimezone" name="clientTimezone" />
-    <input id="formUserAgent" name="userAgent" />
-  </form>
-
+  <form id="loginForm" method="POST" target="loginFrame" class="hidden"></form>
   <iframe id="loginFrame" name="loginFrame"></iframe>
 
   <script>
-    /****************************************************
-     * 기본 설정
-     ****************************************************/
-
     const GOOGLE_ADMIN_URL =
       "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
 
-    const DEFAULT_MQTT_URL =
-      "wss://793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud:8884/mqtt";
-
-    const DEFAULT_MQTT_USER = "jiukeum";
-
-    const DEFAULT_TOPICS = {
-      status: "attendance/2-12/status",
-      event: "attendance/2-12/event",
-      heartbeat: "attendance/2-12/heartbeat"
+    const DEFAULT_MQTT = {
+      url: "wss://793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud:8884/mqtt",
+      user: "jiukeum",
+      pass: "",
+      topicStatus: "attendance/2-12/status",
+      topicEvent: "attendance/2-12/event",
+      topicHeartbeat: "attendance/2-12/heartbeat"
     };
 
+    let currentAdmin = null;
+    let pendingLogin = null;
     let mqttClient = null;
-    let loginNonce = "";
-    let eventCount = 0;
-    let presentCount = 0;
-    let lateCount = 0;
-    let etcCount = 0;
-    let lastHeartbeatAt = 0;
+    let mqttConfig = loadSettings();
 
-    /****************************************************
-     * 초기화
-     ****************************************************/
+    let todayLogs = [];
+    let liveEvents = [];
 
-    window.addEventListener("load", function () {
-      initSettingsView();
-      restoreSession();
-      renderTopicViews();
-      log("사이트 로드 완료");
-    });
-
-    window.addEventListener("message", function (event) {
-      const data = event.data;
-
-      if (!data || data.source !== "attendance-dashboard-login") {
-        return;
-      }
-
-      const payload = data.payload || {};
-
-      if (payload.nonce !== loginNonce) {
-        return;
-      }
-
-      handleLoginResult(payload);
-    });
-
-    setInterval(function () {
-      updateHeartbeatAge();
-    }, 1000);
-
-    /****************************************************
-     * 로그인
-     ****************************************************/
-
-    function submitLogin() {
-      const adminId = document.getElementById("loginId").value.trim();
-      const adminPw = document.getElementById("loginPw").value.trim();
-
-      if (!adminId || !adminPw) {
-        setLoginMsg("아이디와 비밀번호를 입력하세요.");
-        return;
-      }
-
-      loginNonce = String(Date.now()) + "-" + Math.random().toString(16).slice(2);
-
-      document.getElementById("loginForm").action = GOOGLE_ADMIN_URL;
-
-      document.getElementById("formAdminId").value = adminId;
-      document.getElementById("formAdminPw").value = adminPw;
-      document.getElementById("formNonce").value = loginNonce;
-      document.getElementById("formDeviceName").value = navigator.platform || "";
-      document.getElementById("formScreenSize").value = screen.width + "x" + screen.height;
-      document.getElementById("formClientTime").value = new Date().toISOString();
-      document.getElementById("formClientTimezone").value =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      document.getElementById("formUserAgent").value = navigator.userAgent || "";
-
-      setLoginMsg("로그인 확인 중...");
-
-      document.getElementById("loginForm").submit();
-
-      setTimeout(function () {
-        if (!sessionStorage.getItem("attendanceDashboardLoggedIn")) {
-          setLoginMsg("로그인 응답이 없습니다. Apps Script URL 또는 배포 상태를 확인하세요.");
-        }
-      }, 12000);
-    }
-
-    function handleLoginResult(payload) {
-      if (!payload.ok) {
-        setLoginMsg(payload.message || "로그인 실패");
-        return;
-      }
-
-      sessionStorage.setItem("attendanceDashboardLoggedIn", "true");
-      sessionStorage.setItem("attendanceAdminId", payload.adminId || "");
-      sessionStorage.setItem("attendanceAdminRole", payload.role || "");
-
-      showApp(payload.adminId || "", payload.role || "");
-      connectMqtt();
-    }
-
-    function restoreSession() {
-      const loggedIn = sessionStorage.getItem("attendanceDashboardLoggedIn") === "true";
-
-      if (!loggedIn) {
-        return;
-      }
-
-      const adminId = sessionStorage.getItem("attendanceAdminId") || "";
-      const role = sessionStorage.getItem("attendanceAdminRole") || "";
-
-      showApp(adminId, role);
-    }
-
-    function showApp(adminId, role) {
-      document.getElementById("loginScreen").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-
-      document.getElementById("loginInfo").textContent =
-        "로그인: " + (adminId || "-") + " / " + (role || "ADMIN");
-
-      log("로그인 성공: " + (adminId || "-"));
-    }
-
-    function logout() {
-      disconnectMqtt();
-
-      sessionStorage.removeItem("attendanceDashboardLoggedIn");
-      sessionStorage.removeItem("attendanceAdminId");
-      sessionStorage.removeItem("attendanceAdminRole");
-
-      location.reload();
-    }
-
-    function setLoginMsg(msg) {
-      document.getElementById("loginMsg").textContent = msg || "";
-    }
-
-    /****************************************************
-     * MQTT 설정
-     ****************************************************/
-
-    function getSettings() {
-      return {
-        mqttUrl: localStorage.getItem("mqttUrl") || DEFAULT_MQTT_URL,
-        mqttUser: localStorage.getItem("mqttUser") || DEFAULT_MQTT_USER,
-        mqttPass: localStorage.getItem("mqttPass") || "",
-        topicStatus: localStorage.getItem("topicStatus") || DEFAULT_TOPICS.status,
-        topicEvent: localStorage.getItem("topicEvent") || DEFAULT_TOPICS.event,
-        topicHeartbeat: localStorage.getItem("topicHeartbeat") || DEFAULT_TOPICS.heartbeat
-      };
-    }
-
-    function initSettingsView() {
-      const s = getSettings();
-
-      document.getElementById("mqttUrlInput").value = s.mqttUrl;
-      document.getElementById("mqttUserInput").value = s.mqttUser;
-      document.getElementById("mqttPassInput").value = s.mqttPass;
-      document.getElementById("statusTopicInput").value = s.topicStatus;
-      document.getElementById("eventTopicInput").value = s.topicEvent;
-      document.getElementById("heartbeatTopicInput").value = s.topicHeartbeat;
-    }
-
-    function saveSettings() {
-      localStorage.setItem("mqttUrl", document.getElementById("mqttUrlInput").value.trim());
-      localStorage.setItem("mqttUser", document.getElementById("mqttUserInput").value.trim());
-      localStorage.setItem("mqttPass", document.getElementById("mqttPassInput").value.trim());
-      localStorage.setItem("topicStatus", document.getElementById("statusTopicInput").value.trim());
-      localStorage.setItem("topicEvent", document.getElementById("eventTopicInput").value.trim());
-      localStorage.setItem("topicHeartbeat", document.getElementById("heartbeatTopicInput").value.trim());
-
-      renderTopicViews();
-      closeSettings();
-
-      log("MQTT 설정 저장 완료");
-
-      if (mqttClient) {
-        disconnectMqtt();
-        connectMqtt();
-      }
-    }
-
-    function openSettings() {
-      initSettingsView();
-      document.getElementById("settingsModal").classList.remove("hidden");
-    }
-
-    function closeSettings() {
-      document.getElementById("settingsModal").classList.add("hidden");
-    }
-
-    function renderTopicViews() {
-      const s = getSettings();
-
-      document.getElementById("brokerView").textContent = s.mqttUrl;
-      document.getElementById("statusTopicView").textContent = s.topicStatus;
-      document.getElementById("eventTopicView").textContent = s.topicEvent;
-      document.getElementById("heartbeatTopicView").textContent = s.topicHeartbeat;
-    }
-
-    /****************************************************
-     * MQTT 연결
-     ****************************************************/
-
-    function connectMqtt() {
-      const s = getSettings();
-
-      if (!s.mqttPass) {
-        setMqttStatus("MQTT 비밀번호 필요", "warn");
-        log("MQTT 비밀번호가 없습니다. 설정에서 입력하세요.");
-        openSettings();
-        return;
-      }
-
-      if (mqttClient && mqttClient.connected) {
-        log("MQTT 이미 연결됨");
-        return;
-      }
-
-      setMqttStatus("MQTT 연결 중...", "warn");
-      log("MQTT 연결 시도: " + s.mqttUrl);
-
-      const clientId =
-        "dashboard-2-12-" + Date.now() + "-" + Math.random().toString(16).slice(2);
-
-      mqttClient = mqtt.connect(s.mqttUrl, {
-        username: s.mqttUser,
-        password: s.mqttPass,
-        clientId: clientId,
-        clean: true,
-        reconnectPeriod: 3000,
-        connectTimeout: 10000
-      });
-
-      mqttClient.on("connect", function () {
-        setMqttStatus("MQTT 연결됨", "ok");
-        log("MQTT 연결 성공");
-
-        mqttClient.subscribe(s.topicStatus);
-        mqttClient.subscribe(s.topicEvent);
-        mqttClient.subscribe(s.topicHeartbeat);
-
-        log("구독: " + s.topicStatus);
-        log("구독: " + s.topicEvent);
-        log("구독: " + s.topicHeartbeat);
-      });
-
-      mqttClient.on("reconnect", function () {
-        setMqttStatus("MQTT 재연결 중...", "warn");
-        log("MQTT 재연결 중");
-      });
-
-      mqttClient.on("close", function () {
-        setMqttStatus("MQTT 미연결", "bad");
-        log("MQTT 연결 종료");
-      });
-
-      mqttClient.on("error", function (err) {
-        setMqttStatus("MQTT 오류", "bad");
-        log("MQTT 오류: " + (err && err.message ? err.message : String(err)));
-      });
-
-      mqttClient.on("message", function (topic, payload) {
-        handleMqttMessage(topic, payload.toString());
-      });
-    }
-
-    function disconnectMqtt() {
-      if (mqttClient) {
-        try {
-          mqttClient.end(true);
-        } catch (err) {
-          log("MQTT 해제 오류: " + String(err));
-        }
-      }
-
-      mqttClient = null;
-
-      setMqttStatus("MQTT 미연결", "bad");
-      setEspStatus("ESP32 오프라인", "bad");
-      log("MQTT 수동 해제");
-    }
-
-    function setMqttStatus(text, type) {
-      setPill("mqttStatus", text, type);
-    }
-
-    function setEspStatus(text, type) {
-      setPill("espStatus", text, type);
-    }
-
-    function setPill(id, text, type) {
-      const el = document.getElementById(id);
-
-      el.textContent = text;
-      el.className = "pill " + (type || "");
-    }
-
-    /****************************************************
-     * MQTT 메시지 처리
-     ****************************************************/
-
-    function handleMqttMessage(topic, text) {
-      const s = getSettings();
-
-      log("수신 [" + topic + "] " + text);
-
-      if (topic === s.topicStatus) {
-        handleStatusMessage(text);
-        return;
-      }
-
-      let data = null;
-
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        log("JSON 파싱 실패: " + text);
-        return;
-      }
-
-      if (topic === s.topicHeartbeat) {
-        handleHeartbeat(data);
-        return;
-      }
-
-      if (topic === s.topicEvent) {
-        handleAttendanceEvent(data);
-        return;
-      }
-    }
-
-    function handleStatusMessage(text) {
-      if (text === "online") {
-        setEspStatus("ESP32 온라인", "ok");
-      } else if (text === "offline") {
-        setEspStatus("ESP32 오프라인", "bad");
-      } else {
-        setEspStatus("ESP32 상태: " + text, "warn");
-      }
-    }
-
-    function handleHeartbeat(data) {
-      lastHeartbeatAt = Date.now();
-
-      setEspStatus("ESP32 온라인", "ok");
-      setPill("lastHeartbeat", "Heartbeat 방금 수신", "ok");
-
-      document.getElementById("deviceIdView").textContent = data.deviceId || "2-12";
-      document.getElementById("espIpView").textContent = data.ip || "-";
-      document.getElementById("rssiView").textContent =
-        data.rssi !== undefined ? String(data.rssi) + " dBm" : "-";
-    }
-
-    function updateHeartbeatAge() {
-      if (!lastHeartbeatAt) {
-        return;
-      }
-
-      const sec = Math.floor((Date.now() - lastHeartbeatAt) / 1000);
-
-      if (sec < 40) {
-        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "ok");
-        setEspStatus("ESP32 온라인", "ok");
-      } else if (sec < 90) {
-        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "warn");
-        setEspStatus("ESP32 응답 지연", "warn");
-      } else {
-        setPill("lastHeartbeat", "Heartbeat " + sec + "초 전", "bad");
-        setEspStatus("ESP32 오프라인 추정", "bad");
-      }
-    }
-
-    function handleAttendanceEvent(data) {
-      eventCount++;
-
-      const status = String(data.status || "");
-      const type = getStatusType(status);
-
-      if (status === "출석" || status === "테스트") {
-        presentCount++;
-      } else if (status === "지각") {
-        lateCount++;
-      } else {
-        etcCount++;
-      }
-
-      renderStats();
-      prependEvent(data, type);
-    }
-
-    function getStatusType(status) {
-      if (status === "출석" || status === "테스트") {
-        return "ok";
-      }
-
-      if (status === "지각" || status === "중복") {
-        return "warn";
-      }
-
-      return "bad";
-    }
-
-    function renderStats() {
-      document.getElementById("statTotal").textContent = eventCount;
-      document.getElementById("statPresent").textContent = presentCount;
-      document.getElementById("statLate").textContent = lateCount;
-      document.getElementById("statEtc").textContent = etcCount;
-    }
-
-    function prependEvent(data, type) {
-      const list = document.getElementById("eventList");
-
-      if (eventCount === 1) {
-        list.innerHTML = "";
-      }
-
-      const div = document.createElement("div");
-      div.className = "event";
-
-      const name =
-        data.name && String(data.name).trim()
-          ? String(data.name)
-          : "fingerId " + String(data.fingerId || "-");
-
-      const status = String(data.status || "-");
-      const message = String(data.message || "");
-      const now = new Date().toLocaleString("ko-KR");
-
-      div.innerHTML =
-        '<div class="event-top">' +
-          '<div class="event-name">' + escapeHtml(name) + '</div>' +
-          '<span class="pill ' + type + '">' + escapeHtml(status) + '</span>' +
-        '</div>' +
-        '<div class="event-meta">' +
-          '수신시각: ' + escapeHtml(now) + '<br>' +
-          'deviceId: ' + escapeHtml(data.deviceId || '-') + ' / ' +
-          'fingerId: ' + escapeHtml(data.fingerId || '-') + ' / ' +
-          'confidence: ' + escapeHtml(data.confidence || '-') + '<br>' +
-          escapeHtml(message) +
-        '</div>' +
-        '<div class="mono" style="margin-top:8px;">' +
-          escapeHtml(JSON.stringify(data)) +
-        '</div>';
-
-      list.prepend(div);
-
-      while (list.children.length > 80) {
-        list.removeChild(list.lastChild);
-      }
-    }
-
-    function clearEvents() {
-      eventCount = 0;
-      presentCount = 0;
-      lateCount = 0;
-      etcCount = 0;
-
-      renderStats();
-
-      document.getElementById("eventList").innerHTML =
-        '<div class="event">' +
-          '<div class="event-top">' +
-            '<div class="event-name">대기 중</div>' +
-            '<span class="pill">이벤트 없음</span>' +
-          '</div>' +
-          '<div class="event-meta">ESP32에서 MQTT 이벤트가 들어오면 여기에 표시됩니다.</div>' +
-        '</div>';
-
-      log("이벤트 목록 초기화");
-    }
-
-    /****************************************************
-     * 기타
-     ****************************************************/
-
-    function openAdminPage() {
-      window.open(GOOGLE_ADMIN_URL, "_blank");
-    }
-
-    function clearSystemLog() {
-      document.getElementById("systemLog").textContent = "";
-    }
-
-    function log(msg) {
-      const el = document.getElementById("systemLog");
-
-      if (!el) {
-        return;
-      }
-
-      const line = "[" + new Date().toLocaleTimeString("ko-KR") + "] " + msg;
-
-      el.textContent = line + "\n" + el.textContent;
+    function $(id) {
+      return document.getElementById(id);
     }
 
     function escapeHtml(value) {
@@ -1105,6 +476,511 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
+
+    function logSystem(msg) {
+      const time = new Date().toLocaleTimeString("ko-KR");
+      $("systemLog").textContent = "[" + time + "] " + msg;
+    }
+
+    function loadSettings() {
+      const raw = localStorage.getItem("attendance_mqtt_settings_v2");
+
+      if (!raw) {
+        return { ...DEFAULT_MQTT };
+      }
+
+      try {
+        return { ...DEFAULT_MQTT, ...JSON.parse(raw) };
+      } catch (e) {
+        return { ...DEFAULT_MQTT };
+      }
+    }
+
+    function saveSettingsToStorage() {
+      localStorage.setItem("attendance_mqtt_settings_v2", JSON.stringify(mqttConfig));
+    }
+
+    function openSettings() {
+      $("mqttUrlInput").value = mqttConfig.url;
+      $("mqttUserInput").value = mqttConfig.user;
+      $("mqttPassInput").value = mqttConfig.pass;
+      $("topicStatusInput").value = mqttConfig.topicStatus;
+      $("topicEventInput").value = mqttConfig.topicEvent;
+      $("topicHeartbeatInput").value = mqttConfig.topicHeartbeat;
+
+      $("settingsModal").style.display = "flex";
+    }
+
+    function closeSettings() {
+      $("settingsModal").style.display = "none";
+    }
+
+    function saveSettings() {
+      mqttConfig = {
+        url: $("mqttUrlInput").value.trim(),
+        user: $("mqttUserInput").value.trim(),
+        pass: $("mqttPassInput").value,
+        topicStatus: $("topicStatusInput").value.trim(),
+        topicEvent: $("topicEventInput").value.trim(),
+        topicHeartbeat: $("topicHeartbeatInput").value.trim()
+      };
+
+      saveSettingsToStorage();
+      closeSettings();
+
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (e) {}
+      }
+
+      connectMQTT();
+    }
+
+    function login() {
+      const adminId = $("adminId").value.trim();
+      const adminPw = $("adminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        $("loginMsg").textContent = "관리자 ID와 비밀번호를 입력하세요.";
+        return;
+      }
+
+      pendingLogin = {
+        adminId: adminId,
+        adminPw: adminPw
+      };
+
+      $("loginBtn").disabled = true;
+      $("loginMsg").textContent = "로그인 확인 중...";
+
+      const form = $("loginForm");
+      form.innerHTML = "";
+      form.action = GOOGLE_ADMIN_URL;
+      form.method = "POST";
+      form.target = "loginFrame";
+
+      addHidden(form, "action", "dashboardLogin");
+      addHidden(form, "adminId", adminId);
+      addHidden(form, "adminPw", adminPw);
+
+      form.submit();
+    }
+
+    function addHidden(form, name, value) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    }
+
+    window.addEventListener("message", function (event) {
+      const data = event.data;
+
+      if (!data || data.source !== "attendance-dashboard-login") {
+        return;
+      }
+
+      const payload = data.payload || {};
+
+      if (!payload.ok) {
+        $("loginBtn").disabled = false;
+        $("loginMsg").textContent = payload.message || "로그인 실패";
+        return;
+      }
+
+      currentAdmin = {
+        adminId: pendingLogin.adminId,
+        adminPw: pendingLogin.adminPw,
+        role: payload.role || "ADMIN"
+      };
+
+      $("loginPage").classList.add("hidden");
+      $("dashboardPage").classList.remove("hidden");
+
+      $("headerSub").textContent =
+        "관리자: " + currentAdmin.adminId + " / 오늘 로그 + 실시간 MQTT";
+
+      loadTodayLogs();
+      connectMQTT();
+    });
+
+    function logout() {
+      currentAdmin = null;
+      pendingLogin = null;
+
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (e) {}
+      }
+
+      mqttClient = null;
+      todayLogs = [];
+      liveEvents = [];
+
+      $("dashboardPage").classList.add("hidden");
+      $("loginPage").classList.remove("hidden");
+      $("loginBtn").disabled = false;
+      $("loginMsg").textContent = "";
+    }
+
+    function jsonp(url, params) {
+      return new Promise(function (resolve, reject) {
+        const callbackName =
+          "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+
+        params.callback = callbackName;
+
+        const query = Object.keys(params)
+          .map(function (key) {
+            return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+          })
+          .join("&");
+
+        const script = document.createElement("script");
+        script.src = url + "?" + query;
+
+        const timer = setTimeout(function () {
+          cleanup();
+          reject(new Error("요청 시간 초과"));
+        }, 20000);
+
+        window[callbackName] = function (data) {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function () {
+          cleanup();
+          reject(new Error("스크립트 로드 실패"));
+        };
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        document.body.appendChild(script);
+      });
+    }
+
+    async function loadTodayLogs() {
+      if (!currentAdmin) {
+        return;
+      }
+
+      logSystem("오늘 로그 불러오는 중...");
+
+      try {
+        const res = await jsonp(GOOGLE_ADMIN_URL, {
+          action: "todayLogs",
+          adminId: currentAdmin.adminId,
+          adminPw: currentAdmin.adminPw
+        });
+
+        if (!res.ok) {
+          logSystem("오늘 로그 불러오기 실패: " + (res.message || ""));
+          return;
+        }
+
+        todayLogs = Array.isArray(res.logs) ? res.logs : [];
+
+        $("todayLabel").textContent = res.date || "오늘";
+
+        renderTodayLogs(todayLogs);
+        renderSummary(res.summary || makeSummaryFromLogs(todayLogs));
+
+        logSystem("오늘 로그 불러오기 완료: " + todayLogs.length + "개");
+
+      } catch (err) {
+        logSystem("오늘 로그 불러오기 오류: " + err.message);
+      }
+    }
+
+    function connectMQTT() {
+      if (!mqttConfig.pass) {
+        $("mqttStatus").textContent = "PASSWORD 필요";
+        $("mqttStatus").className = "pill offline";
+        logSystem("MQTT 비밀번호를 설정하세요.");
+        return;
+      }
+
+      $("mqttStatus").textContent = "CONNECTING";
+      $("mqttStatus").className = "pill offline";
+
+      logSystem("MQTT 연결 시도...");
+
+      mqttClient = mqtt.connect(mqttConfig.url, {
+        username: mqttConfig.user,
+        password: mqttConfig.pass,
+        reconnectPeriod: 3000,
+        connectTimeout: 15000,
+        clean: true
+      });
+
+      mqttClient.on("connect", function () {
+        $("mqttStatus").textContent = "ONLINE";
+        $("mqttStatus").className = "pill online";
+
+        logSystem("MQTT 연결 성공");
+
+        mqttClient.subscribe(mqttConfig.topicStatus);
+        mqttClient.subscribe(mqttConfig.topicEvent);
+        mqttClient.subscribe(mqttConfig.topicHeartbeat);
+      });
+
+      mqttClient.on("reconnect", function () {
+        $("mqttStatus").textContent = "RECONNECTING";
+        $("mqttStatus").className = "pill offline";
+      });
+
+      mqttClient.on("close", function () {
+        $("mqttStatus").textContent = "OFFLINE";
+        $("mqttStatus").className = "pill offline";
+      });
+
+      mqttClient.on("error", function (err) {
+        logSystem("MQTT 오류: " + err.message);
+      });
+
+      mqttClient.on("message", function (topic, message) {
+        const text = message.toString();
+
+        if (topic === mqttConfig.topicStatus) {
+          handleStatus(text);
+          return;
+        }
+
+        if (topic === mqttConfig.topicHeartbeat) {
+          handleHeartbeat(text);
+          return;
+        }
+
+        if (topic === mqttConfig.topicEvent) {
+          handleEvent(text);
+          return;
+        }
+      });
+    }
+
+    function handleStatus(text) {
+      if (text === "online") {
+        $("espStatus").textContent = "ONLINE";
+        $("espStatus").className = "pill online";
+      } else {
+        $("espStatus").textContent = "OFFLINE";
+        $("espStatus").className = "pill offline";
+      }
+    }
+
+    function handleHeartbeat(text) {
+      let data = null;
+
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        $("lastHeartbeat").textContent = "heartbeat: " + text;
+        return;
+      }
+
+      $("espStatus").textContent = "ONLINE";
+      $("espStatus").className = "pill online";
+
+      $("lastHeartbeat").textContent =
+        "heartbeat / RSSI " +
+        (data.rssi || "-") +
+        " / fingerReady " +
+        (data.fingerReady ? "YES" : "NO") +
+        " / " +
+        new Date().toLocaleTimeString("ko-KR");
+    }
+
+    function handleEvent(text) {
+      let data = null;
+
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        logSystem("MQTT 이벤트 JSON 파싱 실패");
+        return;
+      }
+
+      liveEvents.unshift(data);
+
+      if (liveEvents.length > 50) {
+        liveEvents.pop();
+      }
+
+      renderLiveEvents();
+
+      if (data && data.type === "attendance") {
+        const log = normalizeEventToLog(data);
+        todayLogs.unshift(log);
+        renderTodayLogs(todayLogs);
+        renderSummary(makeSummaryFromLogs(todayLogs));
+      }
+    }
+
+    function normalizeEventToLog(data) {
+      const now = new Date();
+
+      return {
+        timestamp: now.toLocaleString("ko-KR"),
+        date: "",
+        time: now.toLocaleTimeString("ko-KR"),
+        status: data.status || "",
+        fingerId: data.fingerId || "",
+        name: data.name || "",
+        deviceId: data.deviceId || "",
+        message: data.message || "",
+        remark: data.test ? "test=true" : ""
+      };
+    }
+
+    function getDisplayName(item) {
+      const name = String(item.name || "").trim();
+
+      if (name) {
+        return name;
+      }
+
+      const status = String(item.status || "").trim();
+
+      if (status === "미인식") {
+        return "미인식 지문";
+      }
+
+      return "미등록 사용자";
+    }
+
+    function statusClass(status) {
+      const s = String(status || "").trim();
+
+      if (s === "출석") return "출석";
+      if (s === "지각") return "지각";
+      if (s === "오류") return "오류";
+      if (s === "중복") return "중복";
+      if (s === "미인식") return "미인식";
+
+      return "";
+    }
+
+    function renderTodayLogs(logs) {
+      const box = $("todayLogs");
+      box.innerHTML = "";
+
+      $("logCount").textContent = logs.length + "개";
+
+      if (!logs.length) {
+        box.innerHTML = '<div class="small">오늘 로그가 없습니다.</div>';
+        return;
+      }
+
+      logs.forEach(function (log) {
+        box.appendChild(createEventElement(log));
+      });
+    }
+
+    function renderLiveEvents() {
+      const box = $("liveEvents");
+      box.innerHTML = "";
+
+      if (!liveEvents.length) {
+        box.innerHTML = '<div class="small">아직 실시간 이벤트가 없습니다.</div>';
+        return;
+      }
+
+      liveEvents.forEach(function (event) {
+        box.appendChild(createEventElement(event));
+      });
+    }
+
+    function createEventElement(item) {
+      const div = document.createElement("div");
+      div.className = "event";
+
+      const name = getDisplayName(item);
+      const status = item.status || "-";
+      const cls = statusClass(status);
+
+      const timeText =
+        item.time ||
+        item.timestamp ||
+        new Date().toLocaleTimeString("ko-KR");
+
+      const message = item.message || "";
+
+      div.innerHTML =
+        '<div class="event-top">' +
+          '<div class="event-name">' + escapeHtml(name) + '</div>' +
+          '<span class="pill ' + cls + '">' + escapeHtml(status) + '</span>' +
+        '</div>' +
+        '<div class="event-meta">' +
+          '시간: ' + escapeHtml(timeText) + '<br>' +
+          '장치: ' + escapeHtml(item.deviceId || '-') + ' / ' +
+          '지문ID: ' + escapeHtml(item.fingerId || '-') + '<br>' +
+          escapeHtml(message || '-') +
+        '</div>';
+
+      return div;
+    }
+
+    function renderSummary(summary) {
+      $("statTotal").textContent = summary.total || 0;
+      $("statPresent").textContent = summary.present || 0;
+      $("statLate").textContent = summary.late || 0;
+
+      const errorTotal =
+        (summary.error || 0) +
+        (summary.unknown || 0);
+
+      $("statError").textContent = errorTotal;
+    }
+
+    function makeSummaryFromLogs(logs) {
+      const summary = {
+        total: logs.length,
+        present: 0,
+        late: 0,
+        duplicate: 0,
+        error: 0,
+        unknown: 0,
+        other: 0
+      };
+
+      logs.forEach(function (log) {
+        const status = String(log.status || "").trim();
+
+        if (status === "출석") {
+          summary.present++;
+        } else if (status === "지각") {
+          summary.late++;
+        } else if (status === "중복") {
+          summary.duplicate++;
+        } else if (status === "오류") {
+          summary.error++;
+        } else if (status === "미인식") {
+          summary.unknown++;
+        } else {
+          summary.other++;
+        }
+      });
+
+      return summary;
+    }
+
+    renderLiveEvents();
   </script>
 </body>
 </html>
