@@ -4,30 +4,257 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <title>출석</title>
 
-<link rel="icon" type="image/png" href="./favicon.png">
-<link rel="apple-touch-icon" href="./favicon.png">
-  
-  <title>2-12 Attendance Dashboard</title>
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <link rel="apple-touch-icon" href="./favicon.png" />
 
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- MQTT.js -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #152033;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --orange: #ea580c;
+      --gray: #6b7280;
+    }
+
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      font-family: Arial, "Noto Sans KR", sans-serif;
-      background: #f3f5f8;
-      color: #111827;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
 
-    header {
-      background: #111827;
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin: 0;
+      letter-spacing: -0.04em;
+    }
+
+    .date-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+
+    .online {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .neutral {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .login-card {
+      max-width: 440px;
+      margin: 60px auto;
+      padding: 28px;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin: 12px 0 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      background: white;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: var(--blue);
       color: white;
-      padding: 16px 20px;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .btn-ghost {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-small {
+      padding: 9px 11px;
+      font-size: 13px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    #googleButton {
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    .dashboard {
+      display: none;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .summary-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid var(--line);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .summary-value {
+      font-size: 30px;
+      font-weight: 950;
+      margin-top: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .panel-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -35,929 +262,739 @@
       flex-wrap: wrap;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 22px;
+    .panel-title {
+      font-size: 18px;
+      font-weight: 950;
     }
 
-    header .sub {
-      font-size: 13px;
-      color: #cbd5e1;
-      margin-top: 4px;
+    .panel-body {
+      padding: 0;
     }
 
-    button {
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-weight: 700;
-      background: #2563eb;
-      color: white;
-    }
-
-    button.secondary {
-      background: #475569;
-    }
-
-    button.danger {
-      background: #dc2626;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 15px;
-    }
-
-    .wrap {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-      margin-bottom: 16px;
-    }
-
-    .login-card {
-      max-width: 420px;
-      margin: 80px auto;
-    }
-
-    .field {
-      margin-bottom: 12px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 520px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .stat {
-      background: white;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-    }
-
-    .stat .label {
-      color: #64748b;
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-
-    .stat .value {
-      font-size: 30px;
-      font-weight: 800;
-    }
-
-    .status-row {
+    .log-list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
+      flex-direction: column;
     }
 
-    .pill {
-      display: inline-flex;
+    .log-row {
+      display: grid;
+      grid-template-columns: 92px 86px 1fr 110px 1.4fr;
+      gap: 10px;
       align-items: center;
-      border-radius: 999px;
-      padding: 6px 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    .log-row:last-child {
+      border-bottom: 0;
+    }
+
+    .log-header {
+      background: #f8fafc;
+      color: #64748b;
       font-size: 12px;
-      font-weight: 800;
-      background: #e5e7eb;
-      color: #374151;
+      font-weight: 900;
+      text-transform: uppercase;
     }
 
-    .pill.online {
+    .status-chip {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 54px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .chip-present {
       background: #dcfce7;
       color: #166534;
     }
 
-    .pill.offline {
-      background: #fee2e2;
-      color: #991b1b;
+    .chip-late {
+      background: #ffedd5;
+      color: #9a3412;
     }
 
-    .pill.출석 {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .pill.지각 {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .pill.오류,
-    .pill.미등록,
-    .pill.비활성 {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .pill.중복 {
+    .chip-dup {
       background: #e0e7ff;
       color: #3730a3;
     }
 
-    .pill.테스트 {
-      background: #dbeafe;
-      color: #1d4ed8;
+    .chip-bad {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
-    .pill.미인식 {
-      background: #f1f5f9;
-      color: #334155;
+    .chip-neutral {
+      background: #f3f4f6;
+      color: #374151;
     }
 
-    .event-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .muted {
+      color: var(--muted);
     }
 
-    .event {
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 14px;
-      background: #fff;
-    }
-
-    .event-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .event-name {
-      font-size: 20px;
-      font-weight: 900;
-    }
-
-    .event-meta {
-      color: #475569;
-      line-height: 1.5;
-      font-size: 14px;
-    }
-
-    .small {
-      color: #64748b;
-      font-size: 13px;
-    }
-
-    .mono {
-      font-family: Consolas, Monaco, monospace;
+    .footer-note {
+      margin-top: 12px;
+      color: var(--muted);
       font-size: 12px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 8px;
-      border-radius: 10px;
-      overflow-wrap: anywhere;
+      text-align: right;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .right-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .modal-bg {
+    .toast {
       position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 999;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: #111827;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 9999;
     }
 
-    .modal {
-      background: white;
-      border-radius: 16px;
-      padding: 18px;
-      max-width: 620px;
-      width: 100%;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
     }
 
-    .modal h3 {
-      margin-top: 0;
-    }
+    @media (max-width: 760px) {
+      .wrap {
+        padding: 14px;
+      }
 
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 16px;
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .log-row {
+        grid-template-columns: 70px 70px 1fr;
+      }
+
+      .log-row .hide-mobile,
+      .log-header .hide-mobile {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div id="loginPage" class="wrap">
-    <div class="card login-card">
-      <h2>2-12 출석 대시보드</h2>
-      <p class="small">관리자 로그인 후 오늘 출석 로그를 불러옵니다.</p>
+  <div class="wrap">
 
-      <div class="field">
-        <input id="adminId" placeholder="관리자 ID" autocomplete="username" />
+    <!-- LOGIN -->
+    <section id="loginBox" class="card login-card">
+      <div class="login-title">2학년 12반 출석</div>
+      <div class="login-sub">
+        Google 계정 또는 관리자 계정으로 로그인하세요.
       </div>
 
-      <div class="field">
-        <input id="adminPw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" />
+      <div id="googleButton"></div>
+
+      <div class="divider">또는 관리자 로그인</div>
+
+      <label for="adminId">관리자 ID</label>
+      <input id="adminId" type="text" placeholder="관리자 ID" autocomplete="username" />
+
+      <label for="adminPw">관리자 비밀번호</label>
+      <input id="adminPw" type="password" placeholder="비밀번호" autocomplete="current-password" />
+
+      <button class="btn-primary" onclick="adminLogin()">로그인</button>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="dashboard">
+      <div class="topbar">
+        <div class="title-row">
+          <h1>출석 대시보드</h1>
+          <span id="todayPill" class="date-pill">----</span>
+        </div>
+
+        <div class="status-row">
+          <span class="status-item">
+            MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span>
+          </span>
+          <span class="status-item">
+            ESP32 <span id="espBadge" class="badge offline">OFFLINE</span>
+          </span>
+          <button class="btn-ghost btn-small" onclick="loadTodayLogs()">새로고침</button>
+          <button class="btn-ghost btn-small" onclick="logout()">로그아웃</button>
+        </div>
       </div>
 
-      <button id="loginBtn" onclick="login()">로그인</button>
-
-      <p id="loginMsg" class="small"></p>
-    </div>
-  </div>
-
-  <div id="dashboardPage" class="hidden">
-    <header>
-      <div>
-        <h1>2-12 출석 대시보드</h1>
-        <div class="sub" id="headerSub">오늘 로그 + 실시간 MQTT</div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">전체</div>
+          <div id="sumTotal" class="summary-value">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">출석</div>
+          <div id="sumPresent" class="summary-value" style="color:#16a34a;">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">지각</div>
+          <div id="sumLate" class="summary-value" style="color:#ea580c;">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">중복/기타</div>
+          <div id="sumOther" class="summary-value" style="color:#64748b;">0</div>
+        </div>
       </div>
 
-      <div class="right-actions">
-        <button class="secondary" onclick="loadTodayLogs()">오늘 로그 새로고침</button>
-        <button class="secondary" onclick="openSettings()">MQTT 설정</button>
-        <button class="danger" onclick="logout()">로그아웃</button>
-      </div>
-    </header>
-
-    <div class="wrap">
       <div class="card">
-        <div class="toolbar">
-          <div class="status-row">
-            <span>MQTT</span>
-            <span id="mqttStatus" class="pill offline">OFFLINE</span>
-
-            <span>ESP32</span>
-            <span id="espStatus" class="pill offline">UNKNOWN</span>
-
-            <span id="todayLabel" class="pill">오늘</span>
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">오늘 출석 로그</div>
+            <div id="loginInfo" class="muted" style="font-size:13px;margin-top:4px;">로그인 정보</div>
           </div>
-
-          <div class="small" id="lastHeartbeat">heartbeat 없음</div>
+          <div id="lastUpdated" class="muted" style="font-size:13px;">-</div>
         </div>
 
-        <div class="mono" id="systemLog">시스템 준비</div>
-      </div>
-
-      <div class="grid">
-        <div class="stat">
-          <div class="label">오늘 전체 로그</div>
-          <div class="value" id="statTotal">0</div>
-        </div>
-
-        <div class="stat">
-          <div class="label">출석</div>
-          <div class="value" id="statPresent">0</div>
-        </div>
-
-        <div class="stat">
-          <div class="label">지각</div>
-          <div class="value" id="statLate">0</div>
-        </div>
-
-        <div class="stat">
-          <div class="label">오류/미인식</div>
-          <div class="value" id="statError">0</div>
+        <div class="panel-body">
+          <div class="log-list">
+            <div class="log-row log-header">
+              <div>시간</div>
+              <div>상태</div>
+              <div>이름</div>
+              <div class="hide-mobile">지문ID</div>
+              <div class="hide-mobile">메시지</div>
+            </div>
+            <div id="logList"></div>
+          </div>
         </div>
       </div>
 
-      <div class="grid-2" style="margin-top:16px;">
-        <div class="card">
-          <div class="toolbar">
-            <h3 style="margin:0;">오늘 출석 로그</h3>
-            <span class="small" id="logCount">0개</span>
-          </div>
-
-          <div id="todayLogs" class="event-list"></div>
-        </div>
-
-        <div class="card">
-          <div class="toolbar">
-            <h3 style="margin:0;">실시간 수신 이벤트</h3>
-            <span class="small">사이트가 켜진 이후</span>
-          </div>
-
-          <div id="liveEvents" class="event-list"></div>
-        </div>
+      <div class="footer-note">
+        Google 로그인 세션은 Apps Script Cache 기준 약 6시간 유지됩니다.
       </div>
-    </div>
+    </section>
   </div>
 
-  <div id="settingsModal" class="modal-bg">
-    <div class="modal">
-      <h3>MQTT 설정</h3>
-
-      <div class="field">
-        <label class="small">WebSocket URL</label>
-        <input id="mqttUrlInput" />
-      </div>
-
-      <div class="field">
-        <label class="small">MQTT Username</label>
-        <input id="mqttUserInput" />
-      </div>
-
-      <div class="field">
-        <label class="small">MQTT Password</label>
-        <input id="mqttPassInput" type="password" />
-      </div>
-
-      <div class="field">
-        <label class="small">Status Topic</label>
-        <input id="topicStatusInput" />
-      </div>
-
-      <div class="field">
-        <label class="small">Event Topic</label>
-        <input id="topicEventInput" />
-      </div>
-
-      <div class="field">
-        <label class="small">Heartbeat Topic</label>
-        <input id="topicHeartbeatInput" />
-      </div>
-
-      <div class="modal-actions">
-        <button class="secondary" onclick="closeSettings()">닫기</button>
-        <button onclick="saveSettings()">저장 후 재연결</button>
-      </div>
-    </div>
-  </div>
+  <div id="toast" class="toast">알림</div>
 
   <script>
-    const GOOGLE_ADMIN_URL =
+    /****************************************************
+     * CONFIG
+     ****************************************************/
+
+    const APPS_SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
 
-    const DEFAULT_MQTT = {
-      url: "wss://793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud:8884/mqtt",
-      user: "jiukeum",
-      pass: "",
-      topicStatus: "attendance/2-12/status",
-      topicEvent: "attendance/2-12/event",
-      topicHeartbeat: "attendance/2-12/heartbeat"
-    };
+    const GOOGLE_CLIENT_ID =
+      "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
 
-    let currentAdmin = null;
+    const MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
+    const MQTT_WS_PORT = 8884;
+    const MQTT_USER = "jiukeum";
+
+    const MQTT_PASS = "Ojh1532591!";
+
+    const TOPIC_STATUS = "attendance/2-12/status";
+    const TOPIC_EVENT = "attendance/2-12/event";
+    const TOPIC_HEARTBEAT = "attendance/2-12/heartbeat";
+
+    const ESP_OFFLINE_AFTER_MS = 25000;
+
     let mqttClient = null;
-    let mqttConfig = loadSettings();
+    let lastEspSeenAt = 0;
+    let espWatchTimer = null;
 
-    let todayLogs = [];
-    let liveEvents = [];
 
-    function $(id) {
-      return document.getElementById(id);
-    }
+    /****************************************************
+     * INIT
+     ****************************************************/
 
-    function escapeHtml(value) {
-      return String(value == null ? "" : value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+      setTodayPill();
+      initGoogleButton();
+      restoreSession();
+      connectMqtt();
+      startEspWatchdog();
 
-    function logSystem(msg) {
-      const time = new Date().toLocaleTimeString("ko-KR");
-      $("systemLog").textContent = "[" + time + "] " + msg;
-    }
-
-    function loadSettings() {
-      const raw = localStorage.getItem("attendance_mqtt_settings_v2");
-
-      if (!raw) {
-        return { ...DEFAULT_MQTT };
-      }
-
-      try {
-        return { ...DEFAULT_MQTT, ...JSON.parse(raw) };
-      } catch (e) {
-        return { ...DEFAULT_MQTT };
-      }
-    }
-
-    function saveSettingsToStorage() {
-      localStorage.setItem("attendance_mqtt_settings_v2", JSON.stringify(mqttConfig));
-    }
-
-    function openSettings() {
-      $("mqttUrlInput").value = mqttConfig.url;
-      $("mqttUserInput").value = mqttConfig.user;
-      $("mqttPassInput").value = mqttConfig.pass;
-      $("topicStatusInput").value = mqttConfig.topicStatus;
-      $("topicEventInput").value = mqttConfig.topicEvent;
-      $("topicHeartbeatInput").value = mqttConfig.topicHeartbeat;
-
-      $("settingsModal").style.display = "flex";
-    }
-
-    function closeSettings() {
-      $("settingsModal").style.display = "none";
-    }
-
-    function saveSettings() {
-      mqttConfig = {
-        url: $("mqttUrlInput").value.trim(),
-        user: $("mqttUserInput").value.trim(),
-        pass: $("mqttPassInput").value,
-        topicStatus: $("topicStatusInput").value.trim(),
-        topicEvent: $("topicEventInput").value.trim(),
-        topicHeartbeat: $("topicHeartbeatInput").value.trim()
-      };
-
-      saveSettingsToStorage();
-      closeSettings();
-
-      if (mqttClient) {
-        try {
-          mqttClient.end(true);
-        } catch (e) {}
-      }
-
-      connectMQTT();
-    }
-
-    function jsonp(url, params) {
-      return new Promise(function (resolve, reject) {
-        const callbackName =
-          "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-
-        params.callback = callbackName;
-
-        const query = Object.keys(params)
-          .map(function (key) {
-            return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
-          })
-          .join("&");
-
-        const script = document.createElement("script");
-        script.src = url + "?" + query;
-
-        const timer = setTimeout(function () {
-          cleanup();
-          reject(new Error("요청 시간 초과"));
-        }, 20000);
-
-        window[callbackName] = function (data) {
-          cleanup();
-          resolve(data);
-        };
-
-        script.onerror = function () {
-          cleanup();
-          reject(new Error("스크립트 로드 실패"));
-        };
-
-        function cleanup() {
-          clearTimeout(timer);
-
-          try {
-            delete window[callbackName];
-          } catch (e) {
-            window[callbackName] = undefined;
-          }
-
-          if (script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        }
-
-        document.body.appendChild(script);
+      document.getElementById("adminPw").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") adminLogin();
       });
+    });
+
+    function setTodayPill() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      document.getElementById("todayPill").textContent = `${yyyy}-${mm}-${dd}`;
     }
 
-    async function login() {
-      const adminId = $("adminId").value.trim();
-      const adminPw = $("adminPw").value.trim();
 
-      if (!adminId || !adminPw) {
-        $("loginMsg").textContent = "관리자 ID와 비밀번호를 입력하세요.";
+    /****************************************************
+     * GOOGLE LOGIN
+     ****************************************************/
+
+    function initGoogleButton() {
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        setTimeout(initGoogleButton, 300);
         return;
       }
 
-      $("loginBtn").disabled = true;
-      $("loginMsg").textContent = "로그인 확인 중...";
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
 
-      try {
-        const res = await jsonp(GOOGLE_ADMIN_URL, {
-          action: "dashboardLoginJsonp",
-          adminId: adminId,
-          adminPw: adminPw,
-          deviceName: navigator.platform || "",
-          screenSize: screen.width + "x" + screen.height,
-          clientTime: new Date().toLocaleString("ko-KR"),
-          clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          userAgent: navigator.userAgent
-        });
+      google.accounts.id.renderButton(
+        document.getElementById("googleButton"),
+        {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "pill",
+          logo_alignment: "left",
+          width: 280
+        }
+      );
+    }
 
-        if (!res.ok) {
-          $("loginBtn").disabled = false;
-          $("loginMsg").textContent = res.message || "로그인 실패";
+    function handleGoogleCredential(response) {
+      if (!response || !response.credential) {
+        toast("Google 로그인 토큰을 받지 못했습니다.");
+        return;
+      }
+
+      const idToken = response.credential;
+
+      const params = new URLSearchParams();
+      params.set("action", "googleLoginJsonp");
+      params.set("idToken", idToken);
+      params.set("deviceName", navigator.platform || "");
+      params.set("screenSize", window.innerWidth + "x" + window.innerHeight);
+      params.set("clientTime", new Date().toISOString());
+      params.set("clientTimezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+      params.set("userAgent", navigator.userAgent || "");
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "Google 로그인 실패");
           return;
         }
 
-        currentAdmin = {
-          adminId: adminId,
-          adminPw: adminPw,
-          role: res.role || "ADMIN"
-        };
+        sessionStorage.setItem("loginType", "google");
+        sessionStorage.setItem("sessionToken", res.sessionToken || "");
+        sessionStorage.setItem("loginEmail", res.email || "");
+        sessionStorage.setItem("loginName", res.name || "");
+        sessionStorage.setItem("loginRole", res.role || "GOOGLE");
 
-        $("loginPage").classList.add("hidden");
-        $("dashboardPage").classList.remove("hidden");
-
-        $("headerSub").textContent =
-          "관리자: " + currentAdmin.adminId + " / 오늘 로그 + 실시간 MQTT";
-
+        toast("Google 로그인 성공");
+        showDashboard();
         loadTodayLogs();
-        connectMQTT();
+      });
+    }
 
-      } catch (err) {
-        $("loginBtn").disabled = false;
-        $("loginMsg").textContent =
-          "로그인 오류: " + err.message;
+
+    /****************************************************
+     * ADMIN LOGIN
+     ****************************************************/
+
+    function adminLogin() {
+      const adminId = document.getElementById("adminId").value.trim();
+      const adminPw = document.getElementById("adminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        toast("관리자 ID/PW를 입력하세요.");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("action", "dashboardLoginJsonp");
+      params.set("adminId", adminId);
+      params.set("adminPw", adminPw);
+      params.set("deviceName", navigator.platform || "");
+      params.set("screenSize", window.innerWidth + "x" + window.innerHeight);
+      params.set("clientTime", new Date().toISOString());
+      params.set("clientTimezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+      params.set("userAgent", navigator.userAgent || "");
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "관리자 로그인 실패");
+          return;
+        }
+
+        sessionStorage.setItem("loginType", "admin");
+        sessionStorage.setItem("adminId", adminId);
+        sessionStorage.setItem("adminPw", adminPw);
+        sessionStorage.setItem("loginRole", res.role || "ADMIN");
+
+        toast("관리자 로그인 성공");
+        showDashboard();
+        loadTodayLogs();
+      });
+    }
+
+    function restoreSession() {
+      const loginType = sessionStorage.getItem("loginType") || "";
+
+      if (loginType === "google" && sessionStorage.getItem("sessionToken")) {
+        showDashboard();
+        loadTodayLogs();
+        return;
+      }
+
+      if (loginType === "admin" && sessionStorage.getItem("adminId") && sessionStorage.getItem("adminPw")) {
+        showDashboard();
+        loadTodayLogs();
       }
     }
 
     function logout() {
-      currentAdmin = null;
+      sessionStorage.clear();
 
-      if (mqttClient) {
-        try {
-          mqttClient.end(true);
-        } catch (e) {}
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
       }
 
-      mqttClient = null;
-      todayLogs = [];
-      liveEvents = [];
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("loginBox").style.display = "block";
 
-      $("dashboardPage").classList.add("hidden");
-      $("loginPage").classList.remove("hidden");
-      $("loginBtn").disabled = false;
-      $("loginMsg").textContent = "";
+      toast("로그아웃 완료");
     }
 
-    async function loadTodayLogs() {
-      if (!currentAdmin) {
-        return;
+    function showDashboard() {
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+
+      const loginType = sessionStorage.getItem("loginType") || "";
+      const role = sessionStorage.getItem("loginRole") || "";
+
+      if (loginType === "google") {
+        const email = sessionStorage.getItem("loginEmail") || "";
+        const name = sessionStorage.getItem("loginName") || "";
+        document.getElementById("loginInfo").textContent =
+          `Google 로그인: ${name || email} / ${role}`;
+      } else {
+        const adminId = sessionStorage.getItem("adminId") || "";
+        document.getElementById("loginInfo").textContent =
+          `관리자 로그인: ${adminId} / ${role}`;
       }
+    }
 
-      logSystem("오늘 로그 불러오는 중...");
 
-      try {
-        const res = await jsonp(GOOGLE_ADMIN_URL, {
-          action: "todayLogs",
-          adminId: currentAdmin.adminId,
-          adminPw: currentAdmin.adminPw
-        });
+    /****************************************************
+     * TODAY LOGS
+     ****************************************************/
 
-        if (!res.ok) {
-          logSystem("오늘 로그 불러오기 실패: " + (res.message || ""));
+    function loadTodayLogs() {
+      const params = new URLSearchParams();
+      params.set("action", "todayLogs");
+      addAuthParams(params);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "오늘 로그 조회 실패");
+
+          if (String((res && res.message) || "").includes("세션")) {
+            logout();
+          }
+
           return;
         }
 
-        todayLogs = Array.isArray(res.logs) ? res.logs : [];
-
-        $("todayLabel").textContent = res.date || "오늘";
-
-        renderTodayLogs(todayLogs);
-        renderSummary(res.summary || makeSummaryFromLogs(todayLogs));
-
-        logSystem("오늘 로그 불러오기 완료: " + todayLogs.length + "개");
-
-      } catch (err) {
-        logSystem("오늘 로그 불러오기 오류: " + err.message);
-      }
+        renderTodayLogs(res);
+      });
     }
 
-    function connectMQTT() {
-      if (!mqttConfig.pass) {
-        $("mqttStatus").textContent = "PASSWORD 필요";
-        $("mqttStatus").className = "pill offline";
-        logSystem("MQTT 설정에서 비밀번호를 입력하세요.");
+    function addAuthParams(params) {
+      const loginType = sessionStorage.getItem("loginType") || "";
+
+      if (loginType === "google") {
+        params.set("sessionToken", sessionStorage.getItem("sessionToken") || "");
         return;
       }
 
-      $("mqttStatus").textContent = "CONNECTING";
-      $("mqttStatus").className = "pill offline";
+      params.set("adminId", sessionStorage.getItem("adminId") || "");
+      params.set("adminPw", sessionStorage.getItem("adminPw") || "");
+    }
 
-      logSystem("MQTT 연결 시도...");
+    function renderTodayLogs(res) {
+      const summary = res.summary || {};
+      const logs = res.logs || [];
 
-      mqttClient = mqtt.connect(mqttConfig.url, {
-        username: mqttConfig.user,
-        password: mqttConfig.pass,
+      document.getElementById("todayPill").textContent = res.date || "";
+      document.getElementById("sumTotal").textContent = summary.total || 0;
+      document.getElementById("sumPresent").textContent = summary.present || 0;
+      document.getElementById("sumLate").textContent = summary.late || 0;
+
+      const other =
+        Number(summary.duplicate || 0) +
+        Number(summary.unknown || 0) +
+        Number(summary.inactive || 0) +
+        Number(summary.error || 0);
+
+      document.getElementById("sumOther").textContent = other;
+
+      const list = document.getElementById("logList");
+
+      if (!logs.length) {
+        list.innerHTML = `
+          <div class="log-row">
+            <div class="muted">-</div>
+            <div><span class="status-chip chip-neutral">없음</span></div>
+            <div class="muted">오늘 로그가 없습니다.</div>
+            <div class="hide-mobile muted">-</div>
+            <div class="hide-mobile muted">-</div>
+          </div>
+        `;
+      } else {
+        list.innerHTML = logs.map(renderLogRow).join("");
+      }
+
+      document.getElementById("lastUpdated").textContent =
+        "마지막 업데이트 " + new Date().toLocaleTimeString("ko-KR");
+    }
+
+    function renderLogRow(log) {
+      const status = log.status || "";
+      const chipClass = getStatusChipClass(status);
+
+      return `
+        <div class="log-row">
+          <div>${escapeHtml(log.time || "")}</div>
+          <div><span class="status-chip ${chipClass}">${escapeHtml(status)}</span></div>
+          <div>
+            <strong>${escapeHtml(log.name || "-")}</strong>
+            <div class="muted" style="font-size:12px;">${escapeHtml(log.date || "")}</div>
+          </div>
+          <div class="hide-mobile">${escapeHtml(log.fingerId || "")}</div>
+          <div class="hide-mobile muted">${escapeHtml(log.message || "")}</div>
+        </div>
+      `;
+    }
+
+    function getStatusChipClass(status) {
+      if (status === "출석") return "chip-present";
+      if (status === "지각") return "chip-late";
+      if (status === "중복") return "chip-dup";
+      if (status === "미등록" || status === "비활성" || status === "오류") return "chip-bad";
+      return "chip-neutral";
+    }
+
+
+    /****************************************************
+     * MQTT
+     ****************************************************/
+
+    function connectMqtt() {
+      if (!window.mqtt) {
+        setTimeout(connectMqtt, 500);
+        return;
+      }
+
+      if (!MQTT_PASS || MQTT_PASS === "여기에_MQTT_비밀번호") {
+        setMqttBadge(false);
+        console.warn("MQTT_PASS가 비어 있습니다. HiveMQ 비밀번호를 넣어야 MQTT 연결됩니다.");
+        return;
+      }
+
+      const url = `wss://${MQTT_HOST}:${MQTT_WS_PORT}/mqtt`;
+
+      const clientId =
+        "dashboard-2-12-" +
+        Math.random().toString(16).slice(2) +
+        "-" +
+        Date.now();
+
+      mqttClient = mqtt.connect(url, {
+        clientId: clientId,
+        username: MQTT_USER,
+        password: MQTT_PASS,
+        clean: true,
+        connectTimeout: 8000,
         reconnectPeriod: 3000,
-        connectTimeout: 15000,
-        clean: true
+        keepalive: 30
       });
 
       mqttClient.on("connect", function () {
-        $("mqttStatus").textContent = "ONLINE";
-        $("mqttStatus").className = "pill online";
+        setMqttBadge(true);
+        toast("MQTT 연결됨");
 
-        logSystem("MQTT 연결 성공");
-
-        mqttClient.subscribe(mqttConfig.topicStatus);
-        mqttClient.subscribe(mqttConfig.topicEvent);
-        mqttClient.subscribe(mqttConfig.topicHeartbeat);
+        mqttClient.subscribe(TOPIC_STATUS);
+        mqttClient.subscribe(TOPIC_HEARTBEAT);
+        mqttClient.subscribe(TOPIC_EVENT);
       });
 
       mqttClient.on("reconnect", function () {
-        $("mqttStatus").textContent = "RECONNECTING";
-        $("mqttStatus").className = "pill offline";
+        setMqttBadge(false);
       });
 
       mqttClient.on("close", function () {
-        $("mqttStatus").textContent = "OFFLINE";
-        $("mqttStatus").className = "pill offline";
+        setMqttBadge(false);
       });
 
       mqttClient.on("error", function (err) {
-        logSystem("MQTT 오류: " + err.message);
+        setMqttBadge(false);
+        console.error("MQTT error", err);
       });
 
       mqttClient.on("message", function (topic, message) {
         const text = message.toString();
 
-        if (topic === mqttConfig.topicStatus) {
-          handleStatus(text);
-          return;
+        let data = {};
+
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          data = { raw: text };
         }
 
-        if (topic === mqttConfig.topicHeartbeat) {
-          handleHeartbeat(text);
-          return;
-        }
-
-        if (topic === mqttConfig.topicEvent) {
-          handleEvent(text);
-          return;
-        }
+        handleMqttMessage(topic, data);
       });
     }
 
-    function handleStatus(text) {
-      if (text === "online") {
-        $("espStatus").textContent = "ONLINE";
-        $("espStatus").className = "pill online";
-      } else {
-        $("espStatus").textContent = "OFFLINE";
-        $("espStatus").className = "pill offline";
+    function handleMqttMessage(topic, data) {
+      console.log("MQTT", topic, data);
+
+      if (topic === TOPIC_STATUS) {
+        if (data.status === "online") {
+          markEspOnline();
+        } else if (data.status === "offline") {
+          setEspBadge(false);
+        }
+      }
+
+      if (topic === TOPIC_HEARTBEAT) {
+        markEspOnline();
+      }
+
+      if (topic === TOPIC_EVENT) {
+        markEspOnline();
+
+        if (
+          data.type === "attendance" ||
+          data.type === "queued_sent" ||
+          data.type === "queued"
+        ) {
+          setTimeout(loadTodayLogs, 700);
+        }
       }
     }
 
-    function handleHeartbeat(text) {
-      let data = null;
-
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        $("lastHeartbeat").textContent = "heartbeat: " + text;
-        return;
-      }
-
-      $("espStatus").textContent = "ONLINE";
-      $("espStatus").className = "pill online";
-
-      $("lastHeartbeat").textContent =
-        "heartbeat / RSSI " +
-        (data.rssi || "-") +
-        " / fingerReady " +
-        (data.fingerReady ? "YES" : "NO") +
-        " / " +
-        new Date().toLocaleTimeString("ko-KR");
+    function markEspOnline() {
+      lastEspSeenAt = Date.now();
+      setEspBadge(true);
     }
 
-    function handleEvent(text) {
-      let data = null;
+    function startEspWatchdog() {
+      if (espWatchTimer) clearInterval(espWatchTimer);
 
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        logSystem("MQTT 이벤트 JSON 파싱 실패");
-        return;
-      }
+      espWatchTimer = setInterval(function () {
+        if (!lastEspSeenAt) {
+          setEspBadge(false);
+          return;
+        }
 
-      liveEvents.unshift(data);
-
-      if (liveEvents.length > 50) {
-        liveEvents.pop();
-      }
-
-      renderLiveEvents();
-
-      if (data && data.type === "attendance") {
-        setTimeout(function () {
-          loadTodayLogs();
-        }, 800);
-      }
+        if (Date.now() - lastEspSeenAt > ESP_OFFLINE_AFTER_MS) {
+          setEspBadge(false);
+        }
+      }, 3000);
     }
 
-    function getDisplayName(item) {
-      const name = String(item.name || "").trim();
+    function setMqttBadge(isOnline) {
+      const el = document.getElementById("mqttBadge");
 
-      if (name) {
-        return name;
-      }
+      if (!el) return;
 
-      const status = String(item.status || "").trim();
-
-      if (status === "미인식") {
-        return "미인식 지문";
-      }
-
-      return "미등록 사용자";
+      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
+      el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
-    function statusClass(status) {
-      const s = String(status || "").trim();
+    function setEspBadge(isOnline) {
+      const el = document.getElementById("espBadge");
 
-      if (s === "출석") return "출석";
-      if (s === "지각") return "지각";
-      if (s === "오류") return "오류";
-      if (s === "중복") return "중복";
-      if (s === "미인식") return "미인식";
-      if (s === "미등록") return "미등록";
-      if (s === "비활성") return "비활성";
-      if (s === "테스트") return "테스트";
+      if (!el) return;
 
-      return "";
+      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
+      el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
-    function renderTodayLogs(logs) {
-      const box = $("todayLogs");
-      box.innerHTML = "";
 
-      $("logCount").textContent = logs.length + "개";
+    /****************************************************
+     * JSONP
+     ****************************************************/
 
-      if (!logs.length) {
-        box.innerHTML = '<div class="small">오늘 로그가 없습니다.</div>';
-        return;
-      }
+    function callJsonp(url, callback) {
+      const callbackName =
+        "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
 
-      logs.forEach(function (log) {
-        box.appendChild(createEventElement(log));
-      });
-    }
+      let script = null;
 
-    function renderLiveEvents() {
-      const box = $("liveEvents");
-      box.innerHTML = "";
+      window[callbackName] = function (data) {
+        try {
+          callback(data);
+        } finally {
+          delete window[callbackName];
 
-      if (!liveEvents.length) {
-        box.innerHTML = '<div class="small">아직 실시간 이벤트가 없습니다.</div>';
-        return;
-      }
-
-      liveEvents.forEach(function (event) {
-        box.appendChild(createEventElement(event));
-      });
-    }
-
-    function createEventElement(item) {
-      const div = document.createElement("div");
-      div.className = "event";
-
-      const name = getDisplayName(item);
-      const status = item.status || "-";
-      const cls = statusClass(status);
-
-      const timeText =
-        item.time ||
-        item.timestamp ||
-        new Date().toLocaleTimeString("ko-KR");
-
-      const message = item.message || "";
-
-      div.innerHTML =
-        '<div class="event-top">' +
-          '<div class="event-name">' + escapeHtml(name) + '</div>' +
-          '<span class="pill ' + cls + '">' + escapeHtml(status) + '</span>' +
-        '</div>' +
-        '<div class="event-meta">' +
-          '시간: ' + escapeHtml(timeText) + '<br>' +
-          '장치: ' + escapeHtml(item.deviceId || '-') + '<br>' +
-          escapeHtml(message || '-') +
-        '</div>';
-
-      return div;
-    }
-
-    function renderSummary(summary) {
-      $("statTotal").textContent = summary.total || 0;
-      $("statPresent").textContent = summary.present || 0;
-      $("statLate").textContent = summary.late || 0;
-
-      const errorTotal =
-        (summary.error || 0) +
-        (summary.unknown || 0) +
-        (summary.unregistered || 0) +
-        (summary.inactive || 0);
-
-      $("statError").textContent = errorTotal;
-    }
-
-    function makeSummaryFromLogs(logs) {
-      const summary = {
-        total: logs.length,
-        present: 0,
-        late: 0,
-        duplicate: 0,
-        error: 0,
-        unknown: 0,
-        unregistered: 0,
-        inactive: 0,
-        test: 0,
-        other: 0
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
       };
 
-      logs.forEach(function (log) {
-        const status = String(log.status || "").trim();
+      const sep = url.includes("?") ? "&" : "?";
 
-        if (status === "출석") {
-          summary.present++;
-        } else if (status === "지각") {
-          summary.late++;
-        } else if (status === "중복") {
-          summary.duplicate++;
-        } else if (status === "오류") {
-          summary.error++;
-        } else if (status === "미인식") {
-          summary.unknown++;
-        } else if (status === "미등록") {
-          summary.unregistered++;
-        } else if (status === "비활성") {
-          summary.inactive++;
-        } else if (status === "테스트") {
-          summary.test++;
-        } else {
-          summary.other++;
+      script = document.createElement("script");
+      script.src = url + sep + "callback=" + encodeURIComponent(callbackName);
+
+      script.onerror = function () {
+        delete window[callbackName];
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
         }
-      });
 
-      return summary;
+        toast("Apps Script 연결 실패");
+      };
+
+      document.head.appendChild(script);
     }
 
-    renderLiveEvents();
+
+    /****************************************************
+     * UTIL
+     ****************************************************/
+
+    function toast(message) {
+      const el = document.getElementById("toast");
+
+      el.textContent = message;
+      el.classList.add("show");
+
+      setTimeout(function () {
+        el.classList.remove("show");
+      }, 2200);
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
   </script>
 </body>
 </html>
