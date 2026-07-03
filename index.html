@@ -9,11 +9,16 @@
   <link rel="icon" type="image/png" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./favicon.png" />
 
+  <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <!-- MQTT Libraries: Paho primary, MQTT.js fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 
   <style>
     :root {
@@ -23,6 +28,9 @@
       --muted: #6b7280;
       --line: #e5e7eb;
       --blue: #2563eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --orange: #ea580c;
     }
 
     * { box-sizing: border-box; }
@@ -36,7 +44,11 @@
 
     input, button { font-family: inherit; }
 
-    .wrap { max-width: 1040px; margin: 0 auto; padding: 24px; }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+    }
 
     .topbar {
       display: flex;
@@ -46,8 +58,19 @@
       margin-bottom: 16px;
     }
 
-    .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    h1 { font-size: 26px; margin: 0; letter-spacing: -0.04em; font-weight: 900; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin: 0;
+      letter-spacing: -0.04em;
+      font-weight: 900;
+    }
 
     .date-pill {
       padding: 8px 12px;
@@ -58,7 +81,12 @@
       font-weight: 800;
     }
 
-    .status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
     .status-item {
       display: inline-flex;
@@ -85,6 +113,7 @@
 
     .online { background: #dcfce7; color: #166534; }
     .offline { background: #fee2e2; color: #991b1b; }
+    .connecting { background: #fef3c7; color: #92400e; }
 
     .card {
       background: var(--card);
@@ -94,11 +123,32 @@
       overflow: hidden;
     }
 
-    .login-card { max-width: 440px; margin: 60px auto; padding: 28px; }
-    .login-title { font-size: 24px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.04em; }
-    .login-sub { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 22px; }
+    .login-card {
+      max-width: 440px;
+      margin: 60px auto;
+      padding: 28px;
+    }
 
-    label { display: block; font-size: 13px; font-weight: 800; margin: 12px 0 6px; }
+    .login-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin: 12px 0 6px;
+    }
 
     input {
       width: 100%;
@@ -110,7 +160,10 @@
       background: white;
     }
 
-    input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14); }
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
 
     button {
       border: 0;
@@ -121,9 +174,22 @@
       font-size: 14px;
     }
 
-    .btn-primary { background: var(--blue); color: white; width: 100%; margin-top: 14px; }
-    .btn-ghost { background: #f3f4f6; color: #374151; }
-    .btn-small { padding: 9px 11px; font-size: 13px; }
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .btn-ghost {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-small {
+      padding: 9px 11px;
+      font-size: 13px;
+    }
 
     .divider {
       display: flex;
@@ -134,15 +200,48 @@
       font-size: 12px;
       font-weight: 700;
     }
-    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-    #googleButton { display: flex; justify-content: center; min-height: 44px; }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    #googleButton {
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+    }
+
     .dashboard { display: none; }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
-    .summary-card { padding: 18px; border-radius: 18px; background: white; border: 1px solid var(--line); }
-    .summary-label { color: var(--muted); font-size: 13px; font-weight: 800; }
-    .summary-value { font-size: 30px; font-weight: 950; margin-top: 6px; letter-spacing: -0.04em; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .summary-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid var(--line);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .summary-value {
+      font-size: 30px;
+      font-weight: 950;
+      margin-top: 6px;
+      letter-spacing: -0.04em;
+    }
 
     .panel-head {
       padding: 18px 20px;
@@ -154,13 +253,35 @@
       flex-wrap: wrap;
     }
 
-    .panel-title { font-size: 18px; font-weight: 950; }
+    .panel-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+
     .panel-body { padding: 0; }
 
-    .date-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-    .date-input-small { width: 160px; padding: 9px 10px; border-radius: 12px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 700; }
+    .date-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
-    .log-list { display: flex; flex-direction: column; }
+    .date-input-small {
+      width: 160px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+    }
+
     .log-row {
       display: grid;
       grid-template-columns: 92px 86px 1fr 110px 1.4fr;
@@ -170,10 +291,27 @@
       border-bottom: 1px solid #f1f5f9;
       font-size: 14px;
     }
-    .log-row:last-child { border-bottom: 0; }
-    .log-header { background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 900; text-transform: uppercase; }
 
-    .status-chip { display: inline-flex; justify-content: center; min-width: 54px; padding: 6px 9px; border-radius: 999px; font-size: 12px; font-weight: 900; }
+    .log-row:last-child { border-bottom: 0; }
+
+    .log-header {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 54px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .chip-present { background: #dcfce7; color: #166534; }
     .chip-late { background: #ffedd5; color: #9a3412; }
     .chip-dup { background: #e0e7ff; color: #3730a3; }
@@ -181,7 +319,26 @@
     .chip-neutral { background: #f3f4f6; color: #374151; }
 
     .muted { color: var(--muted); }
-    .footer-note { margin-top: 12px; color: var(--muted); font-size: 12px; text-align: right; }
+
+    .mqtt-debug {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      border-radius: 14px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
 
     .toast {
       position: fixed;
@@ -199,7 +356,11 @@
       transition: opacity .2s ease, transform .2s ease;
       z-index: 9999;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
 
     @media (max-width: 760px) {
       .wrap { padding: 14px; }
@@ -215,11 +376,13 @@
 
 <body>
   <div class="wrap">
+
     <section id="loginBox" class="card login-card">
       <div class="login-title">2학년 12반 출석</div>
       <div class="login-sub">Google 계정 또는 관리자 계정으로 로그인하세요.</div>
 
       <div id="googleButton"></div>
+
       <div class="divider">또는 관리자 로그인</div>
 
       <label for="adminId">관리자 ID</label>
@@ -239,18 +402,35 @@
         </div>
 
         <div class="status-row">
-          <span class="status-item">MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span></span>
-          <span class="status-item">ESP32 <span id="espBadge" class="badge offline">OFFLINE</span></span>
+          <span class="status-item">
+            MQTT <span id="mqttBadge" class="badge offline">DISCONNECTED</span>
+          </span>
+          <span class="status-item">
+            ESP32 <span id="espBadge" class="badge offline">DISCONNECTED</span>
+          </span>
+          <button class="btn-ghost btn-small" onclick="mqttManualReconnect()">MQTT 재연결</button>
           <button class="btn-ghost btn-small" onclick="loadTodayLogs()">새로고침</button>
           <button class="btn-ghost btn-small" onclick="logout()">로그아웃</button>
         </div>
       </div>
 
       <div class="summary-grid">
-        <div class="summary-card"><div class="summary-label">전체</div><div id="sumTotal" class="summary-value">0</div></div>
-        <div class="summary-card"><div class="summary-label">출석</div><div id="sumPresent" class="summary-value" style="color:#16a34a;">0</div></div>
-        <div class="summary-card"><div class="summary-label">지각</div><div id="sumLate" class="summary-value" style="color:#ea580c;">0</div></div>
-        <div class="summary-card"><div class="summary-label">중복/기타</div><div id="sumOther" class="summary-value" style="color:#64748b;">0</div></div>
+        <div class="summary-card">
+          <div class="summary-label">전체</div>
+          <div id="sumTotal" class="summary-value">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">출석</div>
+          <div id="sumPresent" class="summary-value" style="color:#16a34a;">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">지각</div>
+          <div id="sumLate" class="summary-value" style="color:#ea580c;">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">중복/기타</div>
+          <div id="sumOther" class="summary-value" style="color:#64748b;">0</div>
+        </div>
       </div>
 
       <div class="card">
@@ -271,44 +451,71 @@
         <div class="panel-body">
           <div class="log-list">
             <div class="log-row log-header">
-              <div>시간</div><div>상태</div><div>이름</div><div class="hide-mobile">지문ID</div><div class="hide-mobile">메시지</div>
+              <div>시간</div>
+              <div>상태</div>
+              <div>이름</div>
+              <div class="hide-mobile">지문ID</div>
+              <div class="hide-mobile">메시지</div>
             </div>
             <div id="logList"></div>
           </div>
         </div>
       </div>
 
-      <div class="footer-note">Google 로그인 세션은 Apps Script Cache 기준 약 6시간 유지됩니다.</div>
+      <div id="mqttDebug" class="mqtt-debug">MQTT 진단 대기 중...</div>
+
+      <div class="footer-note">
+        Google 로그인 세션은 Apps Script Cache 기준 약 6시간 유지됩니다.
+      </div>
     </section>
   </div>
 
   <div id="toast" class="toast">알림</div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
-    const GOOGLE_CLIENT_ID = "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
+    /****************************************************
+     * CONFIG
+     ****************************************************/
+
+    const APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+
+    const GOOGLE_CLIENT_ID =
+      "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
 
     const MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
     const MQTT_WS_PORT = 8884;
+    const MQTT_PATH = "/mqtt";
     const MQTT_USER = "jiukeum";
     const MQTT_PASS = "Ojh1532591!";
 
     const TOPIC_STATUS = "attendance/2-12/status";
     const TOPIC_EVENT = "attendance/2-12/event";
     const TOPIC_HEARTBEAT = "attendance/2-12/heartbeat";
+
     const ESP_OFFLINE_AFTER_MS = 25000;
 
     let mqttClient = null;
+    let mqttMode = "";
+    let mqttConnecting = false;
+    let mqttRetryTimer = null;
     let lastEspSeenAt = 0;
     let espWatchTimer = null;
     let currentViewingDate = "";
+    let mqttLogLines = [];
+
+
+    /****************************************************
+     * INIT
+     ****************************************************/
 
     document.addEventListener("DOMContentLoaded", function () {
       setTodayPill();
       initGoogleButton();
       restoreSession();
-      connectMqtt();
+      connectMqttSmart();
       startEspWatchdog();
+
       document.getElementById("adminPw").addEventListener("keydown", function (e) {
         if (e.key === "Enter") adminLogin();
       });
@@ -325,22 +532,51 @@
     function setTodayPill() {
       const today = getTodayText();
       document.getElementById("todayPill").textContent = today;
+
       const searchDate = document.getElementById("searchDate");
       if (searchDate && !searchDate.value) searchDate.value = today;
+
       currentViewingDate = today;
     }
+
+
+    /****************************************************
+     * GOOGLE LOGIN
+     ****************************************************/
 
     function initGoogleButton() {
       if (!window.google || !google.accounts || !google.accounts.id) {
         setTimeout(initGoogleButton, 300);
         return;
       }
-      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select: false, cancel_on_tap_outside: true });
-      google.accounts.id.renderButton(document.getElementById("googleButton"), { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "pill", logo_alignment: "left", width: 280 });
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById("googleButton"),
+        {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "pill",
+          logo_alignment: "left",
+          width: 280
+        }
+      );
     }
 
     function handleGoogleCredential(response) {
-      if (!response || !response.credential) return toast("Google 로그인 토큰을 받지 못했습니다.");
+      if (!response || !response.credential) {
+        toast("Google 로그인 토큰을 받지 못했습니다.");
+        return;
+      }
+
       const params = new URLSearchParams();
       params.set("action", "googleLoginJsonp");
       params.set("idToken", response.credential);
@@ -351,22 +587,36 @@
       params.set("userAgent", navigator.userAgent || "");
 
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        if (!res || !res.ok) return toast((res && res.message) ? res.message : "Google 로그인 실패");
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "Google 로그인 실패");
+          return;
+        }
+
         sessionStorage.setItem("loginType", "google");
         sessionStorage.setItem("sessionToken", res.sessionToken || "");
         sessionStorage.setItem("loginEmail", res.email || "");
         sessionStorage.setItem("loginName", res.name || "");
         sessionStorage.setItem("loginRole", res.role || "GOOGLE");
+
         toast("Google 로그인 성공");
         showDashboard();
         loadTodayLogs();
       });
     }
 
+
+    /****************************************************
+     * ADMIN LOGIN
+     ****************************************************/
+
     function adminLogin() {
       const adminId = document.getElementById("adminId").value.trim();
       const adminPw = document.getElementById("adminPw").value.trim();
-      if (!adminId || !adminPw) return toast("관리자 ID/PW를 입력하세요.");
+
+      if (!adminId || !adminPw) {
+        toast("관리자 ID/PW를 입력하세요.");
+        return;
+      }
 
       const params = new URLSearchParams();
       params.set("action", "dashboardLoginJsonp");
@@ -379,11 +629,16 @@
       params.set("userAgent", navigator.userAgent || "");
 
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        if (!res || !res.ok) return toast((res && res.message) ? res.message : "관리자 로그인 실패");
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "관리자 로그인 실패");
+          return;
+        }
+
         sessionStorage.setItem("loginType", "admin");
         sessionStorage.setItem("adminId", adminId);
         sessionStorage.setItem("adminPw", adminPw);
         sessionStorage.setItem("loginRole", res.role || "ADMIN");
+
         toast("관리자 로그인 성공");
         showDashboard();
         loadTodayLogs();
@@ -392,11 +647,13 @@
 
     function restoreSession() {
       const loginType = sessionStorage.getItem("loginType") || "";
+
       if (loginType === "google" && sessionStorage.getItem("sessionToken")) {
         showDashboard();
         loadTodayLogs();
         return;
       }
+
       if (loginType === "admin" && sessionStorage.getItem("adminId") && sessionStorage.getItem("adminPw")) {
         showDashboard();
         loadTodayLogs();
@@ -405,43 +662,68 @@
 
     function logout() {
       sessionStorage.clear();
-      if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+
       document.getElementById("dashboard").style.display = "none";
       document.getElementById("loginBox").style.display = "block";
+
       toast("로그아웃 완료");
     }
 
     function showDashboard() {
       document.getElementById("loginBox").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
+
       const loginType = sessionStorage.getItem("loginType") || "";
       const role = sessionStorage.getItem("loginRole") || "";
+
       if (loginType === "google") {
         const email = sessionStorage.getItem("loginEmail") || "";
         const name = sessionStorage.getItem("loginName") || "";
-        document.getElementById("loginInfo").textContent = `Google 로그인: ${name || email} / ${role}`;
+        document.getElementById("loginInfo").textContent =
+          `Google 로그인: ${name || email} / ${role}`;
       } else {
         const adminId = sessionStorage.getItem("adminId") || "";
-        document.getElementById("loginInfo").textContent = `관리자 로그인: ${adminId} / ${role}`;
+        document.getElementById("loginInfo").textContent =
+          `관리자 로그인: ${adminId} / ${role}`;
       }
     }
 
+
+    /****************************************************
+     * LOGS BY DATE
+     ****************************************************/
+
     function loadTodayLogs() {
       const today = getTodayText();
+
       const searchDate = document.getElementById("searchDate");
       if (searchDate) searchDate.value = today;
+
       loadLogsByDate(today);
     }
 
     function loadLogsBySelectedDate() {
       const searchDate = document.getElementById("searchDate");
       const dateText = searchDate ? searchDate.value : "";
-      if (!dateText) return toast("검색할 날짜를 선택하세요.");
+
+      if (!dateText) {
+        toast("검색할 날짜를 선택하세요.");
+        return;
+      }
+
       loadLogsByDate(dateText);
     }
 
     function loadLogsByDate(dateText) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return toast("날짜 형식이 올바르지 않습니다.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+        toast("날짜 형식이 올바르지 않습니다.");
+        return;
+      }
+
       currentViewingDate = dateText;
 
       const params = new URLSearchParams();
@@ -452,25 +734,33 @@
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
         if (!res || !res.ok) {
           toast((res && res.message) ? res.message : "날짜별 로그 조회 실패");
-          if (String((res && res.message) || "").includes("세션")) logout();
+
+          if (String((res && res.message) || "").includes("세션")) {
+            logout();
+          }
+
           return;
         }
+
         renderTodayLogs(res);
       });
     }
 
     function addAuthParams(params) {
       const loginType = sessionStorage.getItem("loginType") || "";
+
       if (loginType === "google") {
         params.set("sessionToken", sessionStorage.getItem("sessionToken") || "");
         return;
       }
+
       params.set("adminId", sessionStorage.getItem("adminId") || "");
       params.set("adminPw", sessionStorage.getItem("adminPw") || "");
     }
 
     function renderTodayLogs(res) {
       currentViewingDate = res.date || currentViewingDate || getTodayText();
+
       const summary = res.summary || {};
       const logs = res.logs || [];
 
@@ -479,22 +769,50 @@
       document.getElementById("sumPresent").textContent = summary.present || 0;
       document.getElementById("sumLate").textContent = summary.late || 0;
 
-      const other = Number(summary.duplicate || 0) + Number(summary.unknown || 0) + Number(summary.inactive || 0) + Number(summary.error || 0);
+      const other =
+        Number(summary.duplicate || 0) +
+        Number(summary.unknown || 0) +
+        Number(summary.inactive || 0) +
+        Number(summary.error || 0);
+
       document.getElementById("sumOther").textContent = other;
 
       const list = document.getElementById("logList");
+
       if (!logs.length) {
-        list.innerHTML = `<div class="log-row"><div class="muted">-</div><div><span class="status-chip chip-neutral">없음</span></div><div class="muted">해당 날짜의 로그가 없습니다.</div><div class="hide-mobile muted">-</div><div class="hide-mobile muted">-</div></div>`;
+        list.innerHTML = `
+          <div class="log-row">
+            <div class="muted">-</div>
+            <div><span class="status-chip chip-neutral">없음</span></div>
+            <div class="muted">해당 날짜의 로그가 없습니다.</div>
+            <div class="hide-mobile muted">-</div>
+            <div class="hide-mobile muted">-</div>
+          </div>
+        `;
       } else {
         list.innerHTML = logs.map(renderLogRow).join("");
       }
-      document.getElementById("lastUpdated").textContent = "마지막 업데이트 " + new Date().toLocaleTimeString("ko-KR");
+
+      document.getElementById("lastUpdated").textContent =
+        "마지막 업데이트 " + new Date().toLocaleTimeString("ko-KR");
     }
 
     function renderLogRow(log) {
       const status = log.status || "";
       const chipClass = getStatusChipClass(status);
-      return `<div class="log-row"><div>${escapeHtml(log.time || "")}</div><div><span class="status-chip ${chipClass}">${escapeHtml(status)}</span></div><div><strong>${escapeHtml(log.name || "-")}</strong><div class="muted" style="font-size:12px;">${escapeHtml(log.date || "")}</div></div><div class="hide-mobile">${escapeHtml(log.fingerId || "")}</div><div class="hide-mobile muted">${escapeHtml(log.message || "")}</div></div>`;
+
+      return `
+        <div class="log-row">
+          <div>${escapeHtml(log.time || "")}</div>
+          <div><span class="status-chip ${chipClass}">${escapeHtml(status)}</span></div>
+          <div>
+            <strong>${escapeHtml(log.name || "-")}</strong>
+            <div class="muted" style="font-size:12px;">${escapeHtml(log.date || "")}</div>
+          </div>
+          <div class="hide-mobile">${escapeHtml(log.fingerId || "")}</div>
+          <div class="hide-mobile muted">${escapeHtml(log.message || "")}</div>
+        </div>
+      `;
     }
 
     function getStatusChipClass(status) {
@@ -505,103 +823,390 @@
       return "chip-neutral";
     }
 
-    function connectMqtt() {
-      if (!window.mqtt) {
-        setTimeout(connectMqtt, 500);
-        return;
-      }
-      if (!MQTT_PASS || MQTT_PASS === "여기에_MQTT_비밀번호") {
-        setMqttBadge(false);
-        console.warn("MQTT_PASS가 비어 있습니다. HiveMQ 비밀번호를 넣어야 MQTT 연결됩니다.");
-        return;
-      }
 
-      const url = `wss://${MQTT_HOST}:${MQTT_WS_PORT}/mqtt`;
-      const clientId = "dashboard-2-12-" + Math.random().toString(16).slice(2) + "-" + Date.now();
-      mqttClient = mqtt.connect(url, { clientId, username: MQTT_USER, password: MQTT_PASS, clean: true, connectTimeout: 8000, reconnectPeriod: 3000, keepalive: 30 });
+    /****************************************************
+     * MQTT - SMART CONNECT
+     * 1순위 Paho
+     * 2순위 MQTT.js fallback
+     ****************************************************/
 
-      mqttClient.on("connect", function () {
-        setMqttBadge(true);
-        toast("MQTT 연결됨");
-        mqttClient.subscribe(TOPIC_STATUS);
-        mqttClient.subscribe(TOPIC_HEARTBEAT);
-        mqttClient.subscribe(TOPIC_EVENT);
-      });
-      mqttClient.on("reconnect", () => setMqttBadge(false));
-      mqttClient.on("close", () => setMqttBadge(false));
-      mqttClient.on("error", err => { setMqttBadge(false); console.error("MQTT error", err); });
-      mqttClient.on("message", function (topic, message) {
-        let data = {};
-        try { data = JSON.parse(message.toString()); } catch (err) { data = { raw: message.toString() }; }
-        handleMqttMessage(topic, data);
-      });
+    function mqttManualReconnect() {
+      clearTimeout(mqttRetryTimer);
+      disconnectMqttSilently();
+      mqttConnecting = false;
+      connectMqttSmart(true);
     }
 
-    function handleMqttMessage(topic, data) {
-      console.log("MQTT", topic, data);
-      if (topic === TOPIC_STATUS) {
-        if (data.status === "online") markEspOnline();
-        else if (data.status === "offline") setEspBadge(false);
+    function connectMqttSmart(manual) {
+      if (mqttConnecting) return;
+
+      mqttConnecting = true;
+      setMqttBadge("connecting");
+      mqttLog("MQTT 연결 시도 시작");
+      mqttLog(`HOST=${MQTT_HOST}, PORT=${MQTT_WS_PORT}, PATH=${MQTT_PATH}, USER=${MQTT_USER}`);
+
+      disconnectMqttSilently();
+
+      setTimeout(function () {
+        connectMqttWithPaho(function (pahoOk) {
+          if (pahoOk) {
+            mqttConnecting = false;
+            return;
+          }
+
+          mqttLog("Paho 실패 → MQTT.js fallback 시도");
+
+          connectMqttWithMqttJs(function (mqttJsOk) {
+            mqttConnecting = false;
+
+            if (!mqttJsOk) {
+              setMqttBadge(false);
+              mqttLog("MQTT 최종 실패. 가능 원인: 비밀번호 오류 / HiveMQ WebSocket 차단 / 네트워크 방화벽 / Cloud credentials 비활성");
+              scheduleMqttRetry();
+            }
+          });
+        });
+      }, manual ? 100 : 300);
+    }
+
+    function connectMqttWithPaho(done) {
+      if (!window.Paho || !Paho.MQTT || !Paho.MQTT.Client) {
+        mqttLog("Paho 라이브러리 로드 실패");
+        done(false);
+        return;
       }
-      if (topic === TOPIC_HEARTBEAT) markEspOnline();
+
+      mqttMode = "paho";
+      const clientId = "dash-paho-2-12-" + Math.random().toString(16).slice(2) + "-" + Date.now();
+
+      try {
+        mqttClient = new Paho.MQTT.Client(MQTT_HOST, Number(MQTT_WS_PORT), MQTT_PATH, clientId);
+
+        mqttClient.onConnectionLost = function (responseObject) {
+          setMqttBadge(false);
+          mqttLog("Paho 연결 끊김: " + (responseObject && responseObject.errorMessage ? responseObject.errorMessage : "unknown"));
+          scheduleMqttRetry();
+        };
+
+        mqttClient.onMessageArrived = function (message) {
+          handleMqttMessage(message.destinationName, message.payloadString);
+        };
+
+        let settled = false;
+        const timeout = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          mqttLog("Paho timeout");
+          try { mqttClient.disconnect(); } catch (e) {}
+          done(false);
+        }, 9000);
+
+        mqttLog("Paho connect...");
+        mqttClient.connect({
+          userName: MQTT_USER,
+          password: MQTT_PASS,
+          useSSL: true,
+          cleanSession: true,
+          keepAliveInterval: 30,
+          timeout: 8,
+          mqttVersion: 4,
+
+          onSuccess: function () {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+
+            setMqttBadge(true);
+            mqttLog("Paho connected");
+            subscribeAllTopicsPaho();
+            done(true);
+          },
+
+          onFailure: function (err) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+
+            const msg = err && (err.errorMessage || err.invocationContext || err.errorCode)
+              ? JSON.stringify(err)
+              : String(err || "unknown");
+            mqttLog("Paho failure: " + msg);
+            done(false);
+          }
+        });
+
+      } catch (err) {
+        mqttLog("Paho exception: " + (err && err.message ? err.message : err));
+        done(false);
+      }
+    }
+
+    function subscribeAllTopicsPaho() {
+      try {
+        mqttClient.subscribe(TOPIC_STATUS, { qos: 0 });
+        mqttClient.subscribe(TOPIC_HEARTBEAT, { qos: 0 });
+        mqttClient.subscribe(TOPIC_EVENT, { qos: 0 });
+        mqttLog("Paho subscribe 완료");
+      } catch (err) {
+        mqttLog("Paho subscribe 오류: " + (err && err.message ? err.message : err));
+      }
+    }
+
+    function connectMqttWithMqttJs(done) {
+      if (!window.mqtt || !mqtt.connect) {
+        mqttLog("MQTT.js 라이브러리 로드 실패");
+        done(false);
+        return;
+      }
+
+      mqttMode = "mqttjs";
+      const url = `wss://${MQTT_HOST}:${MQTT_WS_PORT}${MQTT_PATH}`;
+      const clientId = "dash-mqttjs-2-12-" + Math.random().toString(16).slice(2) + "-" + Date.now();
+
+      let settled = false;
+
+      try {
+        mqttLog("MQTT.js connect... " + url);
+
+        mqttClient = mqtt.connect(url, {
+          clientId: clientId,
+          username: MQTT_USER,
+          password: MQTT_PASS,
+          clean: true,
+          connectTimeout: 9000,
+          reconnectPeriod: 0,
+          keepalive: 30,
+          protocolVersion: 4
+        });
+
+        const timeout = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          mqttLog("MQTT.js timeout");
+          try { mqttClient.end(true); } catch (e) {}
+          done(false);
+        }, 10000);
+
+        mqttClient.on("connect", function () {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+
+          setMqttBadge(true);
+          mqttLog("MQTT.js connected");
+
+          mqttClient.subscribe([TOPIC_STATUS, TOPIC_HEARTBEAT, TOPIC_EVENT], function (err) {
+            mqttLog("MQTT.js subscribe: " + (err ? err.message : "ok"));
+          });
+
+          done(true);
+        });
+
+        mqttClient.on("message", function (topic, payload) {
+          handleMqttMessage(topic, payload.toString());
+        });
+
+        mqttClient.on("close", function () {
+          if (settled) {
+            setMqttBadge(false);
+            mqttLog("MQTT.js close");
+            scheduleMqttRetry();
+          }
+        });
+
+        mqttClient.on("offline", function () {
+          mqttLog("MQTT.js offline");
+        });
+
+        mqttClient.on("error", function (err) {
+          mqttLog("MQTT.js error: " + (err && err.message ? err.message : err));
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeout);
+            try { mqttClient.end(true); } catch (e) {}
+            done(false);
+          }
+        });
+
+      } catch (err) {
+        mqttLog("MQTT.js exception: " + (err && err.message ? err.message : err));
+        done(false);
+      }
+    }
+
+    function disconnectMqttSilently() {
+      try {
+        if (!mqttClient) return;
+
+        if (mqttMode === "paho" && mqttClient.isConnected && mqttClient.isConnected()) {
+          mqttClient.disconnect();
+        }
+
+        if (mqttMode === "mqttjs" && mqttClient.end) {
+          mqttClient.end(true);
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      mqttClient = null;
+    }
+
+    function scheduleMqttRetry() {
+      clearTimeout(mqttRetryTimer);
+
+      mqttRetryTimer = setTimeout(function () {
+        if (document.visibilityState === "hidden") return;
+        connectMqttSmart(false);
+      }, 10000);
+    }
+
+    function handleMqttMessage(topic, payloadText) {
+      let data = {};
+
+      try {
+        data = JSON.parse(payloadText);
+      } catch (err) {
+        data = { raw: payloadText };
+      }
+
+      mqttLog("MESSAGE " + topic + " " + payloadText);
+
+      if (topic === TOPIC_STATUS) {
+        if (data.status === "online") {
+          markEspOnline();
+        } else if (data.status === "offline") {
+          setEspBadge(false);
+        }
+      }
+
+      if (topic === TOPIC_HEARTBEAT) {
+        markEspOnline();
+      }
+
       if (topic === TOPIC_EVENT) {
         markEspOnline();
-        if (data.type === "attendance" || data.type === "queued_sent" || data.type === "queued") {
-          if (currentViewingDate === getTodayText()) setTimeout(loadTodayLogs, 700);
+
+        if (
+          data.type === "attendance" ||
+          data.type === "queued_sent" ||
+          data.type === "queued"
+        ) {
+          if (currentViewingDate === getTodayText()) {
+            setTimeout(loadTodayLogs, 700);
+          }
         }
       }
     }
 
-    function markEspOnline() { lastEspSeenAt = Date.now(); setEspBadge(true); }
+    function markEspOnline() {
+      lastEspSeenAt = Date.now();
+      setEspBadge(true);
+    }
 
     function startEspWatchdog() {
       if (espWatchTimer) clearInterval(espWatchTimer);
+
       espWatchTimer = setInterval(function () {
-        if (!lastEspSeenAt) return setEspBadge(false);
-        if (Date.now() - lastEspSeenAt > ESP_OFFLINE_AFTER_MS) setEspBadge(false);
+        if (!lastEspSeenAt) {
+          setEspBadge(false);
+          return;
+        }
+
+        if (Date.now() - lastEspSeenAt > ESP_OFFLINE_AFTER_MS) {
+          setEspBadge(false);
+        }
       }, 3000);
     }
 
-    function setMqttBadge(isOnline) {
+    function setMqttBadge(state) {
       const el = document.getElementById("mqttBadge");
       if (!el) return;
-      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
-      el.className = "badge " + (isOnline ? "online" : "offline");
+
+      if (state === "connecting") {
+        el.textContent = "CONNECTING";
+        el.className = "badge connecting";
+        return;
+      }
+
+      el.textContent = state ? "ONLINE" : "DISCONNECTED";
+      el.className = "badge " + (state ? "online" : "offline");
     }
 
     function setEspBadge(isOnline) {
       const el = document.getElementById("espBadge");
       if (!el) return;
-      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
+
+      el.textContent = isOnline ? "ONLINE" : "DISCONNECTED";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
+    function mqttLog(message) {
+      const line = "[" + new Date().toLocaleTimeString("ko-KR") + "] " + message;
+      console.log(line);
+
+      mqttLogLines.push(line);
+      if (mqttLogLines.length > 16) mqttLogLines.shift();
+
+      const el = document.getElementById("mqttDebug");
+      if (el) el.textContent = mqttLogLines.join("\n");
+    }
+
+
+    /****************************************************
+     * JSONP
+     ****************************************************/
+
     function callJsonp(url, callback) {
-      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+      const callbackName =
+        "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+
       let script = null;
+
       window[callbackName] = function (data) {
-        try { callback(data); }
-        finally {
+        try {
+          callback(data);
+        } finally {
           delete window[callbackName];
-          if (script && script.parentNode) script.parentNode.removeChild(script);
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
         }
       };
+
       const sep = url.includes("?") ? "&" : "?";
+
       script = document.createElement("script");
       script.src = url + sep + "callback=" + encodeURIComponent(callbackName);
+
       script.onerror = function () {
         delete window[callbackName];
-        if (script && script.parentNode) script.parentNode.removeChild(script);
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
         toast("Apps Script 연결 실패");
       };
+
       document.head.appendChild(script);
     }
 
+
+    /****************************************************
+     * UTIL
+     ****************************************************/
+
     function toast(message) {
       const el = document.getElementById("toast");
+
       el.textContent = message;
       el.classList.add("show");
-      setTimeout(() => el.classList.remove("show"), 2200);
+
+      setTimeout(function () {
+        el.classList.remove("show");
+      }, 2200);
     }
 
     function escapeHtml(value) {
@@ -612,6 +1217,8 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
+
+    window.mqttManualReconnect = mqttManualReconnect;
   </script>
 </body>
 </html>
