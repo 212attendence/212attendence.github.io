@@ -9,14 +9,10 @@
   <link rel="icon" type="image/png" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./favicon.png" />
 
-  <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- MQTT.js -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
@@ -27,10 +23,6 @@
       --muted: #6b7280;
       --line: #e5e7eb;
       --blue: #2563eb;
-      --green: #16a34a;
-      --red: #dc2626;
-      --orange: #ea580c;
-      --gray: #6b7280;
     }
 
     * {
@@ -130,11 +122,6 @@
     .offline {
       background: #fee2e2;
       color: #991b1b;
-    }
-
-    .neutral {
-      background: #f3f4f6;
-      color: #374151;
     }
 
     .card {
@@ -282,10 +269,6 @@
       animation: spin 0.85s linear infinite;
     }
 
-    .loading-overlay.no-icon .loading-spinner {
-      display: none;
-    }
-
     .loading-title {
       font-size: 18px;
       font-weight: 950;
@@ -352,10 +335,6 @@
     .panel-title {
       font-size: 18px;
       font-weight: 950;
-    }
-
-    .panel-body {
-      padding: 0;
     }
 
     .log-list {
@@ -581,10 +560,6 @@
   <div id="toast" class="toast">알림</div>
 
   <script>
-    /****************************************************
-     * CONFIG
-     ****************************************************/
-
     const APPS_SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
 
@@ -594,7 +569,6 @@
     const MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
     const MQTT_WS_PORT = 8884;
     const MQTT_USER = "jiukeum";
-
     const MQTT_PASS = "여기에_MQTT_비밀번호";
 
     const TOPIC_STATUS = "attendance/2-12/status";
@@ -607,11 +581,6 @@
     let lastEspSeenAt = 0;
     let espWatchTimer = null;
     let loginLoadingType = "";
-
-
-    /****************************************************
-     * INIT
-     ****************************************************/
 
     document.addEventListener("DOMContentLoaded", function () {
       setTodayPill();
@@ -632,11 +601,6 @@
       const dd = String(now.getDate()).padStart(2, "0");
       document.getElementById("todayPill").textContent = `${yyyy}-${mm}-${dd}`;
     }
-
-
-    /****************************************************
-     * GOOGLE LOGIN
-     ****************************************************/
 
     function initGoogleButton() {
       if (!window.google || !google.accounts || !google.accounts.id) {
@@ -672,9 +636,7 @@
         return;
       }
 
-      if (loginLoadingType) {
-        return;
-      }
+      if (loginLoadingType) return;
 
       const idToken = response.credential;
       const googleEmail = getEmailFromGoogleCredential(idToken) || "Google 계정";
@@ -715,13 +677,9 @@
         const parts = String(idToken || "").split(".");
         if (parts.length < 2) return "";
 
-        let payload = parts[1]
-          .replace(/-/g, "+")
-          .replace(/_/g, "/");
+        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
 
-        while (payload.length % 4) {
-          payload += "=";
-        }
+        while (payload.length % 4) payload += "=";
 
         const jsonText = decodeURIComponent(
           Array.prototype.map.call(atob(payload), function (c) {
@@ -737,15 +695,8 @@
       }
     }
 
-
-    /****************************************************
-     * ADMIN LOGIN
-     ****************************************************/
-
     function adminLogin() {
-      if (loginLoadingType) {
-        return;
-      }
+      if (loginLoadingType) return;
 
       const adminId = document.getElementById("adminId").value.trim();
       const adminPw = document.getElementById("adminPw").value.trim();
@@ -786,11 +737,6 @@
       });
     }
 
-
-    /****************************************************
-     * LOGIN LOADING
-     ****************************************************/
-
     function startLoginLoading(type, accountText) {
       loginLoadingType = type;
 
@@ -799,53 +745,34 @@
       const sub = document.getElementById("loadingSub");
 
       if (type === "google") {
-        overlay.classList.add("no-icon");
         title.textContent = "Google 계정 로그인 중입니다.";
         sub.textContent = accountText + "로 로그인 중입니다.";
-
         setAdminLoginDisabled(true);
       } else {
-        overlay.classList.remove("no-icon");
         title.textContent = "관리자 계정 로그인 중입니다.";
         sub.textContent = accountText + "으로 로그인 중...";
-
         setAdminLoginDisabled(true);
       }
 
-      if (overlay) {
-        overlay.classList.add("show");
-        overlay.setAttribute("aria-hidden", "false");
-      }
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
     }
 
     function stopLoginLoading() {
       const overlay = document.getElementById("loadingOverlay");
 
-      if (overlay) {
-        overlay.classList.remove("show");
-        overlay.classList.remove("no-icon");
-        overlay.setAttribute("aria-hidden", "true");
-      }
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
 
       setAdminLoginDisabled(false);
-
       loginLoadingType = "";
     }
 
     function setAdminLoginDisabled(disabled) {
-      const adminId = document.getElementById("adminId");
-      const adminPw = document.getElementById("adminPw");
-      const adminLoginBtn = document.getElementById("adminLoginBtn");
-
-      if (adminId) adminId.disabled = disabled;
-      if (adminPw) adminPw.disabled = disabled;
-      if (adminLoginBtn) adminLoginBtn.disabled = disabled;
+      document.getElementById("adminId").disabled = disabled;
+      document.getElementById("adminPw").disabled = disabled;
+      document.getElementById("adminLoginBtn").disabled = disabled;
     }
-
-
-    /****************************************************
-     * SESSION / LOGOUT
-     ****************************************************/
 
     function restoreSession() {
       const loginType = sessionStorage.getItem("loginType") || "";
@@ -886,21 +813,14 @@
       if (loginType === "google") {
         const email = sessionStorage.getItem("loginEmail") || "";
         const name = sessionStorage.getItem("loginName") || "";
-
         document.getElementById("loginInfo").textContent =
           `Google 로그인: ${name || email} / ${role}`;
       } else {
         const adminId = sessionStorage.getItem("adminId") || "";
-
         document.getElementById("loginInfo").textContent =
           `관리자 로그인: ${adminId} / ${role}`;
       }
     }
-
-
-    /****************************************************
-     * TODAY LOGS
-     ****************************************************/
 
     function loadTodayLogs() {
       const params = new URLSearchParams();
@@ -994,14 +914,8 @@
       if (status === "지각") return "chip-late";
       if (status === "중복") return "chip-dup";
       if (status === "미등록" || status === "비활성" || status === "오류") return "chip-bad";
-
       return "chip-neutral";
     }
-
-
-    /****************************************************
-     * MQTT
-     ****************************************************/
 
     function connectMqtt() {
       if (!window.mqtt) {
@@ -1011,7 +925,7 @@
 
       if (!MQTT_PASS || MQTT_PASS === "여기에_MQTT_비밀번호") {
         setMqttBadge(false);
-        console.warn("MQTT_PASS가 비어 있습니다. HiveMQ 비밀번호를 넣어야 MQTT 연결됩니다.");
+        console.warn("MQTT_PASS가 비어 있습니다.");
         return;
       }
 
@@ -1057,7 +971,6 @@
 
       mqttClient.on("message", function (topic, message) {
         const text = message.toString();
-
         let data = {};
 
         try {
@@ -1074,11 +987,8 @@
       console.log("MQTT", topic, data);
 
       if (topic === TOPIC_STATUS) {
-        if (data.status === "online") {
-          markEspOnline();
-        } else if (data.status === "offline") {
-          setEspBadge(false);
-        }
+        if (data.status === "online") markEspOnline();
+        else if (data.status === "offline") setEspBadge(false);
       }
 
       if (topic === TOPIC_HEARTBEAT) {
@@ -1120,26 +1030,17 @@
 
     function setMqttBadge(isOnline) {
       const el = document.getElementById("mqttBadge");
-
       if (!el) return;
-
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
     function setEspBadge(isOnline) {
       const el = document.getElementById("espBadge");
-
       if (!el) return;
-
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
-
-
-    /****************************************************
-     * JSONP
-     ****************************************************/
 
     function callJsonp(url, callback) {
       const callbackName =
@@ -1150,7 +1051,6 @@
 
       const timer = setTimeout(function () {
         if (finished) return;
-
         finished = true;
 
         delete window[callbackName];
@@ -1159,16 +1059,13 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) {
-          stopLoginLoading();
-        }
+        if (loginLoadingType) stopLoginLoading();
 
         toast("Apps Script 응답 시간 초과");
       }, 15000);
 
       window[callbackName] = function (data) {
         if (finished) return;
-
         finished = true;
         clearTimeout(timer);
 
@@ -1190,7 +1087,6 @@
 
       script.onerror = function () {
         if (finished) return;
-
         finished = true;
         clearTimeout(timer);
 
@@ -1200,20 +1096,13 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) {
-          stopLoginLoading();
-        }
+        if (loginLoadingType) stopLoginLoading();
 
         toast("Apps Script 연결 실패");
       };
 
       document.head.appendChild(script);
     }
-
-
-    /****************************************************
-     * UTIL
-     ****************************************************/
 
     function toast(message) {
       const el = document.getElementById("toast");
