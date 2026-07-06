@@ -260,13 +260,20 @@
     }
 
     .loading-spinner {
-      width: 38px;
-      height: 38px;
+      display: block;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       border: 4px solid #dbeafe;
       border-top-color: #2563eb;
       margin: 0 auto 16px;
       animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .loading-title {
@@ -283,12 +290,6 @@
       line-height: 1.6;
       word-break: break-all;
       font-weight: 700;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
     }
 
     .dashboard {
@@ -569,7 +570,8 @@
     const MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
     const MQTT_WS_PORT = 8884;
     const MQTT_USER = "jiukeum";
-    const MQTT_PASS = "여기에_MQTT_비밀번호";
+
+    const MQTT_PASS = "Ojh1532591!";
 
     const TOPIC_STATUS = "attendance/2-12/status";
     const TOPIC_EVENT = "attendance/2-12/event";
@@ -636,7 +638,9 @@
         return;
       }
 
-      if (loginLoadingType) return;
+      if (loginLoadingType) {
+        return;
+      }
 
       const idToken = response.credential;
       const googleEmail = getEmailFromGoogleCredential(idToken) || "Google 계정";
@@ -679,7 +683,9 @@
 
         let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
 
-        while (payload.length % 4) payload += "=";
+        while (payload.length % 4) {
+          payload += "=";
+        }
 
         const jsonText = decodeURIComponent(
           Array.prototype.map.call(atob(payload), function (c) {
@@ -696,7 +702,9 @@
     }
 
     function adminLogin() {
-      if (loginLoadingType) return;
+      if (loginLoadingType) {
+        return;
+      }
 
       const adminId = document.getElementById("adminId").value.trim();
       const adminPw = document.getElementById("adminPw").value.trim();
@@ -747,31 +755,39 @@
       if (type === "google") {
         title.textContent = "Google 계정 로그인 중입니다.";
         sub.textContent = accountText + "로 로그인 중입니다.";
-        setAdminLoginDisabled(true);
       } else {
         title.textContent = "관리자 계정 로그인 중입니다.";
         sub.textContent = accountText + "으로 로그인 중...";
-        setAdminLoginDisabled(true);
       }
 
-      overlay.classList.add("show");
-      overlay.setAttribute("aria-hidden", "false");
+      setAdminLoginDisabled(true);
+
+      if (overlay) {
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+      }
     }
 
     function stopLoginLoading() {
       const overlay = document.getElementById("loadingOverlay");
 
-      overlay.classList.remove("show");
-      overlay.setAttribute("aria-hidden", "true");
+      if (overlay) {
+        overlay.classList.remove("show");
+        overlay.setAttribute("aria-hidden", "true");
+      }
 
       setAdminLoginDisabled(false);
       loginLoadingType = "";
     }
 
     function setAdminLoginDisabled(disabled) {
-      document.getElementById("adminId").disabled = disabled;
-      document.getElementById("adminPw").disabled = disabled;
-      document.getElementById("adminLoginBtn").disabled = disabled;
+      const adminId = document.getElementById("adminId");
+      const adminPw = document.getElementById("adminPw");
+      const adminLoginBtn = document.getElementById("adminLoginBtn");
+
+      if (adminId) adminId.disabled = disabled;
+      if (adminPw) adminPw.disabled = disabled;
+      if (adminLoginBtn) adminLoginBtn.disabled = disabled;
     }
 
     function restoreSession() {
@@ -813,10 +829,12 @@
       if (loginType === "google") {
         const email = sessionStorage.getItem("loginEmail") || "";
         const name = sessionStorage.getItem("loginName") || "";
+
         document.getElementById("loginInfo").textContent =
           `Google 로그인: ${name || email} / ${role}`;
       } else {
         const adminId = sessionStorage.getItem("adminId") || "";
+
         document.getElementById("loginInfo").textContent =
           `관리자 로그인: ${adminId} / ${role}`;
       }
@@ -914,6 +932,7 @@
       if (status === "지각") return "chip-late";
       if (status === "중복") return "chip-dup";
       if (status === "미등록" || status === "비활성" || status === "오류") return "chip-bad";
+
       return "chip-neutral";
     }
 
@@ -987,8 +1006,11 @@
       console.log("MQTT", topic, data);
 
       if (topic === TOPIC_STATUS) {
-        if (data.status === "online") markEspOnline();
-        else if (data.status === "offline") setEspBadge(false);
+        if (data.status === "online") {
+          markEspOnline();
+        } else if (data.status === "offline") {
+          setEspBadge(false);
+        }
       }
 
       if (topic === TOPIC_HEARTBEAT) {
@@ -1030,14 +1052,18 @@
 
     function setMqttBadge(isOnline) {
       const el = document.getElementById("mqttBadge");
+
       if (!el) return;
+
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
     function setEspBadge(isOnline) {
       const el = document.getElementById("espBadge");
+
       if (!el) return;
+
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
@@ -1051,6 +1077,7 @@
 
       const timer = setTimeout(function () {
         if (finished) return;
+
         finished = true;
 
         delete window[callbackName];
@@ -1059,13 +1086,16 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) stopLoginLoading();
+        if (loginLoadingType) {
+          stopLoginLoading();
+        }
 
         toast("Apps Script 응답 시간 초과");
       }, 15000);
 
       window[callbackName] = function (data) {
         if (finished) return;
+
         finished = true;
         clearTimeout(timer);
 
@@ -1087,6 +1117,7 @@
 
       script.onerror = function () {
         if (finished) return;
+
         finished = true;
         clearTimeout(timer);
 
@@ -1096,7 +1127,9 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) stopLoginLoading();
+        if (loginLoadingType) {
+          stopLoginLoading();
+        }
 
         toast("Apps Script 연결 실패");
       };
