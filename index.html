@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>2-12 출석</title>
+  <title>출석</title>
 
   <link rel="icon" type="image/png" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./favicon.png" />
@@ -237,15 +237,6 @@
       min-height: 44px;
     }
 
-    #googleButtonOverlaySlot {
-      display: none;
-      justify-content: center;
-      align-items: center;
-      min-height: 44px;
-      margin-top: 18px;
-      pointer-events: none;
-    }
-
     .loading-overlay {
       position: fixed;
       inset: 0;
@@ -266,11 +257,11 @@
     }
 
     .loading-panel {
-      width: min(360px, calc(100vw - 48px));
+      width: min(380px, calc(100vw - 48px));
       background: rgba(255, 255, 255, 0.96);
       border: 1px solid rgba(255, 255, 255, 0.75);
       border-radius: 24px;
-      padding: 26px 24px;
+      padding: 28px 24px;
       text-align: center;
       box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
       transform: translateY(8px) scale(0.98);
@@ -291,6 +282,10 @@
       animation: spin 0.85s linear infinite;
     }
 
+    .loading-overlay.no-icon .loading-spinner {
+      display: none;
+    }
+
     .loading-title {
       font-size: 18px;
       font-weight: 950;
@@ -299,10 +294,12 @@
     }
 
     .loading-sub {
-      font-size: 13px;
-      color: #6b7280;
-      margin-top: 6px;
-      line-height: 1.5;
+      font-size: 14px;
+      color: #4b5563;
+      margin-top: 8px;
+      line-height: 1.6;
+      word-break: break-all;
+      font-weight: 700;
     }
 
     @keyframes spin {
@@ -578,7 +575,6 @@
       <div class="loading-spinner"></div>
       <div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div>
       <div id="loadingSub" class="loading-sub">로그인 확인 중입니다.</div>
-      <div id="googleButtonOverlaySlot"></div>
     </div>
   </div>
 
@@ -599,7 +595,7 @@
     const MQTT_WS_PORT = 8884;
     const MQTT_USER = "jiukeum";
 
-    const MQTT_PASS = "Ojh1532591!";
+    const MQTT_PASS = "여기에_MQTT_비밀번호";
 
     const TOPIC_STATUS = "attendance/2-12/status";
     const TOPIC_EVENT = "attendance/2-12/event";
@@ -680,9 +676,10 @@
         return;
       }
 
-      startLoginLoading("google");
-
       const idToken = response.credential;
+      const googleEmail = getEmailFromGoogleCredential(idToken) || "Google 계정";
+
+      startLoginLoading("google", googleEmail);
 
       const params = new URLSearchParams();
       params.set("action", "googleLoginJsonp");
@@ -713,6 +710,33 @@
       });
     }
 
+    function getEmailFromGoogleCredential(idToken) {
+      try {
+        const parts = String(idToken || "").split(".");
+        if (parts.length < 2) return "";
+
+        let payload = parts[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        while (payload.length % 4) {
+          payload += "=";
+        }
+
+        const jsonText = decodeURIComponent(
+          Array.prototype.map.call(atob(payload), function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join("")
+        );
+
+        const data = JSON.parse(jsonText);
+        return String(data.email || "").trim();
+
+      } catch (err) {
+        return "";
+      }
+    }
+
 
     /****************************************************
      * ADMIN LOGIN
@@ -731,7 +755,7 @@
         return;
       }
 
-      startLoginLoading("admin");
+      startLoginLoading("admin", adminId);
 
       const params = new URLSearchParams();
       params.set("action", "dashboardLoginJsonp");
@@ -767,7 +791,7 @@
      * LOGIN LOADING
      ****************************************************/
 
-    function startLoginLoading(type) {
+    function startLoginLoading(type, accountText) {
       loginLoadingType = type;
 
       const overlay = document.getElementById("loadingOverlay");
@@ -775,16 +799,16 @@
       const sub = document.getElementById("loadingSub");
 
       if (type === "google") {
-        title.textContent = "잠시만 기다려주세요";
-        sub.textContent = "Google 계정 확인 중입니다.";
+        overlay.classList.add("no-icon");
+        title.textContent = "Google 계정 로그인 중입니다.";
+        sub.textContent = accountText + "로 로그인 중입니다.";
 
-        moveGoogleButtonToOverlay();
         setAdminLoginDisabled(true);
       } else {
-        title.textContent = "잠시만 기다려주세요";
-        sub.textContent = "관리자 계정 확인 중입니다.";
+        overlay.classList.remove("no-icon");
+        title.textContent = "관리자 계정 로그인 중입니다.";
+        sub.textContent = accountText + "으로 로그인 중...";
 
-        restoreGoogleButtonPosition();
         setAdminLoginDisabled(true);
       }
 
@@ -799,10 +823,10 @@
 
       if (overlay) {
         overlay.classList.remove("show");
+        overlay.classList.remove("no-icon");
         overlay.setAttribute("aria-hidden", "true");
       }
 
-      restoreGoogleButtonPosition();
       setAdminLoginDisabled(false);
 
       loginLoadingType = "";
@@ -816,35 +840,6 @@
       if (adminId) adminId.disabled = disabled;
       if (adminPw) adminPw.disabled = disabled;
       if (adminLoginBtn) adminLoginBtn.disabled = disabled;
-    }
-
-    function moveGoogleButtonToOverlay() {
-      const googleButton = document.getElementById("googleButton");
-      const overlaySlot = document.getElementById("googleButtonOverlaySlot");
-
-      if (!googleButton || !overlaySlot) {
-        return;
-      }
-
-      overlaySlot.style.display = "flex";
-
-      if (googleButton.parentElement !== overlaySlot) {
-        overlaySlot.appendChild(googleButton);
-      }
-    }
-
-    function restoreGoogleButtonPosition() {
-      const googleButton = document.getElementById("googleButton");
-      const home = document.getElementById("googleButtonHome");
-      const overlaySlot = document.getElementById("googleButtonOverlaySlot");
-
-      if (googleButton && home && googleButton.parentElement !== home) {
-        home.appendChild(googleButton);
-      }
-
-      if (overlaySlot) {
-        overlaySlot.style.display = "none";
-      }
     }
 
 
