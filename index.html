@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2-12 출석 시스템</title>
 
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#fafaf8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="2-12 출석" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
@@ -94,11 +100,41 @@
     <button onclick="goLogin()">로그인</button>
 
     <div class="sub">
-      로그인 세션이 있으면 대시보드로 바로 이동합니다.
+      아이폰 홈 화면 앱에서는 자동 로그인이 유지됩니다.
     </div>
   </main>
 
   <script>
+    function isMobileOrPwa() {
+      const ua = navigator.userAgent || "";
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+      const isStandalone =
+        window.navigator.standalone === true ||
+        window.matchMedia("(display-mode: standalone)").matches;
+
+      return isMobile || isStandalone;
+    }
+
+    function restorePersistentAuth() {
+      if (!isMobileOrPwa()) return false;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
+
+        if (!saved || !saved.loginType) return false;
+
+        Object.keys(saved).forEach(function (key) {
+          if (saved[key] != null) {
+            sessionStorage.setItem(key, saved[key]);
+          }
+        });
+
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
     function hasSession() {
       return !!(
         sessionStorage.getItem("sessionToken") ||
@@ -107,12 +143,18 @@
     }
 
     function goLogin() {
+      restorePersistentAuth();
+
       if (hasSession()) {
         location.href = "./dashboard/";
       } else {
         location.href = "./login/";
       }
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      restorePersistentAuth();
+    });
   </script>
 </body>
 </html>
