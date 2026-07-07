@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="system">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <title>2-12 출석</title>
 
@@ -17,205 +17,155 @@
 
   <style>
     :root {
-      --bg: #f4f7fb;
-      --card: #ffffff;
-      --text: #152033;
+      color-scheme: light dark;
+
+      --bg: #f5f7fb;
+      --bg-soft: #eef2ff;
+      --card: rgba(255, 255, 255, 0.88);
+      --card-solid: #ffffff;
+      --text: #111827;
       --muted: #6b7280;
-      --line: #e5e7eb;
+      --line: rgba(148, 163, 184, 0.28);
       --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --gray: #64748b;
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      --overlay: rgba(15, 23, 42, 0.50);
+      --input: #ffffff;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+
+      --bg: #0b1120;
+      --bg-soft: #111827;
+      --card: rgba(17, 24, 39, 0.82);
+      --card-solid: #111827;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --line: rgba(148, 163, 184, 0.22);
+      --blue: #60a5fa;
+      --blue-soft: rgba(37, 99, 235, 0.20);
+      --green: #4ade80;
+      --orange: #fb923c;
+      --red: #f87171;
+      --gray: #94a3b8;
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+      --overlay: rgba(0, 0, 0, 0.58);
+      --input: #0f172a;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] {
+        color-scheme: dark;
+
+        --bg: #0b1120;
+        --bg-soft: #111827;
+        --card: rgba(17, 24, 39, 0.82);
+        --card-solid: #111827;
+        --text: #f9fafb;
+        --muted: #9ca3af;
+        --line: rgba(148, 163, 184, 0.22);
+        --blue: #60a5fa;
+        --blue-soft: rgba(37, 99, 235, 0.20);
+        --green: #4ade80;
+        --orange: #fb923c;
+        --red: #f87171;
+        --gray: #94a3b8;
+        --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+        --overlay: rgba(0, 0, 0, 0.58);
+        --input: #0f172a;
+      }
     }
 
     * {
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.10), transparent 26%),
+        var(--bg);
       color: var(--text);
     }
 
     input,
-    button {
+    button,
+    select {
       font-family: inherit;
-    }
-
-    input:disabled,
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .wrap {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    h1 {
-      font-size: 26px;
-      margin: 0;
-      letter-spacing: -0.04em;
-      font-weight: 900;
-    }
-
-    .date-pill {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #eef2ff;
-      color: #1e3a8a;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .status-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: white;
-      border: 1px solid var(--line);
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-    }
-
-    .online {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .offline {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-      overflow: hidden;
-    }
-
-    .login-card {
-      max-width: 440px;
-      margin: 60px auto;
-      padding: 28px;
-    }
-
-    .login-title {
-      font-size: 24px;
-      font-weight: 900;
-      margin-bottom: 6px;
-      letter-spacing: -0.04em;
-    }
-
-    .login-sub {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 22px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 800;
-      margin: 12px 0 6px;
-    }
-
-    input {
-      width: 100%;
-      padding: 13px 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
-      font-size: 15px;
-      outline: none;
-      background: white;
-    }
-
-    input:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
     }
 
     button {
       border: 0;
       cursor: pointer;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-weight: 900;
-      font-size: 14px;
     }
 
-    .btn-primary {
-      background: var(--blue);
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .login-card {
+      width: min(430px, 100%);
+      padding: 28px;
+    }
+
+    .brand-mark {
+      width: 50px;
+      height: 50px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #2563eb, #14b8a6);
+      display: grid;
+      place-items: center;
       color: white;
-      width: 100%;
-      margin-top: 14px;
+      font-weight: 950;
+      font-size: 20px;
+      margin-bottom: 16px;
     }
 
-    .btn-ghost {
-      background: #f3f4f6;
-      color: #374151;
+    .login-title {
+      font-size: 27px;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+      margin-bottom: 6px;
     }
 
-    .btn-small {
-      padding: 9px 11px;
-      font-size: 13px;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 20px 0;
+    .login-sub {
       color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--line);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 22px;
     }
 
     #googleButtonHome {
@@ -224,118 +174,238 @@
       min-height: 44px;
     }
 
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.50);
-      backdrop-filter: blur(2px);
+    .divider {
       display: flex;
       align-items: center;
-      justify-content: center;
-      z-index: 9998;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.18s ease;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin: 22px 0;
     }
 
-    .loading-overlay.show {
-      opacity: 1;
-      pointer-events: auto;
+    .divider::before,
+    .divider::after {
+      content: "";
+      height: 1px;
+      background: var(--line);
+      flex: 1;
     }
 
-    .loading-panel {
-      width: min(380px, calc(100vw - 48px));
-      background: rgba(255, 255, 255, 0.96);
-      border: 1px solid rgba(255, 255, 255, 0.75);
-      border-radius: 24px;
-      padding: 28px 24px;
-      text-align: center;
-      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-      transform: translateY(8px) scale(0.98);
-      transition: transform 0.18s ease;
-    }
-
-    .loading-overlay.show .loading-panel {
-      transform: translateY(0) scale(1);
-    }
-
-    .loading-spinner {
+    label {
       display: block;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 4px solid #dbeafe;
-      border-top-color: #2563eb;
-      margin: 0 auto 16px;
-      animation: spin 0.85s linear infinite;
+      font-size: 13px;
+      font-weight: 850;
+      margin: 12px 0 7px;
     }
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+    input,
+    select {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
     }
 
-    .loading-title {
-      font-size: 18px;
-      font-weight: 950;
-      color: #111827;
-      letter-spacing: -0.03em;
+    input:focus,
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
     }
 
-    .loading-sub {
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 900;
       font-size: 14px;
-      color: #4b5563;
-      margin-top: 8px;
-      line-height: 1.6;
-      word-break: break-all;
-      font-weight: 700;
+      min-height: 44px;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      margin-top: 14px;
+    }
+
+    .btn-soft {
+      background: var(--bg-soft);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      background: rgba(220, 38, 38, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(220, 38, 38, 0.20);
     }
 
     .dashboard {
       display: none;
+      padding-bottom: 28px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 14px 0;
+      background: linear-gradient(to bottom, var(--bg), rgba(0, 0, 0, 0));
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mini-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2563eb, #14b8a6);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: -0.05em;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .top-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.02em;
+    }
+
+    .online {
+      background: rgba(22, 163, 74, 0.15);
+      color: var(--green);
+    }
+
+    .offline {
+      background: rgba(220, 38, 38, 0.14);
+      color: var(--red);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
     }
 
     .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin: 16px 0;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 12px 0 14px;
     }
 
     .summary-card {
       padding: 18px;
-      border-radius: 18px;
-      background: white;
-      border: 1px solid var(--line);
     }
 
     .summary-label {
       color: var(--muted);
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 850;
     }
 
     .summary-value {
-      font-size: 30px;
+      margin-top: 8px;
+      font-size: 32px;
       font-weight: 950;
-      margin-top: 6px;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.05em;
+    }
+
+    .content-grid {
+      grid-template-columns: 1.4fr 0.8fr;
+      align-items: start;
+    }
+
+    .panel {
+      overflow: hidden;
     }
 
     .panel-head {
       padding: 18px 20px;
       border-bottom: 1px solid var(--line);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     .panel-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 950;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
     }
 
     .log-list {
@@ -345,11 +415,11 @@
 
     .log-row {
       display: grid;
-      grid-template-columns: 92px 86px 1fr 110px 1.4fr;
-      gap: 10px;
+      grid-template-columns: 72px 82px 1fr 80px;
       align-items: center;
-      padding: 14px 20px;
-      border-bottom: 1px solid #f1f5f9;
+      gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
       font-size: 14px;
     }
 
@@ -358,111 +428,290 @@
     }
 
     .log-header {
-      background: #f8fafc;
-      color: #64748b;
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--muted);
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 950;
       text-transform: uppercase;
     }
 
     .status-chip {
       display: inline-flex;
       justify-content: center;
-      min-width: 54px;
-      padding: 6px 9px;
+      min-width: 62px;
       border-radius: 999px;
+      padding: 6px 8px;
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 950;
     }
 
     .chip-present {
-      background: #dcfce7;
-      color: #166534;
+      background: rgba(22, 163, 74, 0.15);
+      color: var(--green);
     }
 
     .chip-late {
-      background: #ffedd5;
-      color: #9a3412;
+      background: rgba(234, 88, 12, 0.15);
+      color: var(--orange);
+    }
+
+    .chip-notyet {
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--gray);
+    }
+
+    .chip-absent,
+    .chip-bad {
+      background: rgba(220, 38, 38, 0.14);
+      color: var(--red);
     }
 
     .chip-dup {
-      background: #e0e7ff;
-      color: #3730a3;
+      background: rgba(37, 99, 235, 0.14);
+      color: var(--blue);
     }
 
-    .chip-bad {
-      background: #fee2e2;
-      color: #991b1b;
+    .device-card {
+      padding: 18px;
     }
 
-    .chip-neutral {
-      background: #f3f4f6;
-      color: #374151;
+    .info-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: rgba(148, 163, 184, 0.10);
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .info-value {
+      font-weight: 900;
+      text-align: right;
+      word-break: break-all;
     }
 
     .muted {
       color: var(--muted);
     }
 
-    .footer-note {
-      margin-top: 12px;
+    .modal-backdrop,
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 18px;
+    }
+
+    .modal-backdrop.show,
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(560px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      background: var(--card-solid);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      background: var(--card-solid);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .modal-body {
+      padding: 18px 20px 22px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .loading-panel {
+      width: min(380px, 100%);
+      border-radius: 26px;
+      background: var(--card-solid);
+      border: 1px solid var(--line);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.30);
+      padding: 30px 24px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 4px solid rgba(37, 99, 235, 0.16);
+      border-top-color: var(--blue);
+      margin: 0 auto 16px;
+      animation: spin 0.75s linear infinite;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg) translateZ(0); }
+      to { transform: rotate(360deg) translateZ(0); }
+    }
+
+    .loading-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .loading-sub {
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 12px;
-      text-align: right;
+      font-weight: 800;
+      font-size: 14px;
+      word-break: break-all;
+      line-height: 1.55;
     }
 
     .toast {
       position: fixed;
       left: 50%;
-      bottom: 24px;
-      transform: translateX(-50%);
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(8px);
+      z-index: 200;
       background: #111827;
       color: white;
       padding: 12px 16px;
       border-radius: 999px;
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 850;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .2s ease, transform .2s ease;
-      z-index: 9999;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      max-width: calc(100vw - 32px);
+      text-align: center;
     }
 
     .toast.show {
       opacity: 1;
-      transform: translateX(-50%) translateY(-4px);
+      transform: translateX(-50%) translateY(0);
     }
 
-    @media (max-width: 760px) {
-      .wrap {
+    @media (max-width: 860px) {
+      .app {
         padding: 14px;
       }
 
       .topbar {
-        align-items: flex-start;
+        position: static;
+      }
+
+      .topbar-inner {
         flex-direction: column;
+        align-items: stretch;
+      }
+
+      .actions {
+        justify-content: flex-start;
       }
 
       .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .log-row {
-        grid-template-columns: 70px 70px 1fr;
+      .summary-grid .summary-card:first-child {
+        grid-column: 1 / -1;
       }
 
-      .log-row .hide-mobile,
-      .log-header .hide-mobile {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .login-shell {
+        padding: 14px;
+        align-items: start;
+        padding-top: 42px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .login-card {
+        padding: 22px;
+        border-radius: 24px;
+      }
+
+      .summary-value {
+        font-size: 28px;
+      }
+
+      .log-row {
+        grid-template-columns: 60px 76px 1fr;
+        padding: 13px 14px;
+      }
+
+      .hide-mobile {
         display: none;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-backdrop,
+      .loading-overlay {
+        align-items: flex-end;
+        padding: 12px;
+      }
+
+      .modal {
+        border-radius: 24px;
+        max-height: 88vh;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-
+  <div id="loginShell" class="login-shell">
     <section id="loginBox" class="card login-card">
+      <div class="brand-mark">12</div>
       <div class="login-title">2학년 12반 출석</div>
       <div class="login-sub">
         Google 계정 또는 관리자 계정으로 로그인하세요.
@@ -480,74 +729,205 @@
       <label for="adminPw">관리자 비밀번호</label>
       <input id="adminPw" type="password" placeholder="비밀번호" autocomplete="current-password" />
 
-      <button id="adminLoginBtn" class="btn-primary" onclick="adminLogin()">로그인</button>
+      <button id="adminLoginBtn" class="btn btn-primary" onclick="adminLogin()">로그인</button>
     </section>
+  </div>
 
-    <section id="dashboard" class="dashboard">
-      <div class="topbar">
-        <div class="title-row">
-          <h1>출석 대시보드</h1>
-          <span id="todayPill" class="date-pill">----</span>
+  <main id="dashboard" class="dashboard">
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="title-wrap">
+            <div class="mini-mark">12</div>
+            <div>
+              <h1>출석 대시보드</h1>
+              <div id="todayPill" class="top-sub">----</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <span class="pill">MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span></span>
+            <span class="pill">ESP32 <span id="espBadge" class="badge offline">OFFLINE</span></span>
+            <button class="btn btn-soft" onclick="loadTodayLogs()">새로고침</button>
+            <button class="btn btn-soft" onclick="openSettingsGate()">설정</button>
+            <button class="btn btn-danger" onclick="logout()">로그아웃</button>
+          </div>
         </div>
+      </header>
 
-        <div class="status-row">
-          <span class="status-item">
-            MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span>
-          </span>
-          <span class="status-item">
-            ESP32 <span id="espBadge" class="badge offline">OFFLINE</span>
-          </span>
-          <button class="btn-ghost btn-small" onclick="loadTodayLogs()">새로고침</button>
-          <button class="btn-ghost btn-small" onclick="logout()">로그아웃</button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <div class="summary-label">전체</div>
+      <section class="grid summary-grid">
+        <div class="card summary-card">
+          <div class="summary-label">전체 학생</div>
           <div id="sumTotal" class="summary-value">0</div>
         </div>
-        <div class="summary-card">
+        <div class="card summary-card">
           <div class="summary-label">출석</div>
-          <div id="sumPresent" class="summary-value" style="color:#16a34a;">0</div>
+          <div id="sumPresent" class="summary-value" style="color:var(--green);">0</div>
         </div>
-        <div class="summary-card">
+        <div class="card summary-card">
           <div class="summary-label">지각</div>
-          <div id="sumLate" class="summary-value" style="color:#ea580c;">0</div>
+          <div id="sumLate" class="summary-value" style="color:var(--orange);">0</div>
         </div>
-        <div class="summary-card">
-          <div class="summary-label">중복/기타</div>
-          <div id="sumOther" class="summary-value" style="color:#64748b;">0</div>
+        <div class="card summary-card">
+          <div class="summary-label">미출석</div>
+          <div id="sumNotYet" class="summary-value" style="color:var(--gray);">0</div>
         </div>
-      </div>
+        <div class="card summary-card">
+          <div class="summary-label">결석</div>
+          <div id="sumAbsent" class="summary-value" style="color:var(--red);">0</div>
+        </div>
+      </section>
 
-      <div class="card">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">오늘 출석 로그</div>
-            <div id="loginInfo" class="muted" style="font-size:13px;margin-top:4px;">로그인 정보</div>
+      <section class="grid content-grid">
+        <div class="card panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">오늘 출석 현황</div>
+              <div id="loginInfo" class="panel-sub">로그인 정보</div>
+            </div>
+            <div id="lastUpdated" class="panel-sub">-</div>
           </div>
-          <div id="lastUpdated" class="muted" style="font-size:13px;">-</div>
-        </div>
 
-        <div class="panel-body">
           <div class="log-list">
             <div class="log-row log-header">
               <div>시간</div>
               <div>상태</div>
               <div>이름</div>
               <div class="hide-mobile">지문ID</div>
-              <div class="hide-mobile">메시지</div>
             </div>
             <div id="logList"></div>
           </div>
         </div>
+
+        <aside class="card device-card">
+          <div class="panel-title">장치 상태</div>
+          <div class="panel-sub">ESP32 heartbeat 기준</div>
+
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Wi-Fi</span>
+              <span id="deviceWifi" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">IP</span>
+              <span id="deviceIp" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">RSSI</span>
+              <span id="deviceRssi" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">큐</span>
+              <span id="deviceQueue" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">마지막 신호</span>
+              <span id="deviceSeen" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">테마</span>
+              <span id="themeLabel" class="info-value">시스템</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <div id="reauthModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">관리자 재인증</div>
+        <button class="btn btn-soft" onclick="closeReauthModal()">닫기</button>
       </div>
 
-      <div class="footer-note">
-        Google 로그인 세션은 Apps Script Cache 기준 약 6시간 유지됩니다.
+      <div class="modal-body">
+        <p class="muted" style="margin-top:0;font-weight:750;">
+          설정 변경 전 관리자 권한을 다시 확인합니다.
+        </p>
+
+        <button id="googleReauthBtn" class="btn btn-soft" style="width:100%;margin-bottom:14px;" onclick="reauthGoogleSession()">
+          Google 로그인 세션으로 재인증
+        </button>
+
+        <label for="reauthAdminId">관리자 ID</label>
+        <input id="reauthAdminId" type="text" placeholder="관리자 ID" autocomplete="username" />
+
+        <label for="reauthAdminPw">관리자 비밀번호</label>
+        <input id="reauthAdminPw" type="password" placeholder="비밀번호" autocomplete="current-password" />
+
+        <button id="reauthAdminBtn" class="btn btn-primary" onclick="reauthAdminAccount()">관리자 계정으로 재인증</button>
       </div>
-    </section>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">사이트 설정</div>
+        <button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="full">
+            <label for="themeSelect">화면 모드</label>
+            <select id="themeSelect">
+              <option value="system">시스템 설정 따름</option>
+              <option value="light">라이트 모드</option>
+              <option value="dark">다크 모드</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <label for="setMqttHost">MQTT Host</label>
+            <input id="setMqttHost" type="text" placeholder="HiveMQ Host" />
+          </div>
+
+          <div>
+            <label for="setMqttPort">WebSocket TLS Port</label>
+            <input id="setMqttPort" type="number" placeholder="8884" />
+          </div>
+
+          <div>
+            <label for="setEspOfflineSec">ESP 오프라인 기준 초</label>
+            <input id="setEspOfflineSec" type="number" placeholder="25" />
+          </div>
+
+          <div>
+            <label for="setMqttUser">MQTT User</label>
+            <input id="setMqttUser" type="text" placeholder="MQTT User" />
+          </div>
+
+          <div>
+            <label for="setMqttPass">MQTT Password</label>
+            <input id="setMqttPass" type="password" placeholder="MQTT Password" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicStatus">Status Topic</label>
+            <input id="setTopicStatus" type="text" placeholder="attendance/2-12/status" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicEvent">Event Topic</label>
+            <input id="setTopicEvent" type="text" placeholder="attendance/2-12/event" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicHeartbeat">Heartbeat Topic</label>
+            <input id="setTopicHeartbeat" type="text" placeholder="attendance/2-12/heartbeat" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSettings()">설정 저장</button>
+
+        <p class="muted" style="font-size:12px;line-height:1.55;margin-bottom:0;">
+          ESP Wi-Fi 이름, IP, RSSI는 ESP32가 MQTT heartbeat로 보내는 값을 표시합니다.
+          실제 ESP32 Wi-Fi 목록 변경은 ESP32 펌웨어 수정이 별도로 필요합니다.
+        </p>
+      </div>
+    </div>
   </div>
 
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
@@ -567,32 +947,38 @@
     const GOOGLE_CLIENT_ID =
       "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
 
-    const MQTT_HOST = "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud";
-    const MQTT_WS_PORT = 8884;
-    const MQTT_USER = "jiukeum";
+    const DEFAULT_SETTINGS = {
+      theme: "system",
+      mqttHost: "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",
+      mqttPort: "8884",
+      mqttUser: "jiukeum",
+      mqttPass: "Ojh1532591!",
+      topicStatus: "attendance/2-12/status",
+      topicEvent: "attendance/2-12/event",
+      topicHeartbeat: "attendance/2-12/heartbeat",
+      espOfflineSec: "25"
+    };
 
-    const MQTT_PASS = "Ojh1532591!";
-
-    const TOPIC_STATUS = "attendance/2-12/status";
-    const TOPIC_EVENT = "attendance/2-12/event";
-    const TOPIC_HEARTBEAT = "attendance/2-12/heartbeat";
-
-    const ESP_OFFLINE_AFTER_MS = 25000;
-
+    let appSettings = loadLocalSettings();
     let mqttClient = null;
     let lastEspSeenAt = 0;
     let espWatchTimer = null;
     let loginLoadingType = "";
+    let settingsUnlocked = false;
 
     document.addEventListener("DOMContentLoaded", function () {
+      applyTheme(appSettings.theme || "system");
       setTodayPill();
       initGoogleButton();
       restoreSession();
-      connectMqtt();
       startEspWatchdog();
 
       document.getElementById("adminPw").addEventListener("keydown", function (e) {
         if (e.key === "Enter") adminLogin();
+      });
+
+      document.getElementById("reauthAdminPw").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") reauthAdminAccount();
       });
     });
 
@@ -601,7 +987,7 @@
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, "0");
       const dd = String(now.getDate()).padStart(2, "0");
-      document.getElementById("todayPill").textContent = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("todayPill").textContent = `${yyyy}-${mm}-${dd} · 결석 기준 16:00`;
     }
 
     function initGoogleButton() {
@@ -633,19 +1019,18 @@
 
     function handleGoogleCredential(response) {
       if (!response || !response.credential) {
-        stopLoginLoading();
+        stopLoading();
         toast("Google 로그인 토큰을 받지 못했습니다.");
         return;
       }
 
-      if (loginLoadingType) {
-        return;
-      }
+      if (loginLoadingType) return;
 
       const idToken = response.credential;
       const googleEmail = getEmailFromGoogleCredential(idToken) || "Google 계정";
 
-      startLoginLoading("google", googleEmail);
+      startLoading("Google 계정 로그인 중입니다.", googleEmail + "로 로그인 중입니다.");
+      loginLoadingType = "google";
 
       const params = new URLSearchParams();
       params.set("action", "googleLoginJsonp");
@@ -657,7 +1042,7 @@
       params.set("userAgent", navigator.userAgent || "");
 
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        stopLoginLoading();
+        stopLoading();
 
         if (!res || !res.ok) {
           toast((res && res.message) ? res.message : "Google 로그인 실패");
@@ -670,9 +1055,10 @@
         sessionStorage.setItem("loginName", res.name || "");
         sessionStorage.setItem("loginRole", res.role || "GOOGLE");
 
-        toast("Google 로그인 성공");
         showDashboard();
+        loadRemoteSettingsThenConnect();
         loadTodayLogs();
+        toast("Google 로그인 성공");
       });
     }
 
@@ -682,10 +1068,7 @@
         if (parts.length < 2) return "";
 
         let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-
-        while (payload.length % 4) {
-          payload += "=";
-        }
+        while (payload.length % 4) payload += "=";
 
         const jsonText = decodeURIComponent(
           Array.prototype.map.call(atob(payload), function (c) {
@@ -695,16 +1078,13 @@
 
         const data = JSON.parse(jsonText);
         return String(data.email || "").trim();
-
       } catch (err) {
         return "";
       }
     }
 
     function adminLogin() {
-      if (loginLoadingType) {
-        return;
-      }
+      if (loginLoadingType) return;
 
       const adminId = document.getElementById("adminId").value.trim();
       const adminPw = document.getElementById("adminPw").value.trim();
@@ -714,7 +1094,9 @@
         return;
       }
 
-      startLoginLoading("admin", adminId);
+      startLoading("관리자 계정 로그인 중입니다.", adminId + "으로 로그인 중...");
+      loginLoadingType = "admin";
+      setAdminLoginDisabled(true);
 
       const params = new URLSearchParams();
       params.set("action", "dashboardLoginJsonp");
@@ -727,7 +1109,8 @@
       params.set("userAgent", navigator.userAgent || "");
 
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        stopLoginLoading();
+        stopLoading();
+        setAdminLoginDisabled(false);
 
         if (!res || !res.ok) {
           toast((res && res.message) ? res.message : "관리자 로그인 실패");
@@ -739,55 +1122,17 @@
         sessionStorage.setItem("adminPw", adminPw);
         sessionStorage.setItem("loginRole", res.role || "ADMIN");
 
-        toast("관리자 로그인 성공");
         showDashboard();
+        loadRemoteSettingsThenConnect();
         loadTodayLogs();
+        toast("관리자 로그인 성공");
       });
     }
 
-    function startLoginLoading(type, accountText) {
-      loginLoadingType = type;
-
-      const overlay = document.getElementById("loadingOverlay");
-      const title = document.getElementById("loadingTitle");
-      const sub = document.getElementById("loadingSub");
-
-      if (type === "google") {
-        title.textContent = "Google 계정 로그인 중입니다.";
-        sub.textContent = accountText + "로 로그인 중입니다.";
-      } else {
-        title.textContent = "관리자 계정 로그인 중입니다.";
-        sub.textContent = accountText + "으로 로그인 중...";
-      }
-
-      setAdminLoginDisabled(true);
-
-      if (overlay) {
-        overlay.classList.add("show");
-        overlay.setAttribute("aria-hidden", "false");
-      }
-    }
-
-    function stopLoginLoading() {
-      const overlay = document.getElementById("loadingOverlay");
-
-      if (overlay) {
-        overlay.classList.remove("show");
-        overlay.setAttribute("aria-hidden", "true");
-      }
-
-      setAdminLoginDisabled(false);
-      loginLoadingType = "";
-    }
-
     function setAdminLoginDisabled(disabled) {
-      const adminId = document.getElementById("adminId");
-      const adminPw = document.getElementById("adminPw");
-      const adminLoginBtn = document.getElementById("adminLoginBtn");
-
-      if (adminId) adminId.disabled = disabled;
-      if (adminPw) adminPw.disabled = disabled;
-      if (adminLoginBtn) adminLoginBtn.disabled = disabled;
+      document.getElementById("adminId").disabled = disabled;
+      document.getElementById("adminPw").disabled = disabled;
+      document.getElementById("adminLoginBtn").disabled = disabled;
     }
 
     function restoreSession() {
@@ -795,32 +1140,20 @@
 
       if (loginType === "google" && sessionStorage.getItem("sessionToken")) {
         showDashboard();
+        loadRemoteSettingsThenConnect();
         loadTodayLogs();
         return;
       }
 
       if (loginType === "admin" && sessionStorage.getItem("adminId") && sessionStorage.getItem("adminPw")) {
         showDashboard();
+        loadRemoteSettingsThenConnect();
         loadTodayLogs();
       }
     }
 
-    function logout() {
-      sessionStorage.clear();
-      stopLoginLoading();
-
-      if (window.google && google.accounts && google.accounts.id) {
-        google.accounts.id.disableAutoSelect();
-      }
-
-      document.getElementById("dashboard").style.display = "none";
-      document.getElementById("loginBox").style.display = "block";
-
-      toast("로그아웃 완료");
-    }
-
     function showDashboard() {
-      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("loginShell").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
 
       const loginType = sessionStorage.getItem("loginType") || "";
@@ -829,15 +1162,28 @@
       if (loginType === "google") {
         const email = sessionStorage.getItem("loginEmail") || "";
         const name = sessionStorage.getItem("loginName") || "";
-
         document.getElementById("loginInfo").textContent =
           `Google 로그인: ${name || email} / ${role}`;
       } else {
         const adminId = sessionStorage.getItem("adminId") || "";
-
         document.getElementById("loginInfo").textContent =
           `관리자 로그인: ${adminId} / ${role}`;
       }
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      settingsUnlocked = false;
+      disconnectMqtt();
+      stopLoading();
+
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("loginShell").style.display = "grid";
+      toast("로그아웃 완료");
     }
 
     function loadTodayLogs() {
@@ -852,7 +1198,6 @@
           if (String((res && res.message) || "").includes("세션")) {
             logout();
           }
-
           return;
         }
 
@@ -876,18 +1221,14 @@
       const summary = res.summary || {};
       const logs = res.logs || [];
 
-      document.getElementById("todayPill").textContent = res.date || "";
+      document.getElementById("todayPill").textContent =
+        `${res.date || ""} · 결석 기준 ${res.absentCutoffTime || "16:00"}`;
+
       document.getElementById("sumTotal").textContent = summary.total || 0;
       document.getElementById("sumPresent").textContent = summary.present || 0;
       document.getElementById("sumLate").textContent = summary.late || 0;
-
-      const other =
-        Number(summary.duplicate || 0) +
-        Number(summary.unknown || 0) +
-        Number(summary.inactive || 0) +
-        Number(summary.error || 0);
-
-      document.getElementById("sumOther").textContent = other;
+      document.getElementById("sumNotYet").textContent = summary.notYet || 0;
+      document.getElementById("sumAbsent").textContent = summary.absent || 0;
 
       const list = document.getElementById("logList");
 
@@ -895,9 +1236,8 @@
         list.innerHTML = `
           <div class="log-row">
             <div class="muted">-</div>
-            <div><span class="status-chip chip-neutral">없음</span></div>
-            <div class="muted">오늘 로그가 없습니다.</div>
-            <div class="hide-mobile muted">-</div>
+            <div><span class="status-chip chip-notyet">없음</span></div>
+            <div class="muted">학생 명단 또는 로그가 없습니다.</div>
             <div class="hide-mobile muted">-</div>
           </div>
         `;
@@ -915,14 +1255,13 @@
 
       return `
         <div class="log-row">
-          <div>${escapeHtml(log.time || "")}</div>
+          <div>${escapeHtml(log.time || "-")}</div>
           <div><span class="status-chip ${chipClass}">${escapeHtml(status)}</span></div>
           <div>
             <strong>${escapeHtml(log.name || "-")}</strong>
-            <div class="muted" style="font-size:12px;">${escapeHtml(log.date || "")}</div>
+            <div class="muted" style="font-size:12px;margin-top:2px;">${escapeHtml(log.message || "")}</div>
           </div>
           <div class="hide-mobile">${escapeHtml(log.fingerId || "")}</div>
-          <div class="hide-mobile muted">${escapeHtml(log.message || "")}</div>
         </div>
       `;
     }
@@ -930,10 +1269,182 @@
     function getStatusChipClass(status) {
       if (status === "출석") return "chip-present";
       if (status === "지각") return "chip-late";
+      if (status === "미출석") return "chip-notyet";
+      if (status === "결석") return "chip-absent";
       if (status === "중복") return "chip-dup";
       if (status === "미등록" || status === "비활성" || status === "오류") return "chip-bad";
+      return "chip-notyet";
+    }
 
-      return "chip-neutral";
+    function openSettingsGate() {
+      settingsUnlocked = false;
+      document.getElementById("reauthModal").classList.add("show");
+      document.getElementById("reauthModal").setAttribute("aria-hidden", "false");
+
+      const loginType = sessionStorage.getItem("loginType") || "";
+      document.getElementById("googleReauthBtn").style.display =
+        loginType === "google" ? "inline-flex" : "none";
+    }
+
+    function closeReauthModal() {
+      document.getElementById("reauthModal").classList.remove("show");
+      document.getElementById("reauthModal").setAttribute("aria-hidden", "true");
+    }
+
+    function reauthGoogleSession() {
+      const token = sessionStorage.getItem("sessionToken") || "";
+      if (!token) {
+        toast("Google 세션이 없습니다. 다시 로그인하세요.");
+        return;
+      }
+
+      startLoading("관리자 인증 중입니다", "");
+      const params = new URLSearchParams();
+      params.set("action", "reauthJsonp");
+      params.set("sessionToken", token);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "재인증 실패");
+          return;
+        }
+
+        settingsUnlocked = true;
+        closeReauthModal();
+        openSettingsModal();
+      });
+    }
+
+    function reauthAdminAccount() {
+      const adminId = document.getElementById("reauthAdminId").value.trim();
+      const adminPw = document.getElementById("reauthAdminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        toast("관리자 ID/PW를 입력하세요.");
+        return;
+      }
+
+      startLoading("관리자 인증 중입니다", "");
+
+      const params = new URLSearchParams();
+      params.set("action", "reauthJsonp");
+      params.set("adminId", adminId);
+      params.set("adminPw", adminPw);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "재인증 실패");
+          return;
+        }
+
+        settingsUnlocked = true;
+        closeReauthModal();
+        openSettingsModal();
+      });
+    }
+
+    function openSettingsModal() {
+      if (!settingsUnlocked) {
+        openSettingsGate();
+        return;
+      }
+
+      fillSettingsForm();
+      document.getElementById("settingsModal").classList.add("show");
+      document.getElementById("settingsModal").setAttribute("aria-hidden", "false");
+    }
+
+    function closeSettingsModal() {
+      document.getElementById("settingsModal").classList.remove("show");
+      document.getElementById("settingsModal").setAttribute("aria-hidden", "true");
+    }
+
+    function fillSettingsForm() {
+      document.getElementById("themeSelect").value = appSettings.theme || "system";
+      document.getElementById("setMqttHost").value = appSettings.mqttHost || "";
+      document.getElementById("setMqttPort").value = appSettings.mqttPort || "8884";
+      document.getElementById("setMqttUser").value = appSettings.mqttUser || "";
+      document.getElementById("setMqttPass").value = appSettings.mqttPass || "";
+      document.getElementById("setTopicStatus").value = appSettings.topicStatus || "";
+      document.getElementById("setTopicEvent").value = appSettings.topicEvent || "";
+      document.getElementById("setTopicHeartbeat").value = appSettings.topicHeartbeat || "";
+      document.getElementById("setEspOfflineSec").value = appSettings.espOfflineSec || "25";
+    }
+
+    function saveSettings() {
+      appSettings = {
+        theme: document.getElementById("themeSelect").value || "system",
+        mqttHost: document.getElementById("setMqttHost").value.trim(),
+        mqttPort: document.getElementById("setMqttPort").value.trim() || "8884",
+        mqttUser: document.getElementById("setMqttUser").value.trim(),
+        mqttPass: document.getElementById("setMqttPass").value.trim(),
+        topicStatus: document.getElementById("setTopicStatus").value.trim(),
+        topicEvent: document.getElementById("setTopicEvent").value.trim(),
+        topicHeartbeat: document.getElementById("setTopicHeartbeat").value.trim(),
+        espOfflineSec: document.getElementById("setEspOfflineSec").value.trim() || "25"
+      };
+
+      localStorage.setItem("attendanceDashboardSettings", JSON.stringify(appSettings));
+      applyTheme(appSettings.theme);
+      saveRemoteSettings();
+      reconnectMqtt();
+      closeSettingsModal();
+      toast("설정 저장 완료");
+    }
+
+    function saveRemoteSettings() {
+      const params = new URLSearchParams();
+      params.set("action", "saveDashboardSettingsJsonp");
+      addAuthParams(params);
+
+      Object.keys(appSettings).forEach(function (key) {
+        params.set(key, appSettings[key]);
+      });
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function () {});
+    }
+
+    function loadRemoteSettingsThenConnect() {
+      const params = new URLSearchParams();
+      params.set("action", "getDashboardSettingsJsonp");
+      addAuthParams(params);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        if (res && res.ok && res.settings) {
+          appSettings = Object.assign({}, appSettings, res.settings);
+          localStorage.setItem("attendanceDashboardSettings", JSON.stringify(appSettings));
+          applyTheme(appSettings.theme || "system");
+        }
+
+        connectMqtt();
+      });
+    }
+
+    function loadLocalSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("attendanceDashboardSettings") || "{}");
+        return Object.assign({}, DEFAULT_SETTINGS, saved);
+      } catch (err) {
+        return Object.assign({}, DEFAULT_SETTINGS);
+      }
+    }
+
+    function applyTheme(theme) {
+      const value = theme || "system";
+      document.documentElement.setAttribute("data-theme", value);
+      localStorage.setItem("attendanceTheme", value);
+
+      const label =
+        value === "dark" ? "다크" :
+        value === "light" ? "라이트" :
+        "시스템";
+
+      const themeLabel = document.getElementById("themeLabel");
+      if (themeLabel) themeLabel.textContent = label;
     }
 
     function connectMqtt() {
@@ -942,24 +1453,21 @@
         return;
       }
 
-      if (!MQTT_PASS || MQTT_PASS === "여기에_MQTT_비밀번호") {
+      if (!appSettings.mqttHost || !appSettings.mqttUser || !appSettings.mqttPass) {
         setMqttBadge(false);
-        console.warn("MQTT_PASS가 비어 있습니다.");
+        toast("MQTT 설정이 필요합니다.");
         return;
       }
 
-      const url = `wss://${MQTT_HOST}:${MQTT_WS_PORT}/mqtt`;
+      disconnectMqtt();
 
-      const clientId =
-        "dashboard-2-12-" +
-        Math.random().toString(16).slice(2) +
-        "-" +
-        Date.now();
+      const url = `wss://${appSettings.mqttHost}:${appSettings.mqttPort}/mqtt`;
+      const clientId = "dashboard-2-12-" + Math.random().toString(16).slice(2) + "-" + Date.now();
 
       mqttClient = mqtt.connect(url, {
-        clientId: clientId,
-        username: MQTT_USER,
-        password: MQTT_PASS,
+        clientId,
+        username: appSettings.mqttUser,
+        password: appSettings.mqttPass,
         clean: true,
         connectTimeout: 8000,
         reconnectPeriod: 3000,
@@ -968,11 +1476,9 @@
 
       mqttClient.on("connect", function () {
         setMqttBadge(true);
-        toast("MQTT 연결됨");
-
-        mqttClient.subscribe(TOPIC_STATUS);
-        mqttClient.subscribe(TOPIC_HEARTBEAT);
-        mqttClient.subscribe(TOPIC_EVENT);
+        mqttClient.subscribe(appSettings.topicStatus);
+        mqttClient.subscribe(appSettings.topicHeartbeat);
+        mqttClient.subscribe(appSettings.topicEvent);
       });
 
       mqttClient.on("reconnect", function () {
@@ -989,62 +1495,78 @@
       });
 
       mqttClient.on("message", function (topic, message) {
-        const text = message.toString();
         let data = {};
-
         try {
-          data = JSON.parse(text);
+          data = JSON.parse(message.toString());
         } catch (err) {
-          data = { raw: text };
+          data = { raw: message.toString() };
         }
 
         handleMqttMessage(topic, data);
       });
     }
 
-    function handleMqttMessage(topic, data) {
-      console.log("MQTT", topic, data);
+    function disconnectMqtt() {
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (err) {}
+      }
+      mqttClient = null;
+      setMqttBadge(false);
+    }
 
-      if (topic === TOPIC_STATUS) {
+    function reconnectMqtt() {
+      disconnectMqtt();
+      setTimeout(connectMqtt, 300);
+    }
+
+    function handleMqttMessage(topic, data) {
+      if (topic === appSettings.topicStatus) {
         if (data.status === "online") {
-          markEspOnline();
+          markEspOnline(data);
         } else if (data.status === "offline") {
           setEspBadge(false);
         }
       }
 
-      if (topic === TOPIC_HEARTBEAT) {
-        markEspOnline();
+      if (topic === appSettings.topicHeartbeat) {
+        markEspOnline(data);
       }
 
-      if (topic === TOPIC_EVENT) {
-        markEspOnline();
+      if (topic === appSettings.topicEvent) {
+        markEspOnline(data);
 
-        if (
-          data.type === "attendance" ||
-          data.type === "queued_sent" ||
-          data.type === "queued"
-        ) {
-          setTimeout(loadTodayLogs, 700);
+        if (data.type === "attendance" || data.type === "queued_sent" || data.type === "queued") {
+          setTimeout(loadTodayLogs, 600);
         }
       }
     }
 
-    function markEspOnline() {
+    function markEspOnline(data) {
       lastEspSeenAt = Date.now();
       setEspBadge(true);
+      updateDeviceInfo(data || {});
+    }
+
+    function updateDeviceInfo(data) {
+      document.getElementById("deviceWifi").textContent = data.wifiSsid || "-";
+      document.getElementById("deviceIp").textContent = data.ip || "-";
+      document.getElementById("deviceRssi").textContent =
+        data.wifiRssi == null ? "-" : data.wifiRssi + " dBm";
+      document.getElementById("deviceQueue").textContent =
+        data.queueCount == null ? "-" : data.queueCount;
+      document.getElementById("deviceSeen").textContent =
+        new Date().toLocaleTimeString("ko-KR");
     }
 
     function startEspWatchdog() {
       if (espWatchTimer) clearInterval(espWatchTimer);
 
       espWatchTimer = setInterval(function () {
-        if (!lastEspSeenAt) {
-          setEspBadge(false);
-          return;
-        }
+        const limitMs = Number(appSettings.espOfflineSec || 25) * 1000;
 
-        if (Date.now() - lastEspSeenAt > ESP_OFFLINE_AFTER_MS) {
+        if (!lastEspSeenAt || Date.now() - lastEspSeenAt > limitMs) {
           setEspBadge(false);
         }
       }, 3000);
@@ -1052,7 +1574,6 @@
 
     function setMqttBadge(isOnline) {
       const el = document.getElementById("mqttBadge");
-
       if (!el) return;
 
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
@@ -1061,23 +1582,36 @@
 
     function setEspBadge(isOnline) {
       const el = document.getElementById("espBadge");
-
       if (!el) return;
 
       el.textContent = isOnline ? "ONLINE" : "OFFLINE";
       el.className = "badge " + (isOnline ? "online" : "offline");
     }
 
-    function callJsonp(url, callback) {
-      const callbackName =
-        "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    function startLoading(title, sub) {
+      const overlay = document.getElementById("loadingOverlay");
+      document.getElementById("loadingTitle").textContent = title || "잠시만 기다려주세요";
+      document.getElementById("loadingSub").textContent = sub || "";
+      document.getElementById("loadingSub").style.display = sub ? "block" : "none";
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
+    }
 
+    function stopLoading() {
+      const overlay = document.getElementById("loadingOverlay");
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      document.getElementById("loadingSub").style.display = "block";
+      loginLoadingType = "";
+    }
+
+    function callJsonp(url, callback) {
+      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
       let script = null;
       let finished = false;
 
       const timer = setTimeout(function () {
         if (finished) return;
-
         finished = true;
 
         delete window[callbackName];
@@ -1086,16 +1620,13 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) {
-          stopLoginLoading();
-        }
-
+        stopLoading();
+        setAdminLoginDisabled(false);
         toast("Apps Script 응답 시간 초과");
       }, 15000);
 
       window[callbackName] = function (data) {
         if (finished) return;
-
         finished = true;
         clearTimeout(timer);
 
@@ -1111,13 +1642,11 @@
       };
 
       const sep = url.includes("?") ? "&" : "?";
-
       script = document.createElement("script");
       script.src = url + sep + "callback=" + encodeURIComponent(callbackName);
 
       script.onerror = function () {
         if (finished) return;
-
         finished = true;
         clearTimeout(timer);
 
@@ -1127,10 +1656,8 @@
           script.parentNode.removeChild(script);
         }
 
-        if (loginLoadingType) {
-          stopLoginLoading();
-        }
-
+        stopLoading();
+        setAdminLoginDisabled(false);
         toast("Apps Script 연결 실패");
       };
 
@@ -1139,13 +1666,12 @@
 
     function toast(message) {
       const el = document.getElementById("toast");
-
       el.textContent = message;
       el.classList.add("show");
 
       setTimeout(function () {
         el.classList.remove("show");
-      }, 2200);
+      }, 2300);
     }
 
     function escapeHtml(value) {
