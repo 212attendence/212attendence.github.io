@@ -6,14 +6,13 @@
 
   <title>출석 대시보드</title>
 
-<link rel="manifest" href="../manifest.json" />
-<meta name="theme-color" content="#fafaf8" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="2-12 출석" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<link rel="apple-touch-icon" href="../favicon.png" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#fafaf8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="2-12 출석" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="apple-touch-icon" href="../favicon.png" />
 
-  
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
@@ -93,7 +92,6 @@
     html.theme-animate .modal-head,
     html.theme-animate .loading-panel,
     html.theme-animate input,
-    html.theme-animate select,
     html.theme-animate .btn-soft,
     html.theme-animate .pill,
     html.theme-animate .info-item,
@@ -123,8 +121,7 @@
     }
 
     input,
-    button,
-    select {
+    button {
       font-family: inherit;
     }
 
@@ -134,8 +131,7 @@
     }
 
     button:disabled,
-    input:disabled,
-    select:disabled {
+    input:disabled {
       opacity: 0.55;
       cursor: not-allowed;
     }
@@ -724,6 +720,8 @@
 
             <span class="pill">MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span></span>
             <span class="pill">ESP32 <span id="espBadge" class="badge offline">OFFLINE</span></span>
+
+            <button id="pushBtn" class="btn btn-soft" onclick="enablePushNotifications()">알림 허용</button>
             <button class="btn btn-soft" onclick="loadTodayLogs()">새로고침</button>
             <button class="btn btn-soft" onclick="openSettingsGate()">설정</button>
             <button class="btn btn-danger" onclick="logout()">로그아웃</button>
@@ -929,8 +927,12 @@
     let espWatchTimer = null;
     let settingsUnlocked = false;
 
+    window.APPS_SCRIPT_URL = APPS_SCRIPT_URL;
+
     document.addEventListener("DOMContentLoaded", function () {
       document.documentElement.classList.add("theme-animate");
+
+      restorePersistentAuth();
 
       if (!hasSession()) {
         location.replace("../login/");
@@ -953,6 +955,53 @@
         if (e.key === "Enter") reauthAdminAccount();
       });
     });
+
+    function isMobileOrPwa() {
+      const ua = navigator.userAgent || "";
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+      const isStandalone =
+        window.navigator.standalone === true ||
+        window.matchMedia("(display-mode: standalone)").matches;
+
+      return isMobile || isStandalone;
+    }
+
+    function restorePersistentAuth() {
+      if (!isMobileOrPwa()) return false;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
+
+        if (!saved || !saved.loginType) return false;
+
+        Object.keys(saved).forEach(function (key) {
+          if (saved[key] != null && saved[key] !== "") {
+            sessionStorage.setItem(key, saved[key]);
+          }
+        });
+
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function savePersistentAuth() {
+      if (!isMobileOrPwa()) return;
+
+      const saved = {
+        loginType: sessionStorage.getItem("loginType") || "",
+        sessionToken: sessionStorage.getItem("sessionToken") || "",
+        loginEmail: sessionStorage.getItem("loginEmail") || "",
+        loginName: sessionStorage.getItem("loginName") || "",
+        loginRole: sessionStorage.getItem("loginRole") || "",
+        adminId: sessionStorage.getItem("adminId") || "",
+        adminPw: sessionStorage.getItem("adminPw") || "",
+        theme: sessionStorage.getItem("theme") || ""
+      };
+
+      localStorage.setItem("attendancePersistentAuth", JSON.stringify(saved));
+    }
 
     function hasSession() {
       return !!(
@@ -987,6 +1036,11 @@
 
     function logout() {
       sessionStorage.clear();
+
+      if (isMobileOrPwa()) {
+        localStorage.removeItem("attendancePersistentAuth");
+      }
+
       settingsUnlocked = false;
       disconnectMqtt();
       stopLoading();
@@ -1017,7 +1071,7 @@
 
         if (!res || !res.ok) {
           toast((res && res.message) ? res.message : "대시보드 설정 조회 실패");
-          if (String((res && res.message) || "").includes("세션")) logout();
+          handleAuthFailure(res);
           return;
         }
 
@@ -1025,6 +1079,7 @@
         appSettings.theme = localTheme;
 
         sessionStorage.setItem("theme", appSettings.theme);
+        savePersistentAuth();
 
         applyTheme(appSettings.theme);
         connectMqtt();
@@ -1044,15 +1099,25 @@
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
         if (!res || !res.ok) {
           toast((res && res.message) ? res.message : "오늘 로그 조회 실패");
-
-          if (String((res && res.message) || "").includes("세션")) {
-            logout();
-          }
+          handleAuthFailure(res);
           return;
         }
 
         renderTodayLogs(res);
       });
+    }
+
+    function handleAuthFailure(res) {
+      const msg = String((res && res.message) || "");
+
+      if (
+        msg.includes("세션") ||
+        msg.includes("인증") ||
+        msg.includes("로그인") ||
+        msg.includes("권한")
+      ) {
+        logout();
+      }
     }
 
     function renderTodayLogs(res) {
@@ -1138,6 +1203,7 @@
       const nextTheme = theme === "dark" ? "dark" : "light";
       appSettings.theme = nextTheme;
       sessionStorage.setItem("theme", nextTheme);
+      savePersistentAuth();
 
       requestAnimationFrame(function () {
         applyTheme(nextTheme);
@@ -1535,6 +1601,144 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBN10jMJZ1kB-A6RMt9-HmKWTGjtdfa8iE",
+      authDomain: "attendence-f157b.firebaseapp.com",
+      projectId: "attendence-f157b",
+      storageBucket: "attendence-f157b.firebasestorage.app",
+      messagingSenderId: "382183347016",
+      appId: "1:382183347016:web:ae6aca56ac3a3058f6597d",
+      measurementId: "G-JPCLPN4HQW"
+    };
+
+    const VAPID_PUBLIC_KEY =
+      "BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const messaging = getMessaging(firebaseApp);
+
+    window.enablePushNotifications = async function () {
+      try {
+        const isStandalone =
+          window.navigator.standalone === true ||
+          window.matchMedia("(display-mode: standalone)").matches;
+
+        if (!isStandalone) {
+          toast("아이폰에서는 Safari 공유 버튼 → 홈 화면에 추가 후 앱에서 알림 허용하세요.");
+          return;
+        }
+
+        if (!("Notification" in window)) {
+          toast("이 브라우저는 알림을 지원하지 않습니다.");
+          return;
+        }
+
+        if (!("serviceWorker" in navigator)) {
+          toast("Service Worker를 지원하지 않습니다.");
+          return;
+        }
+
+        startLoading("알림 권한 확인 중입니다", "아이폰 알림 권한을 요청합니다.");
+
+        const permission = await Notification.requestPermission();
+
+        if (permission !== "granted") {
+          stopLoading();
+          toast("알림 권한이 허용되지 않았습니다.");
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.register("../firebase-messaging-sw.js", {
+          scope: "../"
+        });
+
+        const token = await getToken(messaging, {
+          vapidKey: VAPID_PUBLIC_KEY,
+          serviceWorkerRegistration: registration
+        });
+
+        if (!token) {
+          stopLoading();
+          toast("푸시 토큰을 받지 못했습니다.");
+          return;
+        }
+
+        await savePushTokenToAppsScript(token);
+
+        stopLoading();
+        updatePushButton(true);
+        toast("아이폰 알림 등록 완료");
+      } catch (err) {
+        stopLoading();
+        console.error(err);
+        toast("알림 등록 실패: " + (err && err.message ? err.message : err));
+      }
+    };
+
+    async function savePushTokenToAppsScript(token) {
+      return new Promise(function (resolve, reject) {
+        const params = new URLSearchParams();
+        params.set("action", "savePushTokenJsonp");
+
+        if (typeof addAuthParams === "function") {
+          addAuthParams(params);
+        }
+
+        params.set("token", token);
+        params.set("platform", "ios-pwa");
+        params.set("userAgent", navigator.userAgent || "");
+        params.set("createdAt", new Date().toISOString());
+
+        if (typeof callJsonp !== "function") {
+          reject(new Error("callJsonp 함수가 없습니다."));
+          return;
+        }
+
+        callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+          if (!res || !res.ok) {
+            reject(new Error((res && res.message) ? res.message : "토큰 저장 실패"));
+            return;
+          }
+
+          resolve(res);
+        });
+      });
+    }
+
+    function updatePushButton(enabled) {
+      const btn = document.getElementById("pushBtn");
+      if (!btn) return;
+
+      if (enabled) {
+        btn.textContent = "알림 ON";
+        btn.disabled = false;
+      } else {
+        btn.textContent = "알림 허용";
+        btn.disabled = false;
+      }
+    }
+
+    onMessage(messaging, function (payload) {
+      console.log("foreground push", payload);
+
+      const title =
+        payload.data && payload.data.title
+          ? payload.data.title
+          : "2-12 출석 알림";
+
+      const body =
+        payload.data && payload.data.body
+          ? payload.data.body
+          : "출석 상태가 업데이트되었습니다.";
+
+      toast(title + " · " + body);
+    });
   </script>
 </body>
 </html>
