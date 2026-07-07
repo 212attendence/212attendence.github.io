@@ -6,6 +6,12 @@
 
   <title>대시보드 로그인</title>
 
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#fafaf8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="2-12 출석" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
@@ -146,6 +152,18 @@
       font-size: 13px;
     }
 
+    .auto-note {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-radius: 14px;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 750;
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -176,6 +194,7 @@
       display: none;
       place-items: center;
       padding: 20px;
+      z-index: 20;
     }
 
     .loading.show {
@@ -245,6 +264,10 @@
 
     <button id="adminLoginBtn" class="btn" onclick="adminLogin()">로그인</button>
     <button class="back" onclick="location.href='../'">처음 화면으로</button>
+
+    <div id="autoNote" class="auto-note">
+      아이폰 홈 화면 앱 또는 모바일에서는 로그인 상태가 계속 유지됩니다.
+    </div>
   </main>
 
   <div id="loading" class="loading">
@@ -267,6 +290,8 @@
     let loginLoading = false;
 
     document.addEventListener("DOMContentLoaded", function () {
+      restorePersistentAuth();
+
       if (hasSession()) {
         location.replace("../dashboard/");
         return;
@@ -277,7 +302,59 @@
       document.getElementById("adminPw").addEventListener("keydown", function (e) {
         if (e.key === "Enter") adminLogin();
       });
+
+      if (!isMobileOrPwa()) {
+        document.getElementById("autoNote").textContent =
+          "PC에서는 자동 로그인을 저장하지 않습니다. 모바일/아이폰 홈 화면 앱에서만 로그인 상태가 유지됩니다.";
+      }
     });
+
+    function isMobileOrPwa() {
+      const ua = navigator.userAgent || "";
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+      const isStandalone =
+        window.navigator.standalone === true ||
+        window.matchMedia("(display-mode: standalone)").matches;
+
+      return isMobile || isStandalone;
+    }
+
+    function savePersistentAuth() {
+      if (!isMobileOrPwa()) return;
+
+      const saved = {
+        loginType: sessionStorage.getItem("loginType") || "",
+        sessionToken: sessionStorage.getItem("sessionToken") || "",
+        loginEmail: sessionStorage.getItem("loginEmail") || "",
+        loginName: sessionStorage.getItem("loginName") || "",
+        loginRole: sessionStorage.getItem("loginRole") || "",
+        adminId: sessionStorage.getItem("adminId") || "",
+        adminPw: sessionStorage.getItem("adminPw") || "",
+        theme: sessionStorage.getItem("theme") || ""
+      };
+
+      localStorage.setItem("attendancePersistentAuth", JSON.stringify(saved));
+    }
+
+    function restorePersistentAuth() {
+      if (!isMobileOrPwa()) return false;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
+
+        if (!saved || !saved.loginType) return false;
+
+        Object.keys(saved).forEach(function (key) {
+          if (saved[key] != null && saved[key] !== "") {
+            sessionStorage.setItem(key, saved[key]);
+          }
+        });
+
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
 
     function hasSession() {
       return !!(
@@ -351,6 +428,8 @@
         sessionStorage.setItem("loginName", res.name || "");
         sessionStorage.setItem("loginRole", res.role || "GOOGLE");
 
+        savePersistentAuth();
+
         location.replace("../dashboard/");
       });
     }
@@ -400,6 +479,8 @@
         }
 
         sessionStorage.setItem("loginRole", res.role || "ADMIN");
+
+        savePersistentAuth();
 
         location.replace("../dashboard/");
       });
