@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="system">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -17,7 +17,7 @@
 
   <style>
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
       --bg: #f5f7fb;
       --bg-soft: #eef2ff;
       --card: rgba(255, 255, 255, 0.88);
@@ -33,6 +33,9 @@
       --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
       --overlay: rgba(15, 23, 42, 0.50);
       --input: #ffffff;
+      --switch-bg: rgba(148, 163, 184, 0.16);
+      --switch-thumb: #2563eb;
+      --switch-shadow: rgba(37, 99, 235, 0.28);
     }
 
     html[data-theme="dark"] {
@@ -52,32 +55,46 @@
       --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
       --overlay: rgba(0, 0, 0, 0.58);
       --input: #0f172a;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] {
-        color-scheme: dark;
-        --bg: #0b1120;
-        --bg-soft: #111827;
-        --card: rgba(17, 24, 39, 0.82);
-        --card-solid: #111827;
-        --text: #f9fafb;
-        --muted: #9ca3af;
-        --line: rgba(148, 163, 184, 0.22);
-        --blue: #60a5fa;
-        --green: #4ade80;
-        --orange: #fb923c;
-        --red: #f87171;
-        --gray: #94a3b8;
-        --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
-        --overlay: rgba(0, 0, 0, 0.58);
-        --input: #0f172a;
-      }
+      --switch-bg: rgba(148, 163, 184, 0.20);
+      --switch-thumb: #60a5fa;
+      --switch-shadow: rgba(96, 165, 250, 0.32);
     }
 
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    html.theme-animate,
+    html.theme-animate body,
+    html.theme-animate .card,
+    html.theme-animate .login-card,
+    html.theme-animate .summary-card,
+    html.theme-animate .device-card,
+    html.theme-animate .panel,
+    html.theme-animate .modal,
+    html.theme-animate .modal-head,
+    html.theme-animate .loading-panel,
+    html.theme-animate input,
+    html.theme-animate select,
+    html.theme-animate .btn-soft,
+    html.theme-animate .pill,
+    html.theme-animate .info-item,
+    html.theme-animate .log-row,
+    html.theme-animate .log-header,
+    html.theme-animate .theme-switch,
+    html.theme-animate .theme-switch button,
+    html.theme-animate .theme-thumb,
+    html.theme-animate .topbar,
+    html.theme-animate .toast {
+      transition:
+        background-color 0.75s ease,
+        background 0.75s ease,
+        color 0.75s ease,
+        border-color 0.75s ease,
+        box-shadow 0.75s ease,
+        opacity 0.75s ease,
+        transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     body {
@@ -136,29 +153,52 @@
     }
 
     .theme-switch {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 142px;
+      height: 40px;
       padding: 4px;
       border-radius: 999px;
-      background: rgba(148, 163, 184, 0.12);
+      background: var(--switch-bg);
       border: 1px solid var(--line);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .theme-thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      height: calc(100% - 8px);
+      border-radius: 999px;
+      background: var(--switch-thumb);
+      box-shadow: 0 8px 18px var(--switch-shadow);
+      transform: translateX(0);
+      z-index: 0;
+      will-change: transform;
+    }
+
+    html[data-theme="dark"] .theme-thumb {
+      transform: translateX(100%);
     }
 
     .theme-switch button {
-      min-height: 32px;
-      padding: 7px 10px;
+      position: relative;
+      z-index: 1;
+      min-height: 30px;
+      padding: 0 10px;
       border-radius: 999px;
       background: transparent;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 950;
       white-space: nowrap;
     }
 
     .theme-switch button.active {
-      background: var(--blue);
-      color: white;
+      color: #ffffff;
     }
 
     .login-theme-row {
@@ -273,7 +313,6 @@
       font-weight: 900;
       font-size: 14px;
       min-height: 44px;
-      transition: transform 0.12s ease, opacity 0.12s ease;
     }
 
     .btn:active {
@@ -689,7 +728,6 @@
       font-weight: 850;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.18s ease, transform 0.18s ease;
       max-width: calc(100vw - 32px);
       text-align: center;
     }
@@ -789,8 +827,8 @@
   <div id="loginShell" class="login-shell">
     <section id="loginBox" class="card login-card">
       <div class="login-theme-row">
-        <div class="theme-switch">
-          <button type="button" data-theme-choice="system" onclick="setThemeQuick('system')">시스템</button>
+        <div class="theme-switch" aria-label="화면 모드">
+          <span class="theme-thumb"></span>
           <button type="button" data-theme-choice="light" onclick="setThemeQuick('light')">라이트</button>
           <button type="button" data-theme-choice="dark" onclick="setThemeQuick('dark')">다크</button>
         </div>
@@ -831,8 +869,8 @@
           </div>
 
           <div class="actions">
-            <div class="theme-switch">
-              <button type="button" data-theme-choice="system" onclick="setThemeQuick('system')">시스템</button>
+            <div class="theme-switch" aria-label="화면 모드">
+              <span class="theme-thumb"></span>
               <button type="button" data-theme-choice="light" onclick="setThemeQuick('light')">라이트</button>
               <button type="button" data-theme-choice="dark" onclick="setThemeQuick('dark')">다크</button>
             </div>
@@ -917,7 +955,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">테마</span>
-              <span id="themeLabel" class="info-value">시스템</span>
+              <span id="themeLabel" class="info-value">라이트</span>
             </div>
           </div>
         </aside>
@@ -1030,11 +1068,11 @@
       "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
 
     const DEFAULT_SETTINGS = {
-      theme: "system",
+      theme: "light",
       mqttHost: "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",
       mqttPort: "8884",
       mqttUser: "jiukeum",
-      mqttPass: "Ojh1532591!",
+      mqttPass: "",
       topicStatus: "attendance/2-12/status",
       topicEvent: "attendance/2-12/event",
       topicHeartbeat: "attendance/2-12/heartbeat",
@@ -1045,11 +1083,13 @@
     let mqttClient = null;
     let lastEspSeenAt = 0;
     let espWatchTimer = null;
-    let loginLoadingType = "";
+    let loginLoadingType = "Ojh1532591!";
     let settingsUnlocked = false;
 
     document.addEventListener("DOMContentLoaded", function () {
-      applyTheme(appSettings.theme || "system");
+      document.documentElement.classList.add("theme-animate");
+
+      applyTheme(appSettings.theme || "light");
       setTodayPill();
       initGoogleButton();
       restoreSession();
@@ -1480,7 +1520,7 @@
 
     function saveSettings() {
       appSettings = {
-        theme: appSettings.theme || "system",
+        theme: appSettings.theme || "light",
         mqttHost: document.getElementById("setMqttHost").value.trim(),
         mqttPort: document.getElementById("setMqttPort").value.trim() || "8884",
         mqttUser: document.getElementById("setMqttUser").value.trim(),
@@ -1499,15 +1539,21 @@
     }
 
     function setThemeQuick(theme) {
-      appSettings.theme = theme || "system";
+      const nextTheme = theme === "dark" ? "dark" : "light";
+
+      if (appSettings.theme === nextTheme) {
+        applyTheme(nextTheme);
+        return;
+      }
+
+      appSettings.theme = nextTheme;
       localStorage.setItem("attendanceDashboardSettings", JSON.stringify(appSettings));
-      applyTheme(appSettings.theme);
 
-      const label =
-        appSettings.theme === "dark" ? "다크 모드" :
-        appSettings.theme === "light" ? "라이트 모드" :
-        "시스템 설정";
+      requestAnimationFrame(function () {
+        applyTheme(nextTheme);
+      });
 
+      const label = nextTheme === "dark" ? "다크 모드" : "라이트 모드";
       toast(label + " 적용");
     }
 
@@ -1524,7 +1570,7 @@
     }
 
     function loadRemoteSettingsThenConnect() {
-      const localTheme = appSettings.theme || "system";
+      const localTheme = appSettings.theme === "dark" ? "dark" : "light";
 
       const params = new URLSearchParams();
       params.set("action", "getDashboardSettingsJsonp");
@@ -1533,11 +1579,10 @@
       callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
         if (res && res.ok && res.settings) {
           appSettings = Object.assign({}, appSettings, res.settings);
-
           appSettings.theme = localTheme;
 
           localStorage.setItem("attendanceDashboardSettings", JSON.stringify(appSettings));
-          applyTheme(appSettings.theme || "system");
+          applyTheme(appSettings.theme || "light");
         }
 
         connectMqtt();
@@ -1547,27 +1592,33 @@
     function loadLocalSettings() {
       try {
         const saved = JSON.parse(localStorage.getItem("attendanceDashboardSettings") || "{}");
-        return Object.assign({}, DEFAULT_SETTINGS, saved);
+        const merged = Object.assign({}, DEFAULT_SETTINGS, saved);
+
+        if (merged.theme !== "dark") {
+          merged.theme = "light";
+        }
+
+        return merged;
       } catch (err) {
         return Object.assign({}, DEFAULT_SETTINGS);
       }
     }
 
     function applyTheme(theme) {
-      const value = theme || "system";
+      const value = theme === "dark" ? "dark" : "light";
+
       document.documentElement.setAttribute("data-theme", value);
 
       document.querySelectorAll("[data-theme-choice]").forEach(function (btn) {
         btn.classList.toggle("active", btn.getAttribute("data-theme-choice") === value);
       });
 
-      const label =
-        value === "dark" ? "다크" :
-        value === "light" ? "라이트" :
-        "시스템";
-
+      const label = value === "dark" ? "다크" : "라이트";
       const themeLabel = document.getElementById("themeLabel");
-      if (themeLabel) themeLabel.textContent = label;
+
+      if (themeLabel) {
+        themeLabel.textContent = label;
+      }
     }
 
     function connectMqtt() {
