@@ -18,7 +18,6 @@
   <style>
     :root {
       color-scheme: light dark;
-
       --bg: #f5f7fb;
       --bg-soft: #eef2ff;
       --card: rgba(255, 255, 255, 0.88);
@@ -27,7 +26,6 @@
       --muted: #6b7280;
       --line: rgba(148, 163, 184, 0.28);
       --blue: #2563eb;
-      --blue-soft: #dbeafe;
       --green: #16a34a;
       --orange: #ea580c;
       --red: #dc2626;
@@ -39,7 +37,6 @@
 
     html[data-theme="dark"] {
       color-scheme: dark;
-
       --bg: #0b1120;
       --bg-soft: #111827;
       --card: rgba(17, 24, 39, 0.82);
@@ -48,7 +45,6 @@
       --muted: #9ca3af;
       --line: rgba(148, 163, 184, 0.22);
       --blue: #60a5fa;
-      --blue-soft: rgba(37, 99, 235, 0.20);
       --green: #4ade80;
       --orange: #fb923c;
       --red: #f87171;
@@ -61,7 +57,6 @@
     @media (prefers-color-scheme: dark) {
       html[data-theme="system"] {
         color-scheme: dark;
-
         --bg: #0b1120;
         --bg-soft: #111827;
         --card: rgba(17, 24, 39, 0.82);
@@ -70,7 +65,6 @@
         --muted: #9ca3af;
         --line: rgba(148, 163, 184, 0.22);
         --blue: #60a5fa;
-        --blue-soft: rgba(37, 99, 235, 0.20);
         --green: #4ade80;
         --orange: #fb923c;
         --red: #f87171;
@@ -142,7 +136,7 @@
     }
 
     .brand-mark {
-      width: 50px;
+      width: 64px;
       height: 50px;
       border-radius: 18px;
       background: linear-gradient(135deg, #2563eb, #14b8a6);
@@ -150,7 +144,8 @@
       place-items: center;
       color: white;
       font-weight: 950;
-      font-size: 20px;
+      font-size: 17px;
+      letter-spacing: -0.04em;
       margin-bottom: 16px;
     }
 
@@ -282,7 +277,7 @@
     }
 
     .mini-mark {
-      width: 42px;
+      width: 58px;
       height: 42px;
       border-radius: 16px;
       background: linear-gradient(135deg, #2563eb, #14b8a6);
@@ -290,6 +285,8 @@
       display: grid;
       place-items: center;
       font-weight: 950;
+      font-size: 14px;
+      letter-spacing: -0.04em;
       flex: 0 0 auto;
     }
 
@@ -711,7 +708,7 @@
 <body>
   <div id="loginShell" class="login-shell">
     <section id="loginBox" class="card login-card">
-      <div class="brand-mark">12</div>
+      <div class="brand-mark">2-12</div>
       <div class="login-title">2학년 12반 출석</div>
       <div class="login-sub">
         Google 계정 또는 관리자 계정으로 로그인하세요.
@@ -738,7 +735,7 @@
       <header class="topbar">
         <div class="topbar-inner">
           <div class="title-wrap">
-            <div class="mini-mark">12</div>
+            <div class="mini-mark">2-12</div>
             <div>
               <h1>출석 대시보드</h1>
               <div id="todayPill" class="top-sub">----</div>
@@ -923,8 +920,8 @@
         <button class="btn btn-primary" onclick="saveSettings()">설정 저장</button>
 
         <p class="muted" style="font-size:12px;line-height:1.55;margin-bottom:0;">
-          ESP Wi-Fi 이름, IP, RSSI는 ESP32가 MQTT heartbeat로 보내는 값을 표시합니다.
-          실제 ESP32 Wi-Fi 목록 변경은 ESP32 펌웨어 수정이 별도로 필요합니다.
+          MQTT 설정은 브라우저와 Google Sheets 설정 시트에 저장됩니다.
+          ESP32 Wi-Fi 이름, IP, RSSI는 ESP32가 MQTT heartbeat로 보내는 값을 표시합니다.
         </p>
       </div>
     </div>
@@ -1029,8 +1026,8 @@
       const idToken = response.credential;
       const googleEmail = getEmailFromGoogleCredential(idToken) || "Google 계정";
 
-      startLoading("Google 계정 로그인 중입니다.", googleEmail + "로 로그인 중입니다.");
       loginLoadingType = "google";
+      startLoading("Google 계정 로그인 중입니다.", googleEmail + "로 로그인 중입니다.");
 
       const params = new URLSearchParams();
       params.set("action", "googleLoginJsonp");
@@ -1094,8 +1091,8 @@
         return;
       }
 
-      startLoading("관리자 계정 로그인 중입니다.", adminId + "으로 로그인 중...");
       loginLoadingType = "admin";
+      startLoading("관리자 계정 로그인 중입니다.", adminId + "으로 로그인 중...");
       setAdminLoginDisabled(true);
 
       const params = new URLSearchParams();
@@ -1293,12 +1290,14 @@
 
     function reauthGoogleSession() {
       const token = sessionStorage.getItem("sessionToken") || "";
+
       if (!token) {
         toast("Google 세션이 없습니다. 다시 로그인하세요.");
         return;
       }
 
       startLoading("관리자 인증 중입니다", "");
+
       const params = new URLSearchParams();
       params.set("action", "reauthJsonp");
       params.set("sessionToken", token);
@@ -1436,7 +1435,6 @@
     function applyTheme(theme) {
       const value = theme || "system";
       document.documentElement.setAttribute("data-theme", value);
-      localStorage.setItem("attendanceTheme", value);
 
       const label =
         value === "dark" ? "다크" :
@@ -1512,6 +1510,7 @@
           mqttClient.end(true);
         } catch (err) {}
       }
+
       mqttClient = null;
       setMqttBadge(false);
     }
