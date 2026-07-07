@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>2-12 로그인</title>
+
+  <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --bg-soft: #f1f0ec;
+      --card: #fffefb;
+      --text: #1f2320;
+      --muted: #74746e;
+      --line: rgba(92, 92, 84, 0.18);
+      --accent: #3f403a;
+      --accent-hover: #2e302b;
+      --accent-text: #ffffff;
+      --red: #b7423a;
+      --shadow: 0 18px 50px rgba(31, 35, 32, 0.07);
+      --input: #fffefb;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      padding: 24px;
+    }
+
+    .card {
+      width: min(430px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 29px;
+      letter-spacing: -0.055em;
+      font-weight: 950;
+    }
+
+    .sub {
+      margin: 8px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    #googleButtonHome {
+      display: flex;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      margin: 22px 0;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 7px;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    input {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--text);
+      padding: 0 14px;
+      font-size: 15px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(63, 64, 58, 0.12);
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 14px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-size: 14px;
+      font-weight: 950;
+      margin-top: 14px;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .back {
+      width: 100%;
+      margin-top: 12px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(8px);
+      background: #1f2320;
+      color: #fff;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 850;
+      opacity: 0;
+      transition: 0.25s ease;
+      pointer-events: none;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 35, 32, 0.55);
+      display: none;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .loading.show {
+      display: grid;
+    }
+
+    .loading-card {
+      width: min(340px, 100%);
+      background: var(--card);
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      padding: 28px 22px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 4px solid rgba(63, 64, 58, 0.16);
+      border-top-color: var(--accent);
+      margin: 0 auto 16px;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title {
+      font-size: 17px;
+      font-weight: 950;
+    }
+
+    .loading-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1>관리자 로그인</h1>
+    <div class="sub">
+      Google 계정 또는 관리자 계정으로 로그인하세요.
+    </div>
+
+    <div id="googleButtonHome">
+      <div id="googleButton"></div>
+    </div>
+
+    <div class="divider">또는 관리자 로그인</div>
+
+    <label for="adminId">관리자 ID</label>
+    <input id="adminId" type="text" placeholder="관리자 ID" autocomplete="username" />
+
+    <label for="adminPw">관리자 비밀번호</label>
+    <input id="adminPw" type="password" placeholder="비밀번호" autocomplete="current-password" />
+
+    <button id="adminLoginBtn" class="btn" onclick="adminLogin()">로그인</button>
+    <button class="back" onclick="location.href='../'">처음 화면으로</button>
+  </main>
+
+  <div id="loading" class="loading">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div id="loadingTitle" class="loading-title">로그인 중입니다</div>
+      <div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    const APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+
+    const GOOGLE_CLIENT_ID =
+      "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
+
+    let loginLoading = false;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      if (hasSession()) {
+        location.replace("../dashboard/");
+        return;
+      }
+
+      initGoogleButton();
+
+      document.getElementById("adminPw").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") adminLogin();
+      });
+    });
+
+    function hasSession() {
+      return !!(
+        sessionStorage.getItem("sessionToken") ||
+        sessionStorage.getItem("adminId")
+      );
+    }
+
+    function initGoogleButton() {
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        setTimeout(initGoogleButton, 300);
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById("googleButton"),
+        {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "pill",
+          logo_alignment: "left",
+          width: 280
+        }
+      );
+    }
+
+    function handleGoogleCredential(response) {
+      if (!response || !response.credential) {
+        toast("Google 로그인 토큰을 받지 못했습니다.");
+        return;
+      }
+
+      if (loginLoading) return;
+
+      const idToken = response.credential;
+      const email = getEmailFromGoogleCredential(idToken) || "Google 계정";
+
+      loginLoading = true;
+      startLoading("Google 계정 로그인 중입니다", email);
+
+      const params = new URLSearchParams();
+      params.set("action", "googleLoginJsonp");
+      params.set("idToken", idToken);
+      params.set("deviceName", navigator.platform || "");
+      params.set("screenSize", window.innerWidth + "x" + window.innerHeight);
+      params.set("clientTime", new Date().toISOString());
+      params.set("clientTimezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+      params.set("userAgent", navigator.userAgent || "");
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        loginLoading = false;
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "Google 로그인 실패");
+          return;
+        }
+
+        sessionStorage.setItem("loginType", "google");
+        sessionStorage.setItem("sessionToken", res.sessionToken || "");
+        sessionStorage.setItem("loginEmail", res.email || "");
+        sessionStorage.setItem("loginName", res.name || "");
+        sessionStorage.setItem("loginRole", res.role || "GOOGLE");
+
+        location.replace("../dashboard/");
+      });
+    }
+
+    function adminLogin() {
+      if (loginLoading) return;
+
+      const adminId = document.getElementById("adminId").value.trim();
+      const adminPw = document.getElementById("adminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        toast("관리자 ID/PW를 입력하세요.");
+        return;
+      }
+
+      loginLoading = true;
+      setAdminDisabled(true);
+      startLoading("관리자 계정 로그인 중입니다", adminId);
+
+      const params = new URLSearchParams();
+      params.set("action", "dashboardLoginJsonp");
+      params.set("adminId", adminId);
+      params.set("adminPw", adminPw);
+      params.set("deviceName", navigator.platform || "");
+      params.set("screenSize", window.innerWidth + "x" + window.innerHeight);
+      params.set("clientTime", new Date().toISOString());
+      params.set("clientTimezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+      params.set("userAgent", navigator.userAgent || "");
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        loginLoading = false;
+        stopLoading();
+        setAdminDisabled(false);
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "관리자 로그인 실패");
+          return;
+        }
+
+        sessionStorage.setItem("loginType", "admin");
+
+        if (res.sessionToken) {
+          sessionStorage.setItem("sessionToken", res.sessionToken);
+        } else {
+          sessionStorage.setItem("adminId", adminId);
+          sessionStorage.setItem("adminPw", adminPw);
+        }
+
+        sessionStorage.setItem("loginRole", res.role || "ADMIN");
+
+        location.replace("../dashboard/");
+      });
+    }
+
+    function setAdminDisabled(disabled) {
+      document.getElementById("adminId").disabled = disabled;
+      document.getElementById("adminPw").disabled = disabled;
+      document.getElementById("adminLoginBtn").disabled = disabled;
+    }
+
+    function getEmailFromGoogleCredential(idToken) {
+      try {
+        const parts = String(idToken || "").split(".");
+        if (parts.length < 2) return "";
+
+        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        while (payload.length % 4) payload += "=";
+
+        const jsonText = decodeURIComponent(
+          Array.prototype.map.call(atob(payload), function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join("")
+        );
+
+        const data = JSON.parse(jsonText);
+        return String(data.email || "").trim();
+      } catch (err) {
+        return "";
+      }
+    }
+
+    function callJsonp(url, callback) {
+      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+      let script = null;
+      let finished = false;
+
+      const timer = setTimeout(function () {
+        if (finished) return;
+        finished = true;
+        delete window[callbackName];
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
+        loginLoading = false;
+        stopLoading();
+        setAdminDisabled(false);
+        toast("Apps Script 응답 시간 초과");
+      }, 15000);
+
+      window[callbackName] = function (data) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+
+        try {
+          callback(data);
+        } finally {
+          delete window[callbackName];
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+      };
+
+      script = document.createElement("script");
+      script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + encodeURIComponent(callbackName);
+
+      script.onerror = function () {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+
+        delete window[callbackName];
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
+        loginLoading = false;
+        stopLoading();
+        setAdminDisabled(false);
+        toast("Apps Script 연결 실패");
+      };
+
+      document.head.appendChild(script);
+    }
+
+    function startLoading(title, sub) {
+      document.getElementById("loadingTitle").textContent = title || "로그인 중입니다";
+      document.getElementById("loadingSub").textContent = sub || "잠시만 기다려주세요.";
+      document.getElementById("loading").classList.add("show");
+    }
+
+    function stopLoading() {
+      document.getElementById("loading").classList.remove("show");
+    }
+
+    function toast(message) {
+      const el = document.getElementById("toast");
+      el.textContent = message;
+      el.classList.add("show");
+
+      setTimeout(function () {
+        el.classList.remove("show");
+      }, 2300);
+    }
+  </script>
+</body>
+</html>

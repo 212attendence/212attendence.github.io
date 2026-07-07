@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>2-12 대시보드</title>
+
+  <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+
+      --bg: #fafaf8;
+      --bg-soft: #f1f0ec;
+      --card: rgba(255, 255, 252, 0.92);
+      --card-solid: #fffefb;
+      --text: #1f2320;
+      --muted: #74746e;
+      --line: rgba(92, 92, 84, 0.18);
+
+      --accent: #3f403a;
+      --accent-hover: #2e302b;
+      --accent-text: #ffffff;
+
+      --green: #2f8f5b;
+      --orange: #b86a2b;
+      --red: #b7423a;
+      --gray: #74746e;
+
+      --shadow: 0 18px 50px rgba(31, 35, 32, 0.07);
+      --overlay: rgba(31, 35, 32, 0.50);
+      --input: #fffefb;
+
+      --switch-bg: rgba(92, 92, 84, 0.12);
+      --switch-thumb: #3f403a;
+      --switch-shadow: rgba(63, 64, 58, 0.22);
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+
+      --bg: #1a1a1a;
+      --bg-soft: #242424;
+      --card: rgba(38, 38, 38, 0.88);
+      --card-solid: #242424;
+      --text: #f2f0ea;
+      --muted: #aaa69e;
+      --line: rgba(230, 226, 215, 0.14);
+
+      --accent: #d8d3c5;
+      --accent-hover: #eee8d9;
+      --accent-text: #1a1a1a;
+
+      --green: #78c59a;
+      --orange: #d79a62;
+      --red: #e07b73;
+      --gray: #aaa69e;
+
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+      --overlay: rgba(0, 0, 0, 0.58);
+      --input: #202020;
+
+      --switch-bg: rgba(230, 226, 215, 0.12);
+      --switch-thumb: #d8d3c5;
+      --switch-shadow: rgba(216, 211, 197, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html.theme-animate,
+    html.theme-animate body,
+    html.theme-animate .card,
+    html.theme-animate .summary-card,
+    html.theme-animate .device-card,
+    html.theme-animate .panel,
+    html.theme-animate .modal,
+    html.theme-animate .modal-head,
+    html.theme-animate .loading-panel,
+    html.theme-animate input,
+    html.theme-animate select,
+    html.theme-animate .btn-soft,
+    html.theme-animate .pill,
+    html.theme-animate .info-item,
+    html.theme-animate .log-row,
+    html.theme-animate .log-header,
+    html.theme-animate .theme-switch,
+    html.theme-animate .theme-switch button,
+    html.theme-animate .theme-thumb,
+    html.theme-animate .topbar,
+    html.theme-animate .toast {
+      transition:
+        background-color 0.75s ease,
+        background 0.75s ease,
+        color 0.75s ease,
+        border-color 0.75s ease,
+        box-shadow 0.75s ease,
+        opacity 0.75s ease,
+        transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    input,
+    button,
+    select {
+      font-family: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .theme-switch {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 142px;
+      height: 40px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--switch-bg);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .theme-thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      height: calc(100% - 8px);
+      border-radius: 999px;
+      background: var(--switch-thumb);
+      box-shadow: 0 8px 18px var(--switch-shadow);
+      transform: translateX(0);
+      z-index: 0;
+      will-change: transform;
+    }
+
+    html[data-theme="dark"] .theme-thumb {
+      transform: translateX(100%);
+    }
+
+    .theme-switch button {
+      position: relative;
+      z-index: 1;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .theme-switch button.active {
+      color: var(--accent-text);
+    }
+
+    html[data-theme="dark"] .theme-switch button.active {
+      color: #1a1a1a;
+    }
+
+    .dashboard {
+      display: block;
+      padding-bottom: 28px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 14px 0;
+      background: linear-gradient(to bottom, var(--bg), rgba(250, 250, 248, 0));
+      backdrop-filter: blur(8px);
+    }
+
+    html[data-theme="dark"] .topbar {
+      background: linear-gradient(to bottom, var(--bg), rgba(26, 26, 26, 0));
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: -0.05em;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .top-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 900;
+      font-size: 14px;
+      min-height: 44px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: var(--accent-text);
+      margin-top: 14px;
+    }
+
+    .btn-soft {
+      background: var(--bg-soft);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      background: rgba(183, 66, 58, 0.11);
+      color: var(--red);
+      border: 1px solid rgba(183, 66, 58, 0.20);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.02em;
+    }
+
+    .online {
+      background: rgba(47, 143, 91, 0.14);
+      color: var(--green);
+    }
+
+    .offline {
+      background: rgba(183, 66, 58, 0.13);
+      color: var(--red);
+    }
+
+    .connecting {
+      background: rgba(184, 106, 43, 0.14);
+      color: var(--orange);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 12px 0 14px;
+    }
+
+    .summary-card {
+      padding: 18px;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .summary-value {
+      margin-top: 8px;
+      font-size: 32px;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+    }
+
+    .content-grid {
+      grid-template-columns: 1.4fr 0.8fr;
+      align-items: start;
+    }
+
+    .panel {
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-size: 17px;
+      font-weight: 950;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .log-row {
+      display: grid;
+      grid-template-columns: 72px 82px 1fr 80px;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .log-row:last-child {
+      border-bottom: 0;
+    }
+
+    .log-header {
+      background: rgba(92, 92, 84, 0.06);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+
+    html[data-theme="dark"] .log-header {
+      background: rgba(230, 226, 215, 0.06);
+    }
+
+    .status-chip {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 62px;
+      border-radius: 999px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .chip-present {
+      background: rgba(47, 143, 91, 0.14);
+      color: var(--green);
+    }
+
+    .chip-late {
+      background: rgba(184, 106, 43, 0.14);
+      color: var(--orange);
+    }
+
+    .chip-notyet {
+      background: rgba(116, 116, 110, 0.14);
+      color: var(--gray);
+    }
+
+    .chip-absent,
+    .chip-bad {
+      background: rgba(183, 66, 58, 0.13);
+      color: var(--red);
+    }
+
+    .chip-dup {
+      background: rgba(63, 64, 58, 0.12);
+      color: var(--accent);
+    }
+
+    .device-card {
+      padding: 18px;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: rgba(92, 92, 84, 0.06);
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    html[data-theme="dark"] .info-item {
+      background: rgba(230, 226, 215, 0.06);
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .info-value {
+      font-weight: 900;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 850;
+      margin: 12px 0 7px;
+    }
+
+    .modal-backdrop,
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 18px;
+    }
+
+    .modal-backdrop.show,
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(560px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      background: var(--card-solid);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      background: var(--card-solid);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .modal-body {
+      padding: 18px 20px 22px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .loading-panel {
+      width: min(380px, 100%);
+      border-radius: 26px;
+      background: var(--card-solid);
+      border: 1px solid var(--line);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.30);
+      padding: 30px 24px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 4px solid rgba(63, 64, 58, 0.16);
+      border-top-color: var(--accent);
+      margin: 0 auto 16px;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .loading-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 14px;
+      word-break: break-all;
+      line-height: 1.55;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(8px);
+      z-index: 200;
+      background: #1f2320;
+      color: #ffffff;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 850;
+      opacity: 0;
+      pointer-events: none;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+      transition: 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        padding: 14px;
+      }
+
+      .topbar {
+        position: static;
+      }
+
+      .topbar-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .summary-grid .summary-card:first-child {
+        grid-column: 1 / -1;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .theme-switch {
+        width: 100%;
+      }
+
+      .summary-value {
+        font-size: 28px;
+      }
+
+      .log-row {
+        grid-template-columns: 60px 76px 1fr;
+        padding: 13px 14px;
+      }
+
+      .hide-mobile {
+        display: none;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-backdrop,
+      .loading-overlay {
+        align-items: flex-end;
+        padding: 12px;
+      }
+
+      .modal {
+        border-radius: 24px;
+        max-height: 88vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main id="dashboard" class="dashboard">
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div>
+            <h1>출석 대시보드</h1>
+            <div id="todayPill" class="top-sub">----</div>
+          </div>
+
+          <div class="actions">
+            <div class="theme-switch" aria-label="화면 모드">
+              <span class="theme-thumb"></span>
+              <button type="button" data-theme-choice="light" onclick="setThemeQuick('light')">라이트</button>
+              <button type="button" data-theme-choice="dark" onclick="setThemeQuick('dark')">다크</button>
+            </div>
+
+            <span class="pill">MQTT <span id="mqttBadge" class="badge offline">OFFLINE</span></span>
+            <span class="pill">ESP32 <span id="espBadge" class="badge offline">OFFLINE</span></span>
+            <button class="btn btn-soft" onclick="loadTodayLogs()">새로고침</button>
+            <button class="btn btn-soft" onclick="openSettingsGate()">설정</button>
+            <button class="btn btn-danger" onclick="logout()">로그아웃</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid summary-grid">
+        <div class="card summary-card">
+          <div class="summary-label">전체 학생</div>
+          <div id="sumTotal" class="summary-value">0</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">출석</div>
+          <div id="sumPresent" class="summary-value" style="color:var(--green);">0</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">지각</div>
+          <div id="sumLate" class="summary-value" style="color:var(--orange);">0</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">미출석</div>
+          <div id="sumNotYet" class="summary-value" style="color:var(--gray);">0</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">결석</div>
+          <div id="sumAbsent" class="summary-value" style="color:var(--red);">0</div>
+        </div>
+      </section>
+
+      <section class="grid content-grid">
+        <div class="card panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">오늘 출석 현황</div>
+              <div id="loginInfo" class="panel-sub">로그인 정보</div>
+            </div>
+            <div id="lastUpdated" class="panel-sub">-</div>
+          </div>
+
+          <div class="log-list">
+            <div class="log-row log-header">
+              <div>시간</div>
+              <div>상태</div>
+              <div>이름</div>
+              <div class="hide-mobile">지문ID</div>
+            </div>
+            <div id="logList"></div>
+          </div>
+        </div>
+
+        <aside class="card device-card">
+          <div class="panel-title">장치 상태</div>
+          <div class="panel-sub">ESP32 heartbeat 기준</div>
+
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Wi-Fi</span>
+              <span id="deviceWifi" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">IP</span>
+              <span id="deviceIp" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">RSSI</span>
+              <span id="deviceRssi" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">큐</span>
+              <span id="deviceQueue" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">마지막 신호</span>
+              <span id="deviceSeen" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">테마</span>
+              <span id="themeLabel" class="info-value">라이트</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <div id="reauthModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">관리자 재인증</div>
+        <button class="btn btn-soft" onclick="closeReauthModal()">닫기</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="muted" style="margin-top:0;font-weight:750;">
+          MQTT 설정 변경 전 관리자 권한을 다시 확인합니다.
+        </p>
+
+        <button id="googleReauthBtn" class="btn btn-soft" style="width:100%;margin-bottom:14px;" onclick="reauthGoogleSession()">
+          Google 로그인 세션으로 재인증
+        </button>
+
+        <label for="reauthAdminId">관리자 ID</label>
+        <input id="reauthAdminId" type="text" placeholder="관리자 ID" autocomplete="username" />
+
+        <label for="reauthAdminPw">관리자 비밀번호</label>
+        <input id="reauthAdminPw" type="password" placeholder="비밀번호" autocomplete="current-password" />
+
+        <button id="reauthAdminBtn" class="btn btn-primary" onclick="reauthAdminAccount()">관리자 계정으로 재인증</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">MQTT 설정</div>
+        <button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="full">
+            <label for="setMqttHost">MQTT Host</label>
+            <input id="setMqttHost" type="text" placeholder="HiveMQ Host" />
+          </div>
+
+          <div>
+            <label for="setMqttPort">WebSocket TLS Port</label>
+            <input id="setMqttPort" type="number" placeholder="8884" />
+          </div>
+
+          <div>
+            <label for="setEspOfflineSec">ESP 오프라인 기준 초</label>
+            <input id="setEspOfflineSec" type="number" placeholder="25" />
+          </div>
+
+          <div>
+            <label for="setMqttUser">MQTT User</label>
+            <input id="setMqttUser" type="text" placeholder="MQTT User" />
+          </div>
+
+          <div>
+            <label for="setMqttPass">MQTT Password</label>
+            <input id="setMqttPass" type="password" placeholder="MQTT Password" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicStatus">Status Topic</label>
+            <input id="setTopicStatus" type="text" placeholder="attendance/2-12/status" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicEvent">Event Topic</label>
+            <input id="setTopicEvent" type="text" placeholder="attendance/2-12/event" />
+          </div>
+
+          <div class="full">
+            <label for="setTopicHeartbeat">Heartbeat Topic</label>
+            <input id="setTopicHeartbeat" type="text" placeholder="attendance/2-12/heartbeat" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSettings()">MQTT 설정 저장</button>
+
+        <p class="muted" style="font-size:12px;line-height:1.55;margin-bottom:0;">
+          MQTT 비밀번호는 GitHub 코드에 저장하지 않습니다.
+          로그인 후 Apps Script에서 받아온 값만 현재 세션에서 사용합니다.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-panel">
+      <div class="loading-spinner"></div>
+      <div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div>
+      <div id="loadingSub" class="loading-sub">인증 확인 중입니다.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    const APPS_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+
+    const DEFAULT_SETTINGS = {
+      theme: "light",
+      mqttHost: "",
+      mqttPort: "8884",
+      mqttUser: "",
+      mqttPass: "",
+      topicStatus: "attendance/2-12/status",
+      topicEvent: "attendance/2-12/event",
+      topicHeartbeat: "attendance/2-12/heartbeat",
+      espOfflineSec: "25"
+    };
+
+    let appSettings = Object.assign({}, DEFAULT_SETTINGS);
+    let mqttClient = null;
+    let lastEspSeenAt = 0;
+    let espWatchTimer = null;
+    let settingsUnlocked = false;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      document.documentElement.classList.add("theme-animate");
+
+      if (!hasSession()) {
+        location.replace("../login/");
+        return;
+      }
+
+      appSettings.theme = sessionStorage.getItem("theme") || "light";
+
+      applyTheme(appSettings.theme);
+      setTodayPill();
+      showLoginInfo();
+      startEspWatchdog();
+
+      startLoading("대시보드 준비 중입니다", "로그인 세션과 MQTT 설정을 확인합니다.");
+
+      loadRemoteSettingsThenConnect();
+      loadTodayLogs();
+
+      document.getElementById("reauthAdminPw").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") reauthAdminAccount();
+      });
+    });
+
+    function hasSession() {
+      return !!(
+        sessionStorage.getItem("sessionToken") ||
+        sessionStorage.getItem("adminId")
+      );
+    }
+
+    function showLoginInfo() {
+      const loginType = sessionStorage.getItem("loginType") || "";
+      const role = sessionStorage.getItem("loginRole") || "";
+
+      if (loginType === "google") {
+        const email = sessionStorage.getItem("loginEmail") || "";
+        const name = sessionStorage.getItem("loginName") || "";
+        document.getElementById("loginInfo").textContent =
+          `Google 로그인: ${name || email} / ${role}`;
+      } else {
+        const adminId = sessionStorage.getItem("adminId") || "관리자";
+        document.getElementById("loginInfo").textContent =
+          `관리자 로그인: ${adminId} / ${role}`;
+      }
+    }
+
+    function setTodayPill() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      document.getElementById("todayPill").textContent = `${yyyy}-${mm}-${dd} · 결석 기준 16:00`;
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      settingsUnlocked = false;
+      disconnectMqtt();
+      stopLoading();
+      location.replace("../login/");
+    }
+
+    function addAuthParams(params) {
+      const sessionToken = sessionStorage.getItem("sessionToken") || "";
+
+      if (sessionToken) {
+        params.set("sessionToken", sessionToken);
+        return;
+      }
+
+      params.set("adminId", sessionStorage.getItem("adminId") || "");
+      params.set("adminPw", sessionStorage.getItem("adminPw") || "");
+    }
+
+    function loadRemoteSettingsThenConnect() {
+      const localTheme = appSettings.theme === "dark" ? "dark" : "light";
+
+      const params = new URLSearchParams();
+      params.set("action", "getDashboardSettingsJsonp");
+      addAuthParams(params);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "대시보드 설정 조회 실패");
+          if (String((res && res.message) || "").includes("세션")) logout();
+          return;
+        }
+
+        appSettings = Object.assign({}, DEFAULT_SETTINGS, res.settings || {});
+        appSettings.theme = localTheme;
+
+        sessionStorage.setItem("theme", appSettings.theme);
+
+        applyTheme(appSettings.theme);
+        connectMqtt();
+      });
+    }
+
+    function loadTodayLogs() {
+      if (!hasSession()) {
+        location.replace("../login/");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("action", "todayLogs");
+      addAuthParams(params);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "오늘 로그 조회 실패");
+
+          if (String((res && res.message) || "").includes("세션")) {
+            logout();
+          }
+          return;
+        }
+
+        renderTodayLogs(res);
+      });
+    }
+
+    function renderTodayLogs(res) {
+      const summary = res.summary || {};
+      const logs = res.logs || [];
+      const cutoff = formatCutoffTime(res.absentCutoffTime || "16:00");
+
+      document.getElementById("todayPill").textContent =
+        `${res.date || ""} · 결석 기준 ${cutoff}`;
+
+      document.getElementById("sumTotal").textContent = summary.total || 0;
+      document.getElementById("sumPresent").textContent = summary.present || 0;
+      document.getElementById("sumLate").textContent = summary.late || 0;
+      document.getElementById("sumNotYet").textContent = summary.notYet || 0;
+      document.getElementById("sumAbsent").textContent = summary.absent || 0;
+
+      const list = document.getElementById("logList");
+
+      if (!logs.length) {
+        list.innerHTML = `
+          <div class="log-row">
+            <div class="muted">-</div>
+            <div><span class="status-chip chip-notyet">없음</span></div>
+            <div class="muted">학생 명단 또는 로그가 없습니다.</div>
+            <div class="hide-mobile muted">-</div>
+          </div>
+        `;
+      } else {
+        list.innerHTML = logs.map(renderLogRow).join("");
+      }
+
+      document.getElementById("lastUpdated").textContent =
+        "마지막 업데이트 " + new Date().toLocaleTimeString("ko-KR");
+    }
+
+    function formatCutoffTime(value) {
+      const text = String(value || "").trim();
+
+      if (/^\d{1,2}:\d{2}/.test(text)) {
+        const parts = text.substring(0, 5).split(":");
+        return String(parts[0]).padStart(2, "0") + ":" + parts[1];
+      }
+
+      const date = new Date(text);
+
+      if (!isNaN(date.getTime())) {
+        const hh = String(date.getHours()).padStart(2, "0");
+        const mm = String(date.getMinutes()).padStart(2, "0");
+        return `${hh}:${mm}`;
+      }
+
+      return "16:00";
+    }
+
+    function renderLogRow(log) {
+      const status = log.status || "";
+      const chipClass = getStatusChipClass(status);
+
+      return `
+        <div class="log-row">
+          <div>${escapeHtml(log.time || "-")}</div>
+          <div><span class="status-chip ${chipClass}">${escapeHtml(status)}</span></div>
+          <div>
+            <strong>${escapeHtml(log.name || "-")}</strong>
+            <div class="muted" style="font-size:12px;margin-top:2px;">${escapeHtml(log.message || "")}</div>
+          </div>
+          <div class="hide-mobile">${escapeHtml(log.fingerId || "")}</div>
+        </div>
+      `;
+    }
+
+    function getStatusChipClass(status) {
+      if (status === "출석") return "chip-present";
+      if (status === "지각") return "chip-late";
+      if (status === "미출석") return "chip-notyet";
+      if (status === "결석") return "chip-absent";
+      if (status === "중복") return "chip-dup";
+      if (status === "미등록" || status === "비활성" || status === "오류") return "chip-bad";
+      return "chip-notyet";
+    }
+
+    function setThemeQuick(theme) {
+      const nextTheme = theme === "dark" ? "dark" : "light";
+      appSettings.theme = nextTheme;
+      sessionStorage.setItem("theme", nextTheme);
+
+      requestAnimationFrame(function () {
+        applyTheme(nextTheme);
+      });
+    }
+
+    function applyTheme(theme) {
+      const value = theme === "dark" ? "dark" : "light";
+
+      document.documentElement.setAttribute("data-theme", value);
+
+      document.querySelectorAll("[data-theme-choice]").forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-theme-choice") === value);
+      });
+
+      const themeLabel = document.getElementById("themeLabel");
+      if (themeLabel) {
+        themeLabel.textContent = value === "dark" ? "다크" : "라이트";
+      }
+    }
+
+    function connectMqtt() {
+      if (!window.mqtt) {
+        setTimeout(connectMqtt, 500);
+        return;
+      }
+
+      if (!appSettings.mqttHost || !appSettings.mqttUser || !appSettings.mqttPass) {
+        setMqttBadge("offline");
+        toast("MQTT 설정이 필요합니다.");
+        return;
+      }
+
+      disconnectMqtt();
+      setMqttBadge("connecting");
+
+      const url = `wss://${appSettings.mqttHost}:${appSettings.mqttPort}/mqtt`;
+      const clientId = "dashboard-2-12-" + Math.random().toString(16).slice(2) + "-" + Date.now();
+
+      mqttClient = mqtt.connect(url, {
+        clientId,
+        username: appSettings.mqttUser,
+        password: appSettings.mqttPass,
+        clean: true,
+        connectTimeout: 8000,
+        reconnectPeriod: 3000,
+        keepalive: 30
+      });
+
+      mqttClient.on("connect", function () {
+        setMqttBadge("online");
+        mqttClient.subscribe(appSettings.topicStatus);
+        mqttClient.subscribe(appSettings.topicHeartbeat);
+        mqttClient.subscribe(appSettings.topicEvent);
+      });
+
+      mqttClient.on("reconnect", function () {
+        setMqttBadge("connecting");
+      });
+
+      mqttClient.on("close", function () {
+        setMqttBadge("offline");
+      });
+
+      mqttClient.on("error", function (err) {
+        setMqttBadge("offline");
+        console.error("MQTT error", err);
+      });
+
+      mqttClient.on("message", function (topic, message) {
+        let data = {};
+
+        try {
+          data = JSON.parse(message.toString());
+        } catch (err) {
+          data = { raw: message.toString() };
+        }
+
+        handleMqttMessage(topic, data);
+      });
+    }
+
+    function disconnectMqtt() {
+      if (mqttClient) {
+        try {
+          mqttClient.end(true);
+        } catch (err) {}
+      }
+
+      mqttClient = null;
+      setMqttBadge("offline");
+    }
+
+    function reconnectMqtt() {
+      disconnectMqtt();
+      setTimeout(connectMqtt, 300);
+    }
+
+    function handleMqttMessage(topic, data) {
+      if (topic === appSettings.topicStatus) {
+        if (data.status === "online") {
+          markEspOnline(data);
+        } else if (data.status === "offline") {
+          setEspBadge(false);
+        }
+      }
+
+      if (topic === appSettings.topicHeartbeat) {
+        markEspOnline(data);
+      }
+
+      if (topic === appSettings.topicEvent) {
+        markEspOnline(data);
+
+        if (data.type === "attendance" || data.type === "queued_sent" || data.type === "queued") {
+          setTimeout(loadTodayLogs, 600);
+        }
+      }
+    }
+
+    function markEspOnline(data) {
+      lastEspSeenAt = Date.now();
+      setEspBadge(true);
+      updateDeviceInfo(data || {});
+    }
+
+    function updateDeviceInfo(data) {
+      document.getElementById("deviceWifi").textContent = data.wifiSsid || "-";
+      document.getElementById("deviceIp").textContent = data.ip || "-";
+      document.getElementById("deviceRssi").textContent =
+        data.wifiRssi == null ? "-" : data.wifiRssi + " dBm";
+      document.getElementById("deviceQueue").textContent =
+        data.queueCount == null ? "-" : data.queueCount;
+      document.getElementById("deviceSeen").textContent =
+        new Date().toLocaleTimeString("ko-KR");
+    }
+
+    function startEspWatchdog() {
+      if (espWatchTimer) clearInterval(espWatchTimer);
+
+      espWatchTimer = setInterval(function () {
+        const limitMs = Number(appSettings.espOfflineSec || 25) * 1000;
+
+        if (!lastEspSeenAt || Date.now() - lastEspSeenAt > limitMs) {
+          setEspBadge(false);
+        }
+      }, 3000);
+    }
+
+    function setMqttBadge(state) {
+      const el = document.getElementById("mqttBadge");
+      if (!el) return;
+
+      if (state === "online") {
+        el.textContent = "ONLINE";
+        el.className = "badge online";
+      } else if (state === "connecting") {
+        el.textContent = "CONNECTING";
+        el.className = "badge connecting";
+      } else {
+        el.textContent = "OFFLINE";
+        el.className = "badge offline";
+      }
+    }
+
+    function setEspBadge(isOnline) {
+      const el = document.getElementById("espBadge");
+      if (!el) return;
+
+      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
+      el.className = "badge " + (isOnline ? "online" : "offline");
+    }
+
+    function openSettingsGate() {
+      settingsUnlocked = false;
+      document.getElementById("reauthModal").classList.add("show");
+      document.getElementById("reauthModal").setAttribute("aria-hidden", "false");
+
+      const loginType = sessionStorage.getItem("loginType") || "";
+      document.getElementById("googleReauthBtn").style.display =
+        loginType === "google" ? "inline-flex" : "none";
+    }
+
+    function closeReauthModal() {
+      document.getElementById("reauthModal").classList.remove("show");
+      document.getElementById("reauthModal").setAttribute("aria-hidden", "true");
+    }
+
+    function reauthGoogleSession() {
+      const token = sessionStorage.getItem("sessionToken") || "";
+
+      if (!token) {
+        toast("Google 세션이 없습니다. 다시 로그인하세요.");
+        return;
+      }
+
+      startLoading("관리자 인증 중입니다", "");
+
+      const params = new URLSearchParams();
+      params.set("action", "reauthJsonp");
+      params.set("sessionToken", token);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "재인증 실패");
+          return;
+        }
+
+        settingsUnlocked = true;
+        closeReauthModal();
+        openSettingsModal();
+      });
+    }
+
+    function reauthAdminAccount() {
+      const adminId = document.getElementById("reauthAdminId").value.trim();
+      const adminPw = document.getElementById("reauthAdminPw").value.trim();
+
+      if (!adminId || !adminPw) {
+        toast("관리자 ID/PW를 입력하세요.");
+        return;
+      }
+
+      startLoading("관리자 인증 중입니다", "");
+
+      const params = new URLSearchParams();
+      params.set("action", "reauthJsonp");
+      params.set("adminId", adminId);
+      params.set("adminPw", adminPw);
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        stopLoading();
+
+        if (!res || !res.ok) {
+          toast((res && res.message) ? res.message : "재인증 실패");
+          return;
+        }
+
+        settingsUnlocked = true;
+        closeReauthModal();
+        openSettingsModal();
+      });
+    }
+
+    function openSettingsModal() {
+      if (!settingsUnlocked) {
+        openSettingsGate();
+        return;
+      }
+
+      fillSettingsForm();
+      document.getElementById("settingsModal").classList.add("show");
+      document.getElementById("settingsModal").setAttribute("aria-hidden", "false");
+    }
+
+    function closeSettingsModal() {
+      document.getElementById("settingsModal").classList.remove("show");
+      document.getElementById("settingsModal").setAttribute("aria-hidden", "true");
+    }
+
+    function fillSettingsForm() {
+      document.getElementById("setMqttHost").value = appSettings.mqttHost || "";
+      document.getElementById("setMqttPort").value = appSettings.mqttPort || "8884";
+      document.getElementById("setMqttUser").value = appSettings.mqttUser || "";
+      document.getElementById("setMqttPass").value = appSettings.mqttPass || "";
+      document.getElementById("setTopicStatus").value = appSettings.topicStatus || "";
+      document.getElementById("setTopicEvent").value = appSettings.topicEvent || "";
+      document.getElementById("setTopicHeartbeat").value = appSettings.topicHeartbeat || "";
+      document.getElementById("setEspOfflineSec").value = appSettings.espOfflineSec || "25";
+    }
+
+    function saveSettings() {
+      appSettings = {
+        theme: appSettings.theme || "light",
+        mqttHost: document.getElementById("setMqttHost").value.trim(),
+        mqttPort: document.getElementById("setMqttPort").value.trim() || "8884",
+        mqttUser: document.getElementById("setMqttUser").value.trim(),
+        mqttPass: document.getElementById("setMqttPass").value.trim(),
+        topicStatus: document.getElementById("setTopicStatus").value.trim(),
+        topicEvent: document.getElementById("setTopicEvent").value.trim(),
+        topicHeartbeat: document.getElementById("setTopicHeartbeat").value.trim(),
+        espOfflineSec: document.getElementById("setEspOfflineSec").value.trim() || "25"
+      };
+
+      saveRemoteSettings();
+      reconnectMqtt();
+      closeSettingsModal();
+      toast("MQTT 설정 저장 완료");
+    }
+
+    function saveRemoteSettings() {
+      const params = new URLSearchParams();
+      params.set("action", "saveDashboardSettingsJsonp");
+      addAuthParams(params);
+
+      Object.keys(appSettings).forEach(function (key) {
+        if (key !== "theme") {
+          params.set(key, appSettings[key]);
+        }
+      });
+
+      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function () {});
+    }
+
+    function startLoading(title, sub) {
+      const overlay = document.getElementById("loadingOverlay");
+      document.getElementById("loadingTitle").textContent = title || "잠시만 기다려주세요";
+      document.getElementById("loadingSub").textContent = sub || "";
+      document.getElementById("loadingSub").style.display = sub ? "block" : "none";
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
+    }
+
+    function stopLoading() {
+      const overlay = document.getElementById("loadingOverlay");
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      document.getElementById("loadingSub").style.display = "block";
+    }
+
+    function callJsonp(url, callback) {
+      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+      let script = null;
+      let finished = false;
+
+      const timer = setTimeout(function () {
+        if (finished) return;
+        finished = true;
+
+        delete window[callbackName];
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
+        stopLoading();
+        toast("Apps Script 응답 시간 초과");
+      }, 15000);
+
+      window[callbackName] = function (data) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+
+        try {
+          callback(data);
+        } finally {
+          delete window[callbackName];
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+      };
+
+      const sep = url.includes("?") ? "&" : "?";
+      script = document.createElement("script");
+      script.src = url + sep + "callback=" + encodeURIComponent(callbackName);
+
+      script.onerror = function () {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+
+        delete window[callbackName];
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
+        stopLoading();
+        toast("Apps Script 연결 실패");
+      };
+
+      document.head.appendChild(script);
+    }
+
+    function toast(message) {
+      const el = document.getElementById("toast");
+      el.textContent = message;
+      el.classList.add("show");
+
+      setTimeout(function () {
+        el.classList.remove("show");
+      }, 2300);
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+  </script>
+</body>
+</html>
