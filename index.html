@@ -18,46 +18,60 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f7fb;
-      --bg-soft: #eef2ff;
-      --card: rgba(255, 255, 255, 0.88);
-      --card-solid: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: rgba(148, 163, 184, 0.28);
-      --blue: #2563eb;
-      --green: #16a34a;
-      --orange: #ea580c;
-      --red: #dc2626;
-      --gray: #64748b;
-      --shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
-      --overlay: rgba(15, 23, 42, 0.50);
-      --input: #ffffff;
-      --switch-bg: rgba(148, 163, 184, 0.16);
-      --switch-thumb: #2563eb;
-      --switch-shadow: rgba(37, 99, 235, 0.28);
+
+      --bg: #fafaf8;
+      --bg-soft: #f1f0ec;
+      --card: rgba(255, 255, 252, 0.92);
+      --card-solid: #fffefb;
+      --text: #1f2320;
+      --muted: #74746e;
+      --line: rgba(92, 92, 84, 0.18);
+
+      --accent: #3f403a;
+      --accent-hover: #2e302b;
+      --accent-text: #ffffff;
+
+      --green: #2f8f5b;
+      --orange: #b86a2b;
+      --red: #b7423a;
+      --gray: #74746e;
+
+      --shadow: 0 18px 50px rgba(31, 35, 32, 0.07);
+      --overlay: rgba(31, 35, 32, 0.50);
+      --input: #fffefb;
+
+      --switch-bg: rgba(92, 92, 84, 0.12);
+      --switch-thumb: #3f403a;
+      --switch-shadow: rgba(63, 64, 58, 0.22);
     }
 
     html[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #0b1120;
-      --bg-soft: #111827;
-      --card: rgba(17, 24, 39, 0.82);
-      --card-solid: #111827;
-      --text: #f9fafb;
-      --muted: #9ca3af;
-      --line: rgba(148, 163, 184, 0.22);
-      --blue: #60a5fa;
-      --green: #4ade80;
-      --orange: #fb923c;
-      --red: #f87171;
-      --gray: #94a3b8;
+
+      --bg: #1a1a1a;
+      --bg-soft: #242424;
+      --card: rgba(38, 38, 38, 0.88);
+      --card-solid: #242424;
+      --text: #f2f0ea;
+      --muted: #aaa69e;
+      --line: rgba(230, 226, 215, 0.14);
+
+      --accent: #d8d3c5;
+      --accent-hover: #eee8d9;
+      --accent-text: #1a1a1a;
+
+      --green: #78c59a;
+      --orange: #d79a62;
+      --red: #e07b73;
+      --gray: #aaa69e;
+
       --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
       --overlay: rgba(0, 0, 0, 0.58);
-      --input: #0f172a;
-      --switch-bg: rgba(148, 163, 184, 0.20);
-      --switch-thumb: #60a5fa;
-      --switch-shadow: rgba(96, 165, 250, 0.32);
+      --input: #202020;
+
+      --switch-bg: rgba(230, 226, 215, 0.12);
+      --switch-thumb: #d8d3c5;
+      --switch-shadow: rgba(216, 211, 197, 0.22);
     }
 
     * {
@@ -101,10 +115,7 @@
       margin: 0;
       min-height: 100vh;
       font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.10), transparent 26%),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
     }
 
@@ -198,52 +209,23 @@
     }
 
     .theme-switch button.active {
-      color: #ffffff;
+      color: var(--accent-text);
+    }
+
+    html[data-theme="dark"] .theme-switch button.active {
+      color: #1a1a1a;
     }
 
     .login-theme-row {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 16px;
-    }
-
-    .brand-mark {
-      position: relative;
-      width: 64px;
-      height: 50px;
-      border-radius: 18px;
-      overflow: hidden;
-      isolation: isolate;
-      display: grid;
-      place-items: center;
-      color: #ffffff;
-      font-weight: 950;
-      font-size: 17px;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      background: linear-gradient(135deg, #2563eb, #14b8a6);
-      background-clip: padding-box;
-      border: 0;
-      box-shadow: none;
-      outline: none;
-      transform: translateZ(0);
-      backface-visibility: hidden;
-      margin-bottom: 16px;
-    }
-
-    .brand-mark::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(135deg, #2563eb, #14b8a6);
-      z-index: -1;
+      margin-bottom: 18px;
     }
 
     .login-title {
-      font-size: 27px;
+      font-size: 28px;
       font-weight: 950;
-      letter-spacing: -0.05em;
+      letter-spacing: -0.055em;
       margin-bottom: 6px;
     }
 
@@ -299,8 +281,13 @@
 
     input:focus,
     select:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(63, 64, 58, 0.12);
+    }
+
+    html[data-theme="dark"] input:focus,
+    html[data-theme="dark"] select:focus {
+      box-shadow: 0 0 0 4px rgba(216, 211, 197, 0.13);
     }
 
     .btn {
@@ -321,9 +308,13 @@
 
     .btn-primary {
       width: 100%;
-      background: var(--blue);
-      color: white;
+      background: var(--accent);
+      color: var(--accent-text);
       margin-top: 14px;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
     }
 
     .btn-soft {
@@ -333,9 +324,9 @@
     }
 
     .btn-danger {
-      background: rgba(220, 38, 38, 0.12);
+      background: rgba(183, 66, 58, 0.11);
       color: var(--red);
-      border: 1px solid rgba(220, 38, 38, 0.20);
+      border: 1px solid rgba(183, 66, 58, 0.20);
     }
 
     .dashboard {
@@ -348,8 +339,12 @@
       top: 0;
       z-index: 20;
       padding: 14px 0;
-      background: linear-gradient(to bottom, var(--bg), rgba(0, 0, 0, 0));
+      background: linear-gradient(to bottom, var(--bg), rgba(250, 250, 248, 0));
       backdrop-filter: blur(8px);
+    }
+
+    html[data-theme="dark"] .topbar {
+      background: linear-gradient(to bottom, var(--bg), rgba(26, 26, 26, 0));
     }
 
     .topbar-inner {
@@ -366,39 +361,6 @@
       min-width: 0;
       background: transparent;
       box-shadow: none;
-    }
-
-    .mini-mark {
-      position: relative;
-      width: 58px;
-      height: 42px;
-      border-radius: 16px;
-      overflow: hidden;
-      isolation: isolate;
-      flex: 0 0 auto;
-      display: grid;
-      place-items: center;
-      color: #ffffff;
-      font-weight: 950;
-      font-size: 14px;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      background: linear-gradient(135deg, #2563eb, #14b8a6);
-      background-clip: padding-box;
-      border: 0;
-      box-shadow: none;
-      outline: none;
-      transform: translateZ(0);
-      backface-visibility: hidden;
-    }
-
-    .mini-mark::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(135deg, #2563eb, #14b8a6);
-      z-index: -1;
     }
 
     h1 {
@@ -448,12 +410,12 @@
     }
 
     .online {
-      background: rgba(22, 163, 74, 0.15);
+      background: rgba(47, 143, 91, 0.14);
       color: var(--green);
     }
 
     .offline {
-      background: rgba(220, 38, 38, 0.14);
+      background: rgba(183, 66, 58, 0.13);
       color: var(--red);
     }
 
@@ -536,11 +498,15 @@
     }
 
     .log-header {
-      background: rgba(148, 163, 184, 0.08);
+      background: rgba(92, 92, 84, 0.06);
       color: var(--muted);
       font-size: 12px;
       font-weight: 950;
       text-transform: uppercase;
+    }
+
+    html[data-theme="dark"] .log-header {
+      background: rgba(230, 226, 215, 0.06);
     }
 
     .status-chip {
@@ -554,29 +520,29 @@
     }
 
     .chip-present {
-      background: rgba(22, 163, 74, 0.15);
+      background: rgba(47, 143, 91, 0.14);
       color: var(--green);
     }
 
     .chip-late {
-      background: rgba(234, 88, 12, 0.15);
+      background: rgba(184, 106, 43, 0.14);
       color: var(--orange);
     }
 
     .chip-notyet {
-      background: rgba(100, 116, 139, 0.15);
+      background: rgba(116, 116, 110, 0.14);
       color: var(--gray);
     }
 
     .chip-absent,
     .chip-bad {
-      background: rgba(220, 38, 38, 0.14);
+      background: rgba(183, 66, 58, 0.13);
       color: var(--red);
     }
 
     .chip-dup {
-      background: rgba(37, 99, 235, 0.14);
-      color: var(--blue);
+      background: rgba(63, 64, 58, 0.12);
+      color: var(--accent);
     }
 
     .device-card {
@@ -595,9 +561,13 @@
       gap: 12px;
       padding: 11px 12px;
       border-radius: 16px;
-      background: rgba(148, 163, 184, 0.10);
+      background: rgba(92, 92, 84, 0.06);
       border: 1px solid var(--line);
       font-size: 13px;
+    }
+
+    html[data-theme="dark"] .info-item {
+      background: rgba(230, 226, 215, 0.06);
     }
 
     .info-label {
@@ -687,8 +657,8 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 4px solid rgba(37, 99, 235, 0.16);
-      border-top-color: var(--blue);
+      border: 4px solid rgba(63, 64, 58, 0.16);
+      border-top-color: var(--accent);
       margin: 0 auto 16px;
       animation: spin 0.75s linear infinite;
       will-change: transform;
@@ -720,8 +690,8 @@
       bottom: calc(20px + env(safe-area-inset-bottom));
       transform: translateX(-50%) translateY(8px);
       z-index: 200;
-      background: #111827;
-      color: white;
+      background: #1f2320;
+      color: #ffffff;
       padding: 12px 16px;
       border-radius: 999px;
       font-size: 13px;
@@ -834,7 +804,6 @@
         </div>
       </div>
 
-      <div class="brand-mark">2-12</div>
       <div class="login-title">2학년 12반 출석</div>
       <div class="login-sub">
         Google 계정 또는 관리자 계정으로 로그인하세요.
@@ -861,7 +830,6 @@
       <header class="topbar">
         <div class="topbar-inner">
           <div class="title-wrap">
-            <div class="mini-mark">2-12</div>
             <div>
               <h1>출석 대시보드</h1>
               <div id="todayPill" class="top-sub">----</div>
@@ -1072,7 +1040,7 @@
       mqttHost: "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",
       mqttPort: "8884",
       mqttUser: "jiukeum",
-      mqttPass: "",
+      mqttPass: "Ojh1532591!",
       topicStatus: "attendance/2-12/status",
       topicEvent: "attendance/2-12/event",
       topicHeartbeat: "attendance/2-12/heartbeat",
@@ -1083,7 +1051,7 @@
     let mqttClient = null;
     let lastEspSeenAt = 0;
     let espWatchTimer = null;
-    let loginLoadingType = "Ojh1532591!";
+    let loginLoadingType = "";
     let settingsUnlocked = false;
 
     document.addEventListener("DOMContentLoaded", function () {
