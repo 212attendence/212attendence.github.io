@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>2-12 출석 시스템</title>
-  <link rel="manifest" href="./manifest.json?v=7" />
-  <link rel="icon" type="image/png" href="./favicon.png?v=7" />
-  <link rel="apple-touch-icon" href="./favicon.png?v=7" />
+  <link rel="manifest" href="./manifest.json?v=8" />
+  <link rel="icon" type="image/png" href="./favicon.png?v=8" />
+  <link rel="apple-touch-icon" href="./favicon.png?v=8" />
   <meta name="theme-color" content="#fafaf8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="2-12 출석" />
@@ -61,12 +61,6 @@
   </main>
 
   <script>
-    function isMobileDevice() {
-      const ua = navigator.userAgent || "";
-      const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-      return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || iPadDesktop;
-    }
-
     function showHelpMenu() {
       document.title = "도움말 · 2-12 출석";
       document.getElementById("app").innerHTML = `
@@ -77,8 +71,8 @@
             <span>홈 화면 아이콘 설정<small>아이폰·안드로이드 홈 화면에 추가하는 방법</small></span>
             <span class="arrow">›</span>
           </a>
-          <a href="./setup-face-id/">
-            <span>Face ID / 기기 인증 설정<small>Face ID, Touch ID, Windows Hello 등록</small></span>
+          <a href="./setup-login-method/">
+            <span>로그인 방법 설정<small>Face ID, Touch ID, Windows Hello 등록</small></span>
             <span class="arrow">›</span>
           </a>
         </div>
