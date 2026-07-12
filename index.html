@@ -2,17 +2,17 @@
 <html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>2-12 출석 시스템</title>
 
-  <link rel="manifest" href="./manifest.json?v=5" />
-  <link rel="icon" type="image/png" href="./favicon.png?v=5" />
-  <link rel="shortcut icon" type="image/png" href="./favicon.png?v=5" />
+  <link rel="manifest" href="./manifest.json?v=6" />
+  <link rel="icon" type="image/png" href="./favicon.png?v=6" />
+  <link rel="shortcut icon" type="image/png" href="./favicon.png?v=6" />
   <meta name="theme-color" content="#fafaf8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="2-12 출석" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="apple-touch-icon" href="./favicon.png?v=5" />
+  <link rel="apple-touch-icon" href="./favicon.png?v=6" />
 
   <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
@@ -29,9 +29,7 @@
       --shadow: 0 18px 50px rgba(31, 35, 32, 0.07);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -90,6 +88,11 @@
       font-weight: 700;
       text-align: center;
     }
+
+    @media (max-width: 560px) {
+      body { padding: 14px; align-items: start; padding-top: max(34px, env(safe-area-inset-top)); }
+      .card { border-radius: 24px; padding: 30px 24px; }
+    }
   </style>
 </head>
 
@@ -97,47 +100,17 @@
   <main class="card">
     <h1>2학년 12반<br>출석 시스템</h1>
     <p>
-      관리자 로그인 후 출석 대시보드에 접속할 수 있습니다.
+      기기 인증 또는 복구 로그인을 통해 출석 대시보드에 접속합니다.
     </p>
 
     <button onclick="goLogin()">로그인</button>
 
     <div class="sub">
-      아이폰 홈 화면 앱에서는 자동 로그인이 유지됩니다.
+      자동 로그인 정보는 저장하지 않습니다.
     </div>
   </main>
 
   <script>
-    function isMobileOrPwa() {
-      const ua = navigator.userAgent || "";
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-      const isStandalone =
-        window.navigator.standalone === true ||
-        window.matchMedia("(display-mode: standalone)").matches;
-
-      return isMobile || isStandalone;
-    }
-
-    function restorePersistentAuth() {
-      if (!isMobileOrPwa()) return false;
-
-      try {
-        const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
-
-        if (!saved || !saved.loginType) return false;
-
-        Object.keys(saved).forEach(function (key) {
-          if (saved[key] != null) {
-            sessionStorage.setItem(key, saved[key]);
-          }
-        });
-
-        return true;
-      } catch (err) {
-        return false;
-      }
-    }
-
     function hasSession() {
       return !!(
         sessionStorage.getItem("sessionToken") ||
@@ -146,17 +119,11 @@
     }
 
     function goLogin() {
-      restorePersistentAuth();
-
-      if (hasSession()) {
-        location.href = "./dashboard/";
-      } else {
-        location.href = "./login/";
-      }
+      location.href = hasSession() ? "./dashboard/" : "./login/";
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-      restorePersistentAuth();
+      localStorage.removeItem("attendancePersistentAuth");
     });
   </script>
 </body>
