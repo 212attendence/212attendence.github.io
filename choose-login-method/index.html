@@ -4,44 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>로그인 방법 선택</title>
-  <link rel="manifest" href="../manifest.json?v=10">
-  <link rel="icon" href="../favicon.png?v=10">
-  <link rel="apple-touch-icon" href="../favicon.png?v=10">
-  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="../manifest.json?v=12">
+  <link rel="icon" href="../favicon.png?v=12">
+  <link rel="apple-touch-icon" href="../favicon.png?v=12">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=12">
+  <script src="../assets/app.js?v=12" defer></script>
   <style>
-    :root{--bg:#fafaf8;--soft:#f1f0ec;--card:#fffefb;--text:#1f2320;--muted:#74746e;--line:rgba(92,92,84,.18);--accent:#3f403a;--accentText:#fff;--shadow:0 18px 50px rgba(31,35,32,.07)}
-    @media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--soft:#303030;--card:#242424;--text:#f2f0ea;--muted:#aaa69e;--line:rgba(230,226,215,.14);--accent:#d8d3c5;--accentText:#1a1a1a;--shadow:0 22px 60px rgba(0,0,0,.32)}}
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--text);font-family:"Google Sans", "Google Sans Text", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif}
-    .card{width:min(460px,100%);padding:28px;border:1px solid var(--line);border-radius:28px;background:var(--card);box-shadow:var(--shadow)}
-    h1{margin:0;font-size:29px;letter-spacing:-.055em;font-weight:950}p{margin:10px 0 22px;color:var(--muted);line-height:1.6;font-size:14px;font-weight:700}
-    .options{display:grid;gap:12px}.option{width:100%;min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 17px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--text);cursor:pointer;text-align:left;font-family:inherit}.option strong{display:block;font-size:15px;font-weight:950}.option small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:700}.option.primary{background:var(--accent);color:var(--accentText);border-color:var(--accent)}.option.primary small{color:color-mix(in srgb,var(--accentText) 72%,transparent)}.arrow{font-size:24px;opacity:.75}.skip{width:100%;margin-top:16px;border:0;background:transparent;color:var(--muted);font:850 13px inherit;cursor:pointer}.note{margin-top:14px;padding:12px 13px;border-radius:14px;background:var(--soft);color:var(--muted);font-size:12px;line-height:1.55;font-weight:700}
-    @media(max-width:560px){body{padding:14px;align-items:start;padding-top:max(34px,env(safe-area-inset-top))}.card{padding:24px 20px;border-radius:24px}h1{font-size:27px}}
+    .choice-list{display:grid;gap:12px}.choice{width:100%;min-height:82px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 17px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);color:var(--text);text-align:left}.choice.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}.choice strong{display:block;font-size:15px;font-weight:900}.choice small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:650}.choice.primary small{color:color-mix(in srgb,var(--accent-text) 72%,transparent)}.arrow{font-size:24px;opacity:.72}.session-box{margin-top:14px}
   </style>
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
 </head>
-<body>
-  <main class="card">
-    <h1>로그인 방법 선택</h1>
-    <p>이 기기에서 앞으로 사용할 인증 방법을 선택하세요.</p>
-    <div class="options">
-      <button class="option primary" type="button" onclick="location.href='../setup-login-method/'">
-        <span><strong id="primaryTitle">기기 인증 설정</strong><small id="primarySub">Face ID, Touch ID, Windows Hello 또는 기기 PIN을 등록합니다.</small></span><span class="arrow">›</span>
+<body class="auth-page">
+  <main class="auth-card">
+    <div class="brand-chip">로그인 보안</div>
+    <h1>로그인 방법을 선택하세요</h1>
+    <p class="subtext">이 기기에서 다음부터 사용할 빠른 인증 방법을 설정합니다.</p>
+
+    <div class="choice-list">
+      <button class="choice primary" type="button" onclick="location.href='../setup-login-method/'">
+        <span><strong id="primaryTitle">패스키 설정</strong><small id="primarySub">Face ID·Touch ID·Windows Hello를 등록합니다.</small></span><span class="arrow">›</span>
       </button>
-      <button class="option" type="button" onclick="location.href='../dashboard/'">
-        <span><strong>지금은 설정하지 않기</strong><small>현재 로그인으로 대시보드에 들어갑니다. 설정에서 나중에 만들 수 있습니다.</small></span><span class="arrow">›</span>
+      <button class="choice" type="button" onclick="location.href='../dashboard/'">
+        <span><strong>지금은 건너뛰기</strong><small>현재 로그인으로 대시보드에 들어갑니다. 설정에서 나중에 만들 수 있습니다.</small></span><span class="arrow">›</span>
       </button>
     </div>
-    <button class="skip" type="button" onclick="logoutAndBack()">다른 계정으로 다시 로그인</button>
-    <div class="note">기기 인증 등록이 완료되면 다음 접속부터 로그인 페이지에서 기기 인증이 자동으로 실행됩니다.</div>
+
+    <div id="sessionInfo" class="status-box session-box">세션 정보를 확인하는 중입니다.</div>
+    <button class="link-button" type="button" onclick="logout()">다른 계정으로 로그인</button>
   </main>
+
   <script>
-    function hasSession(){return!!(sessionStorage.getItem("sessionToken")||sessionStorage.getItem("adminId"))}
-    function hasLocalPasskey(){return localStorage.getItem("attendancePasskeyRegistered")==="1"&&!!localStorage.getItem("attendancePasskeyCredentialId")}
-    function setDeviceText(){const ua=navigator.userAgent||"",title=document.getElementById("primaryTitle"),sub=document.getElementById("primarySub"),ipad=navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;if(/Windows/i.test(ua)){title.textContent="Windows Hello 설정";sub.textContent="얼굴, 지문 또는 Windows Hello PIN을 등록합니다."}else if(/iPhone|iPad|iPod/i.test(ua)||ipad){title.textContent="Face ID 설정";sub.textContent="Face ID, Touch ID 또는 기기 암호를 등록합니다."}else if(/Macintosh|Mac OS X/i.test(ua)){title.textContent="Touch ID 설정";sub.textContent="Touch ID 또는 Mac 로그인 암호를 등록합니다."}else if(/Android/i.test(ua)){title.textContent="기기 인증 설정";sub.textContent="지문, 얼굴 또는 화면 잠금 PIN을 등록합니다."}}
-    function logoutAndBack(){sessionStorage.clear();location.replace("../login/")}
-    document.addEventListener("DOMContentLoaded",function(){if(!hasSession()){sessionStorage.setItem("postLoginRoute","/choose-login-method/");location.replace("../login/?next=/choose-login-method/");return}if(hasLocalPasskey()){location.replace("../dashboard/");return}setDeviceText()});
+    document.addEventListener("DOMContentLoaded", function () {
+      AttendanceApp.Theme.init();
+      if (!AttendanceApp.Session.require("../login/", "/choose-login-method/")) return;
+      if (AttendanceApp.Passkey.isRegistered()) {
+        location.replace("../dashboard/");
+        return;
+      }
+      const device = AttendanceApp.Passkey.deviceInfo();
+      document.getElementById("primaryTitle").textContent = device.title + " 설정";
+      document.getElementById("primarySub").textContent = device.hint + "을 등록합니다.";
+      document.getElementById("sessionInfo").textContent = "현재 로그인은 " + AttendanceApp.Session.expiryText() + "까지 유효합니다.";
+    });
+
+    function logout() {
+      AttendanceApp.Session.clear();
+      location.replace("../login/");
+    }
   </script>
 </body>
 </html>
