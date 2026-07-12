@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>패스키 삭제</title>
+  <link rel="manifest" href="../manifest.json?v=9" />
+  <link rel="icon" type="image/png" href="../favicon.png?v=9" />
+  <link rel="apple-touch-icon" href="../favicon.png?v=9" />
+  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <style>
+    :root{--bg:#fafaf8;--card:#fffefb;--text:#1f2320;--muted:#74746e;--line:rgba(92,92,84,.18);--accent:#3f403a;--red:#b7423a;--soft:#f1f0ec;--shadow:0 18px 50px rgba(31,35,32,.07)}
+    @media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--card:#242424;--text:#f2f0ea;--muted:#aaa69e;--line:rgba(230,226,215,.14);--accent:#d8d3c5;--red:#e07b73;--soft:#303030;--shadow:0 22px 60px rgba(0,0,0,.32)}}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+    .card{width:min(460px,100%);padding:30px 24px;border:1px solid var(--line);border-radius:28px;background:var(--card);box-shadow:var(--shadow)}
+    .icon{width:62px;height:62px;display:grid;place-items:center;margin-bottom:18px;border-radius:20px;background:rgba(183,66,58,.12);color:var(--red);font-size:28px;font-weight:950}
+    h1{margin:0;font-size:29px;letter-spacing:-.055em;font-weight:950}
+    p{margin:10px 0 22px;color:var(--muted);font-size:14px;line-height:1.65;font-weight:700}
+    .actions{display:grid;gap:10px}
+    button{min-height:49px;border:0;border-radius:15px;font:950 14px inherit;cursor:pointer}
+    .yes{background:var(--red);color:#fff}.no{background:var(--soft);color:var(--text);border:1px solid var(--line)}
+    .note{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:700}
+    @media(max-width:560px){body{padding:14px;align-items:start;padding-top:max(34px,env(safe-area-inset-top))}.card{padding:24px 20px;border-radius:24px}h1{font-size:27px}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="icon">!</div>
+    <h1>패스키를 삭제하시겠습니까?</h1>
+    <p>삭제하려면 관리자 계정 또는 허용된 Google 계정으로 다시 인증해야 합니다.</p>
+    <div class="actions">
+      <button class="yes" type="button" onclick="continueDelete()">예</button>
+      <button class="no" type="button" onclick="location.replace('../dashboard/')">아니요, 메인 화면으로 다시 돌아가겠습니다</button>
+    </div>
+    <div class="note">사이트에서 패스키를 삭제한 뒤 운영체제 또는 비밀번호 관리자에 남아 있는 패스키도 별도로 삭제할 수 있습니다.</div>
+  </main>
+  <script>
+    function hasSession(){return !!(sessionStorage.getItem("sessionToken")||sessionStorage.getItem("adminId"))}
+    function hasPasskey(){return localStorage.getItem("attendancePasskeyRegistered")==="1"&&!!localStorage.getItem("attendancePasskeyCredentialId")}
+    document.addEventListener("DOMContentLoaded",function(){
+      if(!hasSession()){location.replace("../login/?next=/dashboard/");return}
+      if(sessionStorage.getItem("loginType")!=="passkey"||!hasPasskey()){location.replace("../dashboard/")}
+    });
+    function continueDelete(){
+      sessionStorage.setItem("passkeyDeletePending","1");
+      sessionStorage.setItem("passkeyDeleteCredentialId",localStorage.getItem("attendancePasskeyCredentialId")||"");
+      location.href="../verify-admin/";
+    }
+  </script>
+</body>
+</html>
