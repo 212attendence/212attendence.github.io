@@ -4,191 +4,83 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>출석 대시보드</title>
-
-  <link rel="manifest" href="../manifest.json?v=5" />
-  <link rel="icon" type="image/png" href="../favicon.png?v=5" />
-  <link rel="shortcut icon" type="image/png" href="../favicon.png?v=5" />
+  <link rel="manifest" href="../manifest.json?v=9" />
+  <link rel="icon" type="image/png" href="../favicon.png?v=9" />
+  <link rel="apple-touch-icon" href="../favicon.png?v=9" />
   <meta name="theme-color" content="#fafaf8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="2-12 출석" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="apple-touch-icon" href="../favicon.png?v=5" />
-
-  <link rel="stylesheet" as="style" crossorigin
-        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
   <style>
     :root {
-      color-scheme: light;
-      --bg: #fafaf8;
-      --bg-soft: #f1f0ec;
-      --card: rgba(255, 255, 252, 0.94);
-      --card-solid: #fffefb;
-      --text: #1f2320;
-      --muted: #74746e;
-      --line: rgba(92, 92, 84, 0.18);
-      --accent: #3f403a;
-      --accent-hover: #2e302b;
-      --accent-text: #ffffff;
-      --green: #2f8f5b;
-      --orange: #b86a2b;
-      --red: #b7423a;
-      --gray: #74746e;
-      --shadow: 0 18px 50px rgba(31, 35, 32, 0.07);
-      --overlay: rgba(31, 35, 32, 0.50);
-      --input: #fffefb;
-      --switch-bg: rgba(92, 92, 84, 0.12);
-      --switch-thumb: #3f403a;
-      --switch-shadow: rgba(63, 64, 58, 0.22);
+      color-scheme:light;
+      --bg:#fafaf8; --soft:#f1f0ec; --card:rgba(255,255,252,.95); --solid:#fffefb;
+      --text:#1f2320; --muted:#74746e; --line:rgba(92,92,84,.18); --accent:#3f403a;
+      --accent-text:#fff; --green:#2f8f5b; --orange:#b86a2b; --red:#b7423a;
+      --shadow:0 18px 50px rgba(31,35,32,.07); --overlay:rgba(31,35,32,.5); --input:#fffefb;
     }
-
     html[data-theme="dark"] {
-      color-scheme: dark;
-      --bg: #1a1a1a;
-      --bg-soft: #242424;
-      --card: rgba(38, 38, 38, 0.90);
-      --card-solid: #242424;
-      --text: #f2f0ea;
-      --muted: #aaa69e;
-      --line: rgba(230, 226, 215, 0.14);
-      --accent: #d8d3c5;
-      --accent-hover: #eee8d9;
-      --accent-text: #1a1a1a;
-      --green: #78c59a;
-      --orange: #d79a62;
-      --red: #e07b73;
-      --gray: #aaa69e;
-      --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
-      --overlay: rgba(0, 0, 0, 0.58);
-      --input: #202020;
-      --switch-bg: rgba(230, 226, 215, 0.12);
-      --switch-thumb: #d8d3c5;
-      --switch-shadow: rgba(216, 211, 197, 0.22);
+      color-scheme:dark;
+      --bg:#1a1a1a; --soft:#242424; --card:rgba(38,38,38,.92); --solid:#242424;
+      --text:#f2f0ea; --muted:#aaa69e; --line:rgba(230,226,215,.14); --accent:#d8d3c5;
+      --accent-text:#1a1a1a; --green:#78c59a; --orange:#d79a62; --red:#e07b73;
+      --shadow:0 22px 60px rgba(0,0,0,.32); --overlay:rgba(0,0,0,.58); --input:#202020;
     }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; min-height: 100vh; font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--text); }
-    input, button { font-family: inherit; }
-    button { border: 0; cursor: pointer; }
-    button:disabled, input:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    html.theme-animate, html.theme-animate body, html.theme-animate .card, html.theme-animate .summary-card,
-    html.theme-animate .device-card, html.theme-animate .panel, html.theme-animate .modal,
-    html.theme-animate .modal-head, html.theme-animate .loading-panel, html.theme-animate input,
-    html.theme-animate .btn-soft, html.theme-animate .pill, html.theme-animate .info-item,
-    html.theme-animate .log-row, html.theme-animate .log-header, html.theme-animate .theme-switch,
-    html.theme-animate .theme-switch button, html.theme-animate .theme-thumb, html.theme-animate .topbar,
-    html.theme-animate .toast { transition: background-color .75s ease, background .75s ease, color .75s ease, border-color .75s ease, box-shadow .75s ease, opacity .75s ease, transform .75s cubic-bezier(.22,1,.36,1); }
-
-    .app { width: min(1120px, 100%); margin: 0 auto; padding: 22px; }
-    .card, .panel, .summary-card, .device-card { background: var(--card); border: 1px solid var(--line); border-radius: 28px; box-shadow: var(--shadow); backdrop-filter: blur(14px); }
-    .topbar { position: sticky; top: 0; z-index: 20; padding: 14px 0; background: linear-gradient(to bottom, var(--bg), rgba(250,250,248,0)); backdrop-filter: blur(8px); }
-    html[data-theme="dark"] .topbar { background: linear-gradient(to bottom, var(--bg), rgba(26,26,26,0)); }
-    .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    h1 { margin: 0; font-size: 24px; line-height: 1.1; letter-spacing: -0.05em; font-weight: 950; white-space: nowrap; }
-    .top-sub { margin-top: 4px; color: var(--muted); font-size: 13px; font-weight: 700; }
-    .actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; padding: 12px 14px; font-weight: 900; font-size: 14px; min-height: 44px; }
-    .btn:active { transform: scale(0.98); }
-    .btn-primary { width: 100%; background: var(--accent); color: var(--accent-text); margin-top: 14px; }
-    .btn-soft { background: var(--bg-soft); color: var(--text); border: 1px solid var(--line); }
-    .btn-danger { background: rgba(183,66,58,0.11); color: var(--red); border: 1px solid rgba(183,66,58,0.20); }
-
-    .theme-switch { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 142px; height: 40px; padding: 4px; border-radius: 999px; background: var(--switch-bg); border: 1px solid var(--line); overflow: hidden; flex: 0 0 auto; }
-    .theme-thumb { position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); border-radius: 999px; background: var(--switch-thumb); box-shadow: 0 8px 18px var(--switch-shadow); transform: translateX(0); z-index: 0; }
-    html[data-theme="dark"] .theme-thumb { transform: translateX(100%); }
-    .theme-switch button { position: relative; z-index: 1; min-height: 30px; padding: 0 10px; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 950; white-space: nowrap; }
-    .theme-switch button.active { color: var(--accent-text); }
-    html[data-theme="dark"] .theme-switch button.active { color: #1a1a1a; }
-
-    .grid { display: grid; gap: 14px; }
-    .summary-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 12px 0 14px; }
-    .summary-card { padding: 18px; }
-    .summary-label { color: var(--muted); font-size: 13px; font-weight: 850; }
-    .summary-value { margin-top: 8px; font-size: 32px; font-weight: 950; letter-spacing: -0.05em; }
-    .content-grid { grid-template-columns: 1.4fr 0.8fr; align-items: start; }
-
-    .panel { overflow: hidden; }
-    .panel-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .panel-title { font-size: 17px; font-weight: 950; letter-spacing: -0.03em; }
-    .panel-sub { margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
-    .log-list { display: flex; flex-direction: column; }
-    .log-row { display: grid; grid-template-columns: 72px 82px 1fr 80px; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 14px; }
-    .log-row:last-child { border-bottom: 0; }
-    .log-header { background: rgba(92,92,84,0.06); color: var(--muted); font-size: 12px; font-weight: 950; text-transform: uppercase; }
-    html[data-theme="dark"] .log-header { background: rgba(230,226,215,0.06); }
-
-    .status-chip { display: inline-flex; justify-content: center; min-width: 62px; border-radius: 999px; padding: 6px 8px; font-size: 12px; font-weight: 950; }
-    .chip-present { background: rgba(47,143,91,0.14); color: var(--green); }
-    .chip-late { background: rgba(184,106,43,0.14); color: var(--orange); }
-    .chip-notyet { background: rgba(116,116,110,0.14); color: var(--gray); }
-    .chip-absent, .chip-bad { background: rgba(183,66,58,0.13); color: var(--red); }
-    .chip-dup { background: rgba(63,64,58,0.12); color: var(--accent); }
-
-    .badge { border-radius: 999px; padding: 5px 8px; font-size: 11px; font-weight: 950; letter-spacing: 0.02em; }
-    .online { background: rgba(47,143,91,0.14); color: var(--green); }
-    .offline { background: rgba(183,66,58,0.13); color: var(--red); }
-    .connecting { background: rgba(184,106,43,0.14); color: var(--orange); }
-
-    .device-card { padding: 18px; }
-    .info-list { display: grid; gap: 10px; margin-top: 14px; }
-    .info-item { display: flex; justify-content: space-between; gap: 12px; padding: 11px 12px; border-radius: 16px; background: rgba(92,92,84,0.06); border: 1px solid var(--line); font-size: 13px; }
-    html[data-theme="dark"] .info-item { background: rgba(230,226,215,0.06); }
-    .info-label { color: var(--muted); font-weight: 850; }
-    .info-value { font-weight: 900; text-align: right; word-break: break-all; }
-    .muted { color: var(--muted); }
-
-    input { width: 100%; padding: 13px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--input); color: var(--text); outline: none; font-size: 15px; }
-    label { display: block; font-size: 13px; font-weight: 850; margin: 12px 0 7px; }
-
-    .modal-backdrop, .loading-overlay { position: fixed; inset: 0; background: var(--overlay); display: none; place-items: center; padding: 20px; z-index: 100; }
-    .modal-backdrop.show, .loading-overlay.show { display: grid; }
-    .modal { width: min(520px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow: auto; background: var(--card-solid); border: 1px solid var(--line); border-radius: 28px; box-shadow: var(--shadow); }
-    .modal-head { position: sticky; top: 0; background: var(--card-solid); padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .modal-title { font-size: 18px; font-weight: 950; }
-    .modal-body { padding: 18px 20px 22px; }
-    .loading-panel { width: min(360px, 100%); padding: 26px 22px; border-radius: 28px; background: var(--card-solid); border: 1px solid var(--line); box-shadow: var(--shadow); text-align: center; }
-    .spinner { width: 42px; height: 42px; border-radius: 50%; border: 4px solid rgba(63,64,58,0.16); border-top-color: var(--accent); margin: 0 auto 16px; animation: spin .75s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-title { font-size: 18px; font-weight: 950; }
-    .loading-sub { margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 750; line-height: 1.5; word-break: break-all; }
-    .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(8px); background: #1f2320; color: #fff; border-radius: 999px; padding: 12px 16px; font-size: 13px; font-weight: 850; opacity: 0; transition: .25s ease; pointer-events: none; z-index: 300; max-width: calc(100vw - 32px); text-align: center; }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .pc-hidden { display: none !important; }
-
-    @media (hover: hover) and (pointer: fine) {
-      .push-ui { display: none !important; }
-    }
-
-    @media (max-width: 860px) {
-      .app { padding: 16px; }
-      .topbar-inner { align-items: flex-start; flex-direction: column; }
-      .actions { justify-content: flex-start; }
-      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .content-grid { grid-template-columns: 1fr; }
-      .log-row { grid-template-columns: 64px 72px 1fr 62px; padding: 13px 14px; font-size: 13px; }
-      h1 { font-size: 22px; }
-      .summary-value { font-size: 28px; }
-    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+    button,input{font:inherit} button{border:0;cursor:pointer} button:disabled,input:disabled{opacity:.55;cursor:not-allowed}
+    .app{width:min(1120px,100%);margin:auto;padding:22px}
+    .topbar{position:sticky;top:0;z-index:20;padding:14px 0;background:linear-gradient(to bottom,var(--bg),transparent);backdrop-filter:blur(8px)}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{margin:0;font-size:24px;line-height:1.1;letter-spacing:-.05em;font-weight:950}
+    .sub{margin-top:4px;color:var(--muted);font-size:13px;font-weight:700}
+    .actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 14px;border-radius:14px;font-size:14px;font-weight:900}
+    .btn:active{transform:scale(.98)} .btn-soft{background:var(--soft);color:var(--text);border:1px solid var(--line)}
+    .btn-primary{width:100%;margin-top:14px;background:var(--accent);color:var(--accent-text)}
+    .btn-danger{background:rgba(183,66,58,.11);color:var(--red);border:1px solid rgba(183,66,58,.2)}
+    .theme-switch{display:grid;grid-template-columns:1fr 1fr;width:142px;height:40px;padding:4px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+    .theme-switch button{border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:950}
+    .theme-switch button.active{background:var(--accent);color:var(--accent-text)}
+    .grid{display:grid;gap:14px}.summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin:12px 0 14px}
+    .summary-card,.panel,.device-card{background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);backdrop-filter:blur(14px)}
+    .summary-card{padding:18px}.summary-label{color:var(--muted);font-size:13px;font-weight:850}.summary-value{margin-top:8px;font-size:32px;font-weight:950}
+    .content-grid{grid-template-columns:1.4fr .8fr;align-items:start}.panel{overflow:hidden}
+    .panel-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .panel-title{font-size:17px;font-weight:950;letter-spacing:-.03em}.panel-sub{margin-top:4px;color:var(--muted);font-size:12px;font-weight:700}
+    .log-row{display:grid;grid-template-columns:72px 82px 1fr 80px;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px}
+    .log-header{background:rgba(92,92,84,.06);color:var(--muted);font-size:12px;font-weight:950}
+    .status-chip{display:inline-flex;justify-content:center;min-width:62px;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:950}
+    .present{background:rgba(47,143,91,.14);color:var(--green)}.late{background:rgba(184,106,43,.14);color:var(--orange)}
+    .notyet{background:rgba(116,116,110,.14);color:var(--muted)}.bad{background:rgba(183,66,58,.13);color:var(--red)}
+    .badge{border-radius:999px;padding:5px 8px;font-size:11px;font-weight:950}.online{background:rgba(47,143,91,.14);color:var(--green)}
+    .offline{background:rgba(183,66,58,.13);color:var(--red)}.connecting{background:rgba(184,106,43,.14);color:var(--orange)}
+    .device-card{padding:18px}.info-list{display:grid;gap:10px;margin-top:14px}.info-item{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:16px;background:rgba(92,92,84,.06);border:1px solid var(--line);font-size:13px}
+    .info-label{color:var(--muted);font-weight:850}.info-value{font-weight:900;text-align:right;word-break:break-all}
+    .modal-backdrop,.loading{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:var(--overlay);z-index:100}
+    .modal-backdrop.show,.loading.show{display:grid}.modal{width:min(540px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--solid);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+    .modal-head{position:sticky;top:0;background:var(--solid);padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .modal-body{padding:18px 20px 22px}.section-title{margin:18px 0 8px;font-size:14px;font-weight:950}.section-title:first-child{margin-top:0}
+    .passkey-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--soft)}
+    .passkey-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:750}
+    label{display:block;margin:12px 0 7px;font-size:13px;font-weight:850}input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--input);color:var(--text);outline:none}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);max-width:calc(100vw - 32px);padding:12px 16px;border-radius:999px;background:#1f2320;color:#fff;font-size:13px;font-weight:850;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:300}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.spinner{width:42px;height:42px;margin:0 auto 16px;border-radius:50%;border:4px solid rgba(63,64,58,.16);border-top-color:var(--accent);animation:spin .75s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}.loading-card{width:min(360px,100%);padding:26px 22px;border-radius:28px;background:var(--solid);text-align:center}
+    .loading-title{font-size:18px;font-weight:950}.loading-sub{margin-top:8px;color:var(--muted);font-size:13px;font-weight:750}
+    .pc-hidden{display:none!important}
+    @media(hover:hover) and (pointer:fine){.push-ui{display:none!important}}
+    @media(max-width:860px){.app{padding:16px}.topbar-inner{align-items:flex-start;flex-direction:column}.actions{justify-content:flex-start}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{grid-template-columns:1fr}.log-row{grid-template-columns:64px 72px 1fr 62px;padding:13px 14px;font-size:13px}}
   </style>
 </head>
-
 <body>
-  <main class="app dashboard">
+  <main class="app">
     <section class="topbar">
       <div class="topbar-inner">
-        <div>
-          <h1>출석 대시보드</h1>
-          <div id="todayText" class="top-sub">2학년 12반 · 오늘 출석 현황</div>
-        </div>
+        <div><h1>출석 대시보드</h1><div id="todayText" class="sub">2학년 12반 · 오늘 출석 현황</div></div>
         <div class="actions">
-          <div class="theme-switch" aria-label="theme switch">
-            <span class="theme-thumb"></span>
-            <button id="lightBtn" onclick="setTheme('light')">Light</button>
-            <button id="darkBtn" onclick="setTheme('dark')">Dark</button>
-          </div>
+          <div class="theme-switch"><button id="lightBtn" onclick="setTheme('light')">Light</button><button id="darkBtn" onclick="setTheme('dark')">Dark</button></div>
           <button id="pushBtn" class="btn btn-soft push-ui" onclick="enablePushNotifications()">알림 확인중</button>
           <button class="btn btn-soft" onclick="loadTodayLogs(true)">새로고침</button>
           <button class="btn btn-soft" onclick="openSettingsModal()">설정</button>
@@ -198,7 +90,7 @@
     </section>
 
     <section class="grid summary-grid">
-      <div class="summary-card"><div class="summary-label">전체 로그</div><div id="sumTotal" class="summary-value">-</div></div>
+      <div class="summary-card"><div class="summary-label">전체</div><div id="sumTotal" class="summary-value">-</div></div>
       <div class="summary-card"><div class="summary-label">출석</div><div id="sumPresent" class="summary-value">-</div></div>
       <div class="summary-card"><div class="summary-label">지각</div><div id="sumLate" class="summary-value">-</div></div>
       <div class="summary-card"><div class="summary-label">결석</div><div id="sumAbsent" class="summary-value">-</div></div>
@@ -207,23 +99,13 @@
 
     <section class="grid content-grid">
       <div class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">오늘 출석 로그</div>
-            <div id="logSub" class="panel-sub">Google Sheets에서 불러오는 중</div>
-          </div>
-          <span id="mqttBadge" class="badge offline">MQTT OFFLINE</span>
-        </div>
-        <div class="log-list">
-          <div class="log-row log-header"><div>시간</div><div>상태</div><div>이름</div><div>지문ID</div></div>
-          <div id="logList"></div>
-        </div>
+        <div class="panel-head"><div><div class="panel-title">오늘 출석 로그</div><div id="logSub" class="panel-sub">Google Sheets에서 불러오는 중</div></div><span id="mqttBadge" class="badge offline">MQTT OFFLINE</span></div>
+        <div class="log-row log-header"><div>시간</div><div>상태</div><div>이름</div><div>지문ID</div></div>
+        <div id="logList"></div>
       </div>
-
       <aside class="grid">
         <div class="device-card">
-          <div class="panel-title">ESP32 장치 상태</div>
-          <div class="panel-sub">MQTT heartbeat 기준</div>
+          <div class="panel-title">ESP32 장치 상태</div><div class="panel-sub">MQTT heartbeat 기준</div>
           <div class="info-list">
             <div class="info-item"><span class="info-label">장치</span><span id="espBadge" class="badge offline">OFFLINE</span></div>
             <div class="info-item"><span class="info-label">Wi-Fi</span><span id="deviceWifi" class="info-value">-</span></div>
@@ -233,14 +115,9 @@
             <div class="info-item"><span class="info-label">Last seen</span><span id="deviceSeen" class="info-value">-</span></div>
           </div>
         </div>
-
         <div id="pushStatusCard" class="device-card push-ui">
-          <div class="panel-title">알림 상태</div>
-          <div class="panel-sub">iPhone 홈 화면 앱에서만 Web Push 가능</div>
-          <div class="info-list">
-            <div class="info-item"><span class="info-label">권한</span><span id="pushPermissionText" class="info-value">확인중</span></div>
-            <div class="info-item"><span class="info-label">PWA</span><span id="pwaText" class="info-value">확인중</span></div>
-          </div>
+          <div class="panel-title">알림 상태</div><div class="panel-sub">모바일 홈 화면 앱</div>
+          <div class="info-list"><div class="info-item"><span class="info-label">권한</span><span id="pushPermissionText" class="info-value">확인중</span></div><div class="info-item"><span class="info-label">PWA</span><span id="pwaText" class="info-value">확인중</span></div></div>
         </div>
       </aside>
     </section>
@@ -248,707 +125,102 @@
 
   <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal">
-      <div class="modal-head">
-        <div class="modal-title">MQTT 설정</div>
-        <button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button>
-      </div>
+      <div class="modal-head"><div class="panel-title">설정</div><button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button></div>
       <div class="modal-body">
-        <label for="setMqttHost">MQTT Host</label>
-        <input id="setMqttHost" placeholder="HiveMQ host" />
-        <label for="setMqttPort">MQTT WebSocket TLS Port</label>
-        <input id="setMqttPort" placeholder="8884" />
-        <label for="setMqttUser">MQTT User</label>
-        <input id="setMqttUser" placeholder="username" />
-        <label for="setMqttPass">MQTT Password</label>
-        <input id="setMqttPass" type="password" placeholder="password" />
-        <label for="setTopicStatus">Status Topic</label>
-        <input id="setTopicStatus" placeholder="attendance/2-12/status" />
-        <label for="setTopicEvent">Event Topic</label>
-        <input id="setTopicEvent" placeholder="attendance/2-12/event" />
-        <label for="setTopicHeartbeat">Heartbeat Topic</label>
-        <input id="setTopicHeartbeat" placeholder="attendance/2-12/heartbeat" />
-        <label for="setEspOfflineSec">ESP Offline 기준 초</label>
-        <input id="setEspOfflineSec" placeholder="25" />
+        <div class="section-title">로그인 방법</div>
+        <div class="passkey-card">
+          <p id="passkeyActionText">이 기기의 패스키 상태를 확인합니다.</p>
+          <button id="passkeyActionBtn" class="btn btn-soft" style="width:100%" onclick="handlePasskeySetting()">확인 중</button>
+        </div>
+
+        <div class="section-title">MQTT 설정</div>
+        <label for="setMqttHost">MQTT Host</label><input id="setMqttHost" placeholder="HiveMQ host" />
+        <label for="setMqttPort">MQTT WebSocket TLS Port</label><input id="setMqttPort" placeholder="8884" />
+        <label for="setMqttUser">MQTT User</label><input id="setMqttUser" placeholder="username" />
+        <label for="setMqttPass">MQTT Password</label><input id="setMqttPass" type="password" placeholder="password" />
+        <label for="setTopicStatus">Status Topic</label><input id="setTopicStatus" />
+        <label for="setTopicEvent">Event Topic</label><input id="setTopicEvent" />
+        <label for="setTopicHeartbeat">Heartbeat Topic</label><input id="setTopicHeartbeat" />
+        <label for="setEspOfflineSec">ESP Offline 기준 초</label><input id="setEspOfflineSec" placeholder="25" />
         <button class="btn btn-primary" onclick="saveSettings()">저장</button>
       </div>
     </div>
   </div>
 
-  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
-    <div class="loading-panel">
-      <div class="spinner"></div>
-      <div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div>
-      <div id="loadingSub" class="loading-sub">처리 중입니다.</div>
-    </div>
-  </div>
-
+  <div id="loadingOverlay" class="loading" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div><div id="loadingSub" class="loading-sub">처리 중입니다.</div></div></div>
   <div id="toast" class="toast">알림</div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    const APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    window.APPS_SCRIPT_URL=APPS_SCRIPT_URL;
+    const DEFAULT_SETTINGS={mqttHost:"793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",mqttPort:"8884",mqttUser:"",mqttPass:"",topicStatus:"attendance/2-12/status",topicEvent:"attendance/2-12/event",topicHeartbeat:"attendance/2-12/heartbeat",espOfflineSec:"25"};
+    let appSettings={...DEFAULT_SETTINGS},mqttClient=null,lastEspSeenAt=0,espWatchTimer=null;
 
-    const DEFAULT_SETTINGS = {
-      mqttHost: "793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",
-      mqttPort: "8884",
-      mqttUser: "",
-      mqttPass: "",
-      topicStatus: "attendance/2-12/status",
-      topicEvent: "attendance/2-12/event",
-      topicHeartbeat: "attendance/2-12/heartbeat",
-      espOfflineSec: "25"
-    };
-
-    let appSettings = { ...DEFAULT_SETTINGS };
-    let mqttClient = null;
-    let lastEspSeenAt = 0;
-    let espWatchTimer = null;
-
-    document.addEventListener("DOMContentLoaded", function () {
-      if (!isMobilePushTarget()) hidePushUiForPc();
-
-      restorePersistentAuth();
-      if (!hasSession()) {
-        location.replace("../login/");
-        return;
-      }
-
-      document.getElementById("todayText").textContent = "2학년 12반 · " + new Date().toLocaleDateString("ko-KR") + " 출석 현황";
-      applyStoredTheme();
-      startLoading("대시보드 로딩 중입니다", "설정과 오늘 로그를 불러옵니다.");
-      loadRemoteSettings(function () {
-        connectMqtt();
-        startEspWatchdog();
-        loadTodayLogs(false, stopLoading);
-      });
+    document.addEventListener("DOMContentLoaded",function(){
+      localStorage.removeItem("attendancePersistentAuth");
+      if(!hasSession()){location.replace("../login/");return}
+      if(!isMobilePushTarget())hidePushUiForPc();
+      document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";
+      applyStoredTheme();renderPasskeySetting();
+      startLoading("대시보드 로딩 중입니다","설정과 오늘 로그를 불러옵니다.");
+      loadRemoteSettings(function(){connectMqtt();startEspWatchdog();loadTodayLogs(false,stopLoading)});
     });
 
-    function isMobilePushTarget() {
-      const ua = navigator.userAgent || "";
-      const isiOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
-      const isAndroid = /Android/i.test(ua);
-      return isiOS || isAndroid;
+    function hasSession(){return!!(sessionStorage.getItem("sessionToken")||sessionStorage.getItem("adminId"))}
+    function addAuthParams(p){const t=sessionStorage.getItem("sessionToken")||"";if(t)p.set("sessionToken",t);else{p.set("adminId",sessionStorage.getItem("adminId")||"");p.set("adminPw",sessionStorage.getItem("adminPw")||"")}}
+    function logout(){sessionStorage.clear();disconnectMqtt();location.replace("../login/")}
+    function hasLocalPasskey(){return localStorage.getItem("attendancePasskeyRegistered")==="1"&&!!localStorage.getItem("attendancePasskeyCredentialId")}
+    function renderPasskeySetting(){
+      const btn=document.getElementById("passkeyActionBtn"),text=document.getElementById("passkeyActionText");
+      const loginType=sessionStorage.getItem("loginType")||"";
+      if(loginType==="passkey"&&hasLocalPasskey()){btn.textContent="패스키 삭제";btn.className="btn btn-danger";btn.disabled=false;text.textContent="현재 패스키로 로그인했습니다. 이 기기의 패스키를 삭제할 수 있습니다.";return}
+      if(!hasLocalPasskey()){btn.textContent="패스키 생성";btn.className="btn btn-soft";btn.disabled=false;text.textContent="이 기기에 등록된 패스키가 없습니다. 새 패스키를 생성할 수 있습니다.";return}
+      btn.textContent="패스키가 등록되어 있습니다";btn.className="btn btn-soft";btn.disabled=true;text.textContent="패스키를 삭제하려면 다음 로그인에서 패스키로 로그인한 뒤 설정을 여세요."
     }
+    function handlePasskeySetting(){const loginType=sessionStorage.getItem("loginType")||"";if(loginType==="passkey"&&hasLocalPasskey())location.href="../delete-passkey/";else if(!hasLocalPasskey())location.href="../setup-login-method/"}
 
-    function hidePushUiForPc() {
-      const pushBtn = document.getElementById("pushBtn");
-      const pushStatusCard = document.getElementById("pushStatusCard");
-      if (pushBtn) pushBtn.classList.add("pc-hidden");
-      if (pushStatusCard) pushStatusCard.classList.add("pc-hidden");
-    }
+    function applyStoredTheme(){setTheme(sessionStorage.getItem("theme")||localStorage.getItem("attendanceTheme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),true)}
+    function setTheme(theme,silent){const next=theme==="dark"?"dark":"light";document.documentElement.setAttribute("data-theme",next);sessionStorage.setItem("theme",next);localStorage.setItem("attendanceTheme",next);document.getElementById("lightBtn").classList.toggle("active",next==="light");document.getElementById("darkBtn").classList.toggle("active",next==="dark")}
 
-    window.isMobilePushTarget = isMobilePushTarget;
-    window.hidePushUiForPc = hidePushUiForPc;
+    function loadRemoteSettings(done){const p=new URLSearchParams({action:"getDashboardSettingsJsonp"});addAuthParams(p);callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){if(r&&r.ok)appSettings={...DEFAULT_SETTINGS,...(r.settings||r.data||{})};else toast((r&&r.message)||"원격 설정을 불러오지 못했습니다.");if(done)done()})}
+    function loadTodayLogs(showToast,done){const p=new URLSearchParams({action:"todayLogs"});addAuthParams(p);callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){if(!r||!r.ok){toast((r&&r.message)||"로그 불러오기 실패");if(done)done();return}const logs=normalizeLogs(r.logs||[]);renderLogs(logs);renderSummary(logs,r.summary||null);document.getElementById("logSub").textContent="마지막 업데이트 "+new Date().toLocaleTimeString("ko-KR");if(showToast)toast("새로고침 완료");if(done)done()})}
+    function normalizeLogs(rows){return Array.isArray(rows)?rows.map(r=>({time:r.time||r.시간||r.timestamp||"-",status:r.status||r.상태||"-",name:r.name||r.이름||"-",fingerId:r.fingerId||r.지문ID||"-"})).reverse():[]}
+    function renderLogs(logs){const el=document.getElementById("logList");if(!logs.length){el.innerHTML='<div class="log-row"><div>-</div><div><span class="status-chip notyet">없음</span></div><div>오늘 로그가 없습니다.</div><div>-</div></div>';return}el.innerHTML=logs.map(x=>'<div class="log-row"><div>'+esc(formatTime(x.time))+'</div><div><span class="status-chip '+statusClass(x.status)+'">'+esc(x.status)+'</span></div><div>'+esc(x.name)+'</div><div>'+esc(x.fingerId)+'</div></div>').join("")}
+    function renderSummary(logs,s){const c={total:logs.length,present:0,late:0,absent:0,notYet:0};logs.forEach(x=>{const v=String(x.status);if(v.includes("지각"))c.late++;else if(v.includes("출석")&&!v.includes("미출석"))c.present++;else if(v.includes("결석"))c.absent++;else if(v.includes("미출석"))c.notYet++});if(s)Object.keys(c).forEach(k=>{if(s[k]!=null)c[k]=Number(s[k])||0});["Total","Present","Late","Absent","NotYet"].forEach(k=>document.getElementById("sum"+k).textContent=c[k.charAt(0).toLowerCase()+k.slice(1)])}
+    function statusClass(s){s=String(s);if(s.includes("지각"))return"late";if(s.includes("출석")&&!s.includes("미출석"))return"present";if(s.includes("결석")||s.includes("오류")||s.includes("미등록"))return"bad";return"notyet"}
+    function formatTime(v){const m=String(v||"").match(/(\d{1,2}:\d{2}(?::\d{2})?)/);return m?m[1]:(v||"-")}
 
-    function restorePersistentAuth() {
-      if (!isMobilePushTarget()) return false;
-      try {
-        const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
-        if (!saved || !saved.loginType) return false;
-        Object.keys(saved).forEach(function (key) {
-          if (saved[key] != null && saved[key] !== "") sessionStorage.setItem(key, saved[key]);
-        });
-        return true;
-      } catch (err) {
-        return false;
-      }
-    }
+    function connectMqtt(){disconnectMqtt();if(!window.mqtt||!appSettings.mqttHost||!appSettings.mqttUser||!appSettings.mqttPass){setMqttBadge("offline");return}setMqttBadge("connecting");mqttClient=mqtt.connect("wss://"+appSettings.mqttHost+":"+(appSettings.mqttPort||"8884")+"/mqtt",{username:appSettings.mqttUser,password:appSettings.mqttPass,clean:true,connectTimeout:8000,reconnectPeriod:4000,clientId:"dashboard_2_12_"+Math.random().toString(16).slice(2)});mqttClient.on("connect",()=>{setMqttBadge("online");[appSettings.topicStatus,appSettings.topicEvent,appSettings.topicHeartbeat].forEach(t=>t&&mqttClient.subscribe(t))});mqttClient.on("reconnect",()=>setMqttBadge("connecting"));mqttClient.on("close",()=>setMqttBadge("offline"));mqttClient.on("error",()=>setMqttBadge("offline"));mqttClient.on("message",(topic,payload)=>{let d={};try{d=JSON.parse(payload.toString())}catch(e){}if(topic===appSettings.topicHeartbeat||topic===appSettings.topicStatus||topic===appSettings.topicEvent){lastEspSeenAt=Date.now();setEspBadge(true);updateDeviceInfo(d)}if(topic===appSettings.topicEvent)setTimeout(()=>loadTodayLogs(false),600)})}
+    function disconnectMqtt(){if(mqttClient){try{mqttClient.end(true)}catch(e){}mqttClient=null}}
+    function startEspWatchdog(){clearInterval(espWatchTimer);espWatchTimer=setInterval(()=>{if(!lastEspSeenAt||Date.now()-lastEspSeenAt>Number(appSettings.espOfflineSec||25)*1000)setEspBadge(false)},3000)}
+    function updateDeviceInfo(d){document.getElementById("deviceWifi").textContent=d.wifiSsid||d.ssid||"-";document.getElementById("deviceIp").textContent=d.ip||"-";document.getElementById("deviceRssi").textContent=d.wifiRssi==null?"-":d.wifiRssi+" dBm";document.getElementById("deviceQueue").textContent=d.queueCount==null?"-":d.queueCount;document.getElementById("deviceSeen").textContent=new Date().toLocaleTimeString("ko-KR")}
+    function setMqttBadge(s){const e=document.getElementById("mqttBadge");e.textContent="MQTT "+(s==="online"?"ONLINE":s==="connecting"?"CONNECTING":"OFFLINE");e.className="badge "+s}
+    function setEspBadge(on){const e=document.getElementById("espBadge");e.textContent=on?"ONLINE":"OFFLINE";e.className="badge "+(on?"online":"offline")}
 
-    function hasSession() {
-      return !!(sessionStorage.getItem("sessionToken") || sessionStorage.getItem("adminId"));
-    }
+    function openSettingsModal(){fillSettingsForm();renderPasskeySetting();document.getElementById("settingsModal").classList.add("show")}
+    function closeSettingsModal(){document.getElementById("settingsModal").classList.remove("show")}
+    function fillSettingsForm(){["mqttHost","mqttPort","mqttUser","mqttPass","topicStatus","topicEvent","topicHeartbeat","espOfflineSec"].forEach(k=>document.getElementById("set"+k.charAt(0).toUpperCase()+k.slice(1)).value=appSettings[k]||"")}
+    function saveSettings(){["mqttHost","mqttPort","mqttUser","mqttPass","topicStatus","topicEvent","topicHeartbeat","espOfflineSec"].forEach(k=>appSettings[k]=document.getElementById("set"+k.charAt(0).toUpperCase()+k.slice(1)).value.trim());const p=new URLSearchParams({action:"saveDashboardSettingsJsonp"});addAuthParams(p);Object.keys(appSettings).forEach(k=>p.set(k,appSettings[k]));callJsonp(APPS_SCRIPT_URL+"?"+p,()=>{});connectMqtt();closeSettingsModal();toast("설정 저장 완료")}
 
-    function addAuthParams(params) {
-      const sessionToken = sessionStorage.getItem("sessionToken") || "";
-      if (sessionToken) {
-        params.set("sessionToken", sessionToken);
-        return;
-      }
-      params.set("adminId", sessionStorage.getItem("adminId") || "");
-      params.set("adminPw", sessionStorage.getItem("adminPw") || "");
-    }
+    function isMobilePushTarget(){const ua=navigator.userAgent||"";return/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
+    function hidePushUiForPc(){document.getElementById("pushBtn")?.classList.add("pc-hidden");document.getElementById("pushStatusCard")?.classList.add("pc-hidden")}
+    window.isMobilePushTarget=isMobilePushTarget;window.hidePushUiForPc=hidePushUiForPc;
 
-    function logout() {
-      sessionStorage.clear();
-      localStorage.removeItem("attendancePersistentAuth");
-      disconnectMqtt();
-      location.replace("../login/");
-    }
-
-    function applyStoredTheme() {
-      const theme = sessionStorage.getItem("theme") || localStorage.getItem("attendanceTheme") || "light";
-      setTheme(theme, true);
-    }
-
-    function setTheme(theme, silent) {
-      const next = theme === "dark" ? "dark" : "light";
-      if (!silent) document.documentElement.classList.add("theme-animate");
-      document.documentElement.setAttribute("data-theme", next);
-      sessionStorage.setItem("theme", next);
-      localStorage.setItem("attendanceTheme", next);
-      document.getElementById("lightBtn")?.classList.toggle("active", next === "light");
-      document.getElementById("darkBtn")?.classList.toggle("active", next === "dark");
-      setTimeout(function () { document.documentElement.classList.remove("theme-animate"); }, 900);
-    }
-
-    function loadRemoteSettings(done) {
-      const params = new URLSearchParams();
-      params.set("action", "getDashboardSettingsJsonp");
-      addAuthParams(params);
-
-      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        if (res && res.ok) {
-          const remote = res.settings || res.data || res;
-          appSettings = { ...DEFAULT_SETTINGS, ...remote };
-        } else {
-          toast((res && res.message) ? res.message : "원격 설정을 불러오지 못해 기본값을 사용합니다.");
-        }
-        if (typeof done === "function") done();
-      });
-    }
-
-    function loadTodayLogs(showToast, done) {
-      const params = new URLSearchParams();
-      params.set("action", "todayLogs");
-      addAuthParams(params);
-
-      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-        if (!res || !res.ok) {
-          document.getElementById("logSub").textContent = (res && res.message) ? res.message : "로그 불러오기 실패";
-          toast((res && res.message) ? res.message : "로그 불러오기 실패");
-          if (typeof done === "function") done();
-          return;
-        }
-
-        const logs = normalizeLogs(res.logs || res.data || res.records || []);
-        renderLogs(logs);
-        renderSummary(logs, res.summary || null);
-        document.getElementById("logSub").textContent = "마지막 업데이트 " + new Date().toLocaleTimeString("ko-KR");
-        if (showToast) toast("새로고침 완료");
-        if (typeof done === "function") done();
-      });
-    }
-
-    function normalizeLogs(rows) {
-      if (!Array.isArray(rows)) return [];
-      return rows.map(function (r) {
-        return {
-          time: r.time || r.시간 || r.timestamp || r.clientTimestamp || r.createdAt || r.date || "-",
-          status: r.status || r.상태 || "-",
-          name: r.name || r.이름 || r.userName || r.studentName || r.student || "-",
-          fingerId: r.fingerId || r.지문ID || r.id || r.fid || "-"
-        };
-      }).reverse();
-    }
-
-    function renderLogs(logs) {
-      const list = document.getElementById("logList");
-      if (!logs.length) {
-        list.innerHTML = '<div class="log-row"><div>-</div><div><span class="status-chip chip-notyet">없음</span></div><div class="muted">오늘 로그가 없습니다.</div><div>-</div></div>';
-        return;
-      }
-      list.innerHTML = logs.map(function (log) {
-        const status = escapeHtml(log.status || "-");
-        return '<div class="log-row">' +
-          '<div>' + escapeHtml(formatTime(log.time)) + '</div>' +
-          '<div><span class="status-chip ' + statusClass(log.status) + '">' + status + '</span></div>' +
-          '<div>' + escapeHtml(log.name) + '</div>' +
-          '<div>' + escapeHtml(log.fingerId) + '</div>' +
-          '</div>';
-      }).join("");
-    }
-
-    function renderSummary(logs, summary) {
-      const counts = { total: logs.length, present: 0, late: 0, absent: 0, notYet: 0 };
-      logs.forEach(function (log) {
-        const s = String(log.status || "");
-        if (s.includes("지각")) counts.late++;
-        else if (s.includes("출석") && !s.includes("미출석")) counts.present++;
-        else if (s.includes("결석")) counts.absent++;
-        else if (s.includes("미출석")) counts.notYet++;
-      });
-
-      if (summary) {
-        counts.total = pickNumber(summary, ["total", "전체", "전체로그"], counts.total);
-        counts.present = pickNumber(summary, ["present", "출석"], counts.present);
-        counts.late = pickNumber(summary, ["late", "지각"], counts.late);
-        counts.absent = pickNumber(summary, ["absent", "결석"], counts.absent);
-        counts.notYet = pickNumber(summary, ["notYet", "미출석"], counts.notYet);
-      }
-
-      document.getElementById("sumTotal").textContent = counts.total;
-      document.getElementById("sumPresent").textContent = counts.present;
-      document.getElementById("sumLate").textContent = counts.late;
-      document.getElementById("sumAbsent").textContent = counts.absent;
-      document.getElementById("sumNotYet").textContent = counts.notYet;
-    }
-
-    function pickNumber(obj, keys, fallback) {
-      for (const key of keys) {
-        if (obj[key] != null && obj[key] !== "") return Number(obj[key]) || 0;
-      }
-      return fallback;
-    }
-
-    function statusClass(status) {
-      const s = String(status || "");
-      if (s.includes("지각")) return "chip-late";
-      if (s.includes("출석") && !s.includes("미출석")) return "chip-present";
-      if (s.includes("미출석")) return "chip-notyet";
-      if (s.includes("결석")) return "chip-absent";
-      if (s.includes("중복")) return "chip-dup";
-      if (s.includes("오류") || s.includes("미등록") || s.includes("비활성")) return "chip-bad";
-      return "chip-notyet";
-    }
-
-    function formatTime(value) {
-      if (!value) return "-";
-      const s = String(value);
-      const match = s.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
-      if (match) return match[1];
-      const d = new Date(s);
-      if (!isNaN(d.getTime())) return d.toLocaleTimeString("ko-KR");
-      return s;
-    }
-
-    function connectMqtt() {
-      if (!window.mqtt) {
-        setMqttBadge("offline");
-        toast("MQTT 라이브러리를 불러오지 못했습니다.");
-        return;
-      }
-      disconnectMqtt();
-      if (!appSettings.mqttHost || !appSettings.mqttUser || !appSettings.mqttPass) {
-        setMqttBadge("offline");
-        return;
-      }
-
-      const url = "wss://" + appSettings.mqttHost + ":" + (appSettings.mqttPort || "8884") + "/mqtt";
-      setMqttBadge("connecting");
-
-      mqttClient = mqtt.connect(url, {
-        username: appSettings.mqttUser,
-        password: appSettings.mqttPass,
-        clean: true,
-        connectTimeout: 8000,
-        reconnectPeriod: 4000,
-        clientId: "dashboard_2_12_" + Math.random().toString(16).slice(2)
-      });
-
-      mqttClient.on("connect", function () {
-        setMqttBadge("online");
-        [appSettings.topicStatus, appSettings.topicEvent, appSettings.topicHeartbeat].forEach(function (topic) {
-          if (topic) mqttClient.subscribe(topic);
-        });
-      });
-
-      mqttClient.on("reconnect", function () { setMqttBadge("connecting"); });
-      mqttClient.on("close", function () { setMqttBadge("offline"); });
-      mqttClient.on("error", function (err) { console.error(err); setMqttBadge("offline"); });
-      mqttClient.on("message", function (topic, payload) {
-        let data = {};
-        try { data = JSON.parse(payload.toString()); } catch (err) { data = { raw: payload.toString() }; }
-        handleMqttMessage(topic, data);
-      });
-    }
-
-    function disconnectMqtt() {
-      if (mqttClient) {
-        try { mqttClient.end(true); } catch (err) {}
-        mqttClient = null;
-      }
-    }
-
-    function handleMqttMessage(topic, data) {
-      if (topic === appSettings.topicStatus) {
-        if (data.status === "online") markEspOnline(data);
-        if (data.status === "offline") setEspBadge(false);
-      }
-      if (topic === appSettings.topicHeartbeat) markEspOnline(data);
-      if (topic === appSettings.topicEvent) {
-        markEspOnline(data);
-        if (data.type === "attendance" || data.type === "queued_sent" || data.type === "queued") {
-          setTimeout(function () { loadTodayLogs(false); }, 600);
-        }
-      }
-    }
-
-    function markEspOnline(data) {
-      lastEspSeenAt = Date.now();
-      setEspBadge(true);
-      updateDeviceInfo(data || {});
-    }
-
-    function updateDeviceInfo(data) {
-      document.getElementById("deviceWifi").textContent = data.wifiSsid || data.ssid || "-";
-      document.getElementById("deviceIp").textContent = data.ip || "-";
-      document.getElementById("deviceRssi").textContent = data.wifiRssi == null ? "-" : data.wifiRssi + " dBm";
-      document.getElementById("deviceQueue").textContent = data.queueCount == null ? "-" : data.queueCount;
-      document.getElementById("deviceSeen").textContent = new Date().toLocaleTimeString("ko-KR");
-    }
-
-    function startEspWatchdog() {
-      if (espWatchTimer) clearInterval(espWatchTimer);
-      espWatchTimer = setInterval(function () {
-        const limitMs = Number(appSettings.espOfflineSec || 25) * 1000;
-        if (!lastEspSeenAt || Date.now() - lastEspSeenAt > limitMs) setEspBadge(false);
-      }, 3000);
-    }
-
-    function setMqttBadge(state) {
-      const el = document.getElementById("mqttBadge");
-      if (!el) return;
-      if (state === "online") { el.textContent = "MQTT ONLINE"; el.className = "badge online"; }
-      else if (state === "connecting") { el.textContent = "MQTT CONNECTING"; el.className = "badge connecting"; }
-      else { el.textContent = "MQTT OFFLINE"; el.className = "badge offline"; }
-    }
-
-    function setEspBadge(isOnline) {
-      const el = document.getElementById("espBadge");
-      if (!el) return;
-      el.textContent = isOnline ? "ONLINE" : "OFFLINE";
-      el.className = "badge " + (isOnline ? "online" : "offline");
-    }
-
-    function openSettingsModal() {
-      fillSettingsForm();
-      document.getElementById("settingsModal").classList.add("show");
-      document.getElementById("settingsModal").setAttribute("aria-hidden", "false");
-    }
-
-    function closeSettingsModal() {
-      document.getElementById("settingsModal").classList.remove("show");
-      document.getElementById("settingsModal").setAttribute("aria-hidden", "true");
-    }
-
-    function fillSettingsForm() {
-      document.getElementById("setMqttHost").value = appSettings.mqttHost || "";
-      document.getElementById("setMqttPort").value = appSettings.mqttPort || "8884";
-      document.getElementById("setMqttUser").value = appSettings.mqttUser || "";
-      document.getElementById("setMqttPass").value = appSettings.mqttPass || "";
-      document.getElementById("setTopicStatus").value = appSettings.topicStatus || "";
-      document.getElementById("setTopicEvent").value = appSettings.topicEvent || "";
-      document.getElementById("setTopicHeartbeat").value = appSettings.topicHeartbeat || "";
-      document.getElementById("setEspOfflineSec").value = appSettings.espOfflineSec || "25";
-    }
-
-    function saveSettings() {
-      appSettings = {
-        ...appSettings,
-        mqttHost: document.getElementById("setMqttHost").value.trim(),
-        mqttPort: document.getElementById("setMqttPort").value.trim() || "8884",
-        mqttUser: document.getElementById("setMqttUser").value.trim(),
-        mqttPass: document.getElementById("setMqttPass").value.trim(),
-        topicStatus: document.getElementById("setTopicStatus").value.trim(),
-        topicEvent: document.getElementById("setTopicEvent").value.trim(),
-        topicHeartbeat: document.getElementById("setTopicHeartbeat").value.trim(),
-        espOfflineSec: document.getElementById("setEspOfflineSec").value.trim() || "25"
-      };
-      saveRemoteSettings();
-      connectMqtt();
-      closeSettingsModal();
-      toast("MQTT 설정 저장 완료");
-    }
-
-    function saveRemoteSettings() {
-      const params = new URLSearchParams();
-      params.set("action", "saveDashboardSettingsJsonp");
-      addAuthParams(params);
-      Object.keys(appSettings).forEach(function (key) { params.set(key, appSettings[key]); });
-      callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function () {});
-    }
-
-    function startLoading(title, sub) {
-      const overlay = document.getElementById("loadingOverlay");
-      document.getElementById("loadingTitle").textContent = title || "잠시만 기다려주세요";
-      document.getElementById("loadingSub").textContent = sub || "";
-      document.getElementById("loadingSub").style.display = sub ? "block" : "none";
-      overlay.classList.add("show");
-      overlay.setAttribute("aria-hidden", "false");
-    }
-
-    function stopLoading() {
-      const overlay = document.getElementById("loadingOverlay");
-      overlay.classList.remove("show");
-      overlay.setAttribute("aria-hidden", "true");
-      document.getElementById("loadingSub").style.display = "block";
-    }
-
-    function callJsonp(url, callback) {
-      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-      let script = null;
-      let finished = false;
-      const timer = setTimeout(function () {
-        if (finished) return;
-        finished = true;
-        delete window[callbackName];
-        if (script && script.parentNode) script.parentNode.removeChild(script);
-        stopLoading();
-        toast("Apps Script 응답 시간 초과");
-      }, 15000);
-
-      window[callbackName] = function (data) {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        try { callback(data); }
-        finally {
-          delete window[callbackName];
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-        }
-      };
-
-      const sep = url.includes("?") ? "&" : "?";
-      script = document.createElement("script");
-      script.src = url + sep + "callback=" + encodeURIComponent(callbackName);
-      script.onerror = function () {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        delete window[callbackName];
-        if (script && script.parentNode) script.parentNode.removeChild(script);
-        stopLoading();
-        toast("Apps Script 연결 실패");
-      };
-      document.head.appendChild(script);
-    }
-
-    function toast(message) {
-      const el = document.getElementById("toast");
-      el.textContent = message;
-      el.classList.add("show");
-      setTimeout(function () { el.classList.remove("show"); }, 2300);
-    }
-
-    function escapeHtml(value) {
-      return String(value == null ? "" : value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
+    function startLoading(t,s){document.getElementById("loadingTitle").textContent=t;document.getElementById("loadingSub").textContent=s||"";document.getElementById("loadingOverlay").classList.add("show")}
+    function stopLoading(){document.getElementById("loadingOverlay").classList.remove("show")}
+    function callJsonp(url,cb){const n="jsonp_"+Date.now()+"_"+Math.floor(Math.random()*1e5),sc=document.createElement("script");let done=false;const tm=setTimeout(()=>{if(done)return;done=true;delete window[n];sc.remove();stopLoading();toast("Apps Script 응답 시간 초과")},15000);window[n]=d=>{if(done)return;done=true;clearTimeout(tm);try{cb(d)}finally{delete window[n];sc.remove()}};sc.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(n);sc.onerror=()=>{if(done)return;done=true;clearTimeout(tm);delete window[n];sc.remove();stopLoading();toast("Apps Script 연결 실패")};document.head.appendChild(sc)}
+    function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
+    function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
   </script>
 
   <script type="module">
-    const VAPID_PUBLIC_KEY = "BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBN10jMJZ1kB-A6RMt9-HmKWTGjtdfa8iE",
-      authDomain: "attendence-f157b.firebaseapp.com",
-      projectId: "attendence-f157b",
-      storageBucket: "attendence-f157b.firebasestorage.app",
-      messagingSenderId: "382183347016",
-      appId: "1:382183347016:web:ae6aca56ac3a3058f6597d",
-      measurementId: "G-JPCLPN4HQW"
-    };
-
-    let messaging = null;
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initPushArea);
-    } else {
-      initPushArea();
-    }
-
-    async function initPushArea() {
-      if (!window.isMobilePushTarget || !window.isMobilePushTarget()) {
-        if (window.hidePushUiForPc) window.hidePushUiForPc();
-        return;
-      }
-
-      try {
-        const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
-        const firebaseMessagingModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
-
-        const firebaseApp = firebaseAppModule.initializeApp(firebaseConfig);
-        messaging = firebaseMessagingModule.getMessaging(firebaseApp);
-
-        firebaseMessagingModule.onMessage(messaging, function (payload) {
-          const title = payload.data && payload.data.title ? payload.data.title : "2-12 출석 알림";
-          const body = payload.data && payload.data.body ? payload.data.body : "출석 상태가 업데이트되었습니다.";
-          if (window.toast) window.toast(title + " · " + body);
-        });
-
-        await initPushPermissionStatus(firebaseMessagingModule.getToken);
-      } catch (err) {
-        console.error(err);
-        setPushButtonState("unsupported");
-        setPushText("초기화 실패", "모바일");
-      }
-    }
-
-    async function initPushPermissionStatus(getTokenFn) {
-      const btn = document.getElementById("pushBtn");
-      if (!btn) return;
-
-      const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-      setPushText("확인중", isStandalone ? "홈 화면 앱" : "일반 브라우저");
-
-      if (!("Notification" in window)) {
-        setPushText("미지원", isStandalone ? "홈 화면 앱" : "일반 브라우저");
-        setPushButtonState("unsupported");
-        return;
-      }
-      if (!("serviceWorker" in navigator)) {
-        setPushText("SW 미지원", isStandalone ? "홈 화면 앱" : "일반 브라우저");
-        setPushButtonState("unsupported");
-        return;
-      }
-      if (!isStandalone) {
-        setPushText(Notification.permission, "일반 브라우저");
-        setPushButtonState("needHomeScreen");
-        return;
-      }
-
-      setPushText(Notification.permission, "홈 화면 앱");
-
-      if (Notification.permission === "granted") {
-        setPushButtonState("checking");
-        try {
-          await registerAndSavePushToken(getTokenFn);
-          setPushButtonState("on");
-          setPushText("granted / token 저장됨", "홈 화면 앱");
-        } catch (err) {
-          console.error(err);
-          setPushButtonState("retry");
-          setPushText("허용됨 / 토큰 재저장 필요", "홈 화면 앱");
-        }
-        return;
-      }
-
-      if (Notification.permission === "denied") {
-        setPushButtonState("blocked");
-        return;
-      }
-
-      setPushButtonState("ready");
-    }
-
-    window.enablePushNotifications = async function () {
-      try {
-        if (!window.isMobilePushTarget || !window.isMobilePushTarget()) {
-          if (window.hidePushUiForPc) window.hidePushUiForPc();
-          return;
-        }
-
-        const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-
-        if (!isStandalone) {
-          if (window.toast) window.toast("아이폰에서는 Safari 공유 버튼 → 홈 화면에 추가 후 앱에서 알림 허용하세요.");
-          setPushButtonState("needHomeScreen");
-          return;
-        }
-        if (!("Notification" in window)) {
-          if (window.toast) window.toast("이 브라우저는 알림을 지원하지 않습니다.");
-          setPushButtonState("unsupported");
-          return;
-        }
-        if (!("serviceWorker" in navigator)) {
-          if (window.toast) window.toast("Service Worker를 지원하지 않습니다.");
-          setPushButtonState("unsupported");
-          return;
-        }
-        if (Notification.permission === "denied") {
-          if (window.toast) window.toast("알림이 차단되어 있습니다. iPhone 설정 → 알림 → 2-12 출석에서 허용하세요.");
-          setPushButtonState("blocked");
-          return;
-        }
-
-        if (window.startLoading) window.startLoading("알림 권한 확인 중입니다", "아이폰 알림 권한을 요청합니다.");
-        const permission = await Notification.requestPermission();
-        setPushText(permission, "홈 화면 앱");
-
-        if (permission !== "granted") {
-          if (window.stopLoading) window.stopLoading();
-          setPushButtonState(permission === "denied" ? "blocked" : "ready");
-          if (window.toast) window.toast("알림 권한이 허용되지 않았습니다.");
-          return;
-        }
-
-        const firebaseMessagingModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
-        await registerAndSavePushToken(firebaseMessagingModule.getToken);
-        if (window.stopLoading) window.stopLoading();
-        setPushButtonState("on");
-        setPushText("granted / token 저장됨", "홈 화면 앱");
-        if (window.toast) window.toast("아이폰 알림 등록 완료");
-      } catch (err) {
-        if (window.stopLoading) window.stopLoading();
-        console.error(err);
-        setPushButtonState("retry");
-        if (window.toast) window.toast("알림 등록 실패: " + (err && err.message ? err.message : err));
-      }
-    };
-
-    async function registerAndSavePushToken(getTokenFn) {
-      const registration = await navigator.serviceWorker.register("../firebase-messaging-sw.js?v=5", { scope: "../" });
-      const token = await getTokenFn(messaging, {
-        vapidKey: VAPID_PUBLIC_KEY,
-        serviceWorkerRegistration: registration
-      });
-      if (!token) throw new Error("푸시 토큰을 받지 못했습니다.");
-      await savePushTokenToAppsScript(token);
-      return token;
-    }
-
-    async function savePushTokenToAppsScript(token) {
-      return new Promise(function (resolve, reject) {
-        const params = new URLSearchParams();
-        params.set("action", "savePushTokenJsonp");
-        if (typeof window.addAuthParams === "function") window.addAuthParams(params);
-        else if (typeof addAuthParams === "function") addAuthParams(params);
-        params.set("token", token);
-        params.set("platform", "ios-pwa");
-        params.set("userAgent", navigator.userAgent || "");
-        params.set("createdAt", new Date().toISOString());
-
-        if (typeof window.callJsonp !== "function" && typeof callJsonp !== "function") {
-          reject(new Error("callJsonp 함수가 없습니다."));
-          return;
-        }
-
-        const jsonp = window.callJsonp || callJsonp;
-        jsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
-          if (!res || !res.ok) {
-            reject(new Error((res && res.message) ? res.message : "토큰 저장 실패"));
-            return;
-          }
-          resolve(res);
-        });
-      });
-    }
-
-    function setPushText(permissionText, pwaText) {
-      const permissionEl = document.getElementById("pushPermissionText");
-      const pwaEl = document.getElementById("pwaText");
-      if (permissionEl) permissionEl.textContent = permissionText || "-";
-      if (pwaEl) pwaEl.textContent = pwaText || "-";
-    }
-
-    function setPushButtonState(state) {
-      const btn = document.getElementById("pushBtn");
-      if (!btn) return;
-      btn.disabled = false;
-      btn.classList.remove("btn-danger");
-      btn.classList.add("btn-soft");
-
-      if (state === "on") { btn.textContent = "알림 ON"; return; }
-      if (state === "checking") { btn.textContent = "알림 확인중"; return; }
-      if (state === "ready") { btn.textContent = "알림 허용"; return; }
-      if (state === "retry") { btn.textContent = "알림 재등록"; return; }
-      if (state === "needHomeScreen") { btn.textContent = "홈화면 필요"; return; }
-      if (state === "blocked") {
-        btn.textContent = "알림 차단됨";
-        btn.classList.remove("btn-soft");
-        btn.classList.add("btn-danger");
-        return;
-      }
-      if (state === "unsupported") {
-        btn.textContent = "알림 미지원";
-        btn.disabled = true;
-        return;
-      }
-      btn.textContent = "알림 허용";
-    }
+    const VAPID_PUBLIC_KEY="BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
+    const firebaseConfig={apiKey:"AIzaSyBN10jMJZ1kB-A6RMt9-HmKWTGjtdfa8iE",authDomain:"attendence-f157b.firebaseapp.com",projectId:"attendence-f157b",storageBucket:"attendence-f157b.firebasestorage.app",messagingSenderId:"382183347016",appId:"1:382183347016:web:ae6aca56ac3a3058f6597d",measurementId:"G-JPCLPN4HQW"};
+    let messaging,getTokenFn;
+    async function initPush(){if(!window.isMobilePushTarget||!window.isMobilePushTarget()){window.hidePushUiForPc?.();return}const standalone=navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;document.getElementById("pwaText").textContent=standalone?"홈 화면 앱":"일반 브라우저";if(!("Notification"in window)||!("serviceWorker"in navigator)){setPush("미지원","unsupported");return}try{const a=await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js"),m=await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");messaging=m.getMessaging(a.initializeApp(firebaseConfig));getTokenFn=m.getToken;document.getElementById("pushPermissionText").textContent=Notification.permission;setPush(Notification.permission==="granted"?"알림 사용 중":Notification.permission==="denied"?"알림 차단됨":"알림 켜기",Notification.permission==="granted"?"on":"ready")}catch(e){setPush("초기화 실패","unsupported")}}
+    function setPush(text,state){const b=document.getElementById("pushBtn");if(b){b.textContent=text;b.disabled=state==="unsupported"}}
+    window.enablePushNotifications=async function(){if(!getTokenFn||Notification.permission==="denied"){toast("브라우저 알림 설정을 확인하세요.");return}const permission=await Notification.requestPermission();document.getElementById("pushPermissionText").textContent=permission;if(permission!=="granted"){setPush("알림 허용 필요","ready");return}try{const reg=await navigator.serviceWorker.register("../firebase-messaging-sw.js");const token=await getTokenFn(messaging,{vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:reg});const p=new URLSearchParams({action:"savePushTokenJsonp",token:token,platform:navigator.platform||"web",userAgent:navigator.userAgent||""});const st=sessionStorage.getItem("sessionToken")||"";if(st)p.set("sessionToken",st);callJsonp(window.APPS_SCRIPT_URL+"?"+p,()=>{});setPush("알림 사용 중","on");toast("알림 설정 완료")}catch(e){toast(e.message||String(e))}}
+    document.readyState==="loading"?document.addEventListener("DOMContentLoaded",initPush):initPush();
   </script>
 </body>
 </html>
