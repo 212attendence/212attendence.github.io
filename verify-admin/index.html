@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>관리자 재인증</title>
+  <link rel="manifest" href="../manifest.json?v=9" />
+  <link rel="icon" type="image/png" href="../favicon.png?v=9" />
+  <link rel="apple-touch-icon" href="../favicon.png?v=9" />
+  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root{--bg:#fafaf8;--soft:#f1f0ec;--card:#fffefb;--text:#1f2320;--muted:#74746e;--line:rgba(92,92,84,.18);--accent:#3f403a;--accent-text:#fff;--red:#b7423a;--shadow:0 18px 50px rgba(31,35,32,.07);--input:#fffefb}
+    @media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--soft:#303030;--card:#242424;--text:#f2f0ea;--muted:#aaa69e;--line:rgba(230,226,215,.14);--accent:#d8d3c5;--accent-text:#1a1a1a;--red:#e07b73;--shadow:0 22px 60px rgba(0,0,0,.32);--input:#202020}}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+    .card{width:min(440px,100%);padding:28px;border:1px solid var(--line);border-radius:28px;background:var(--card);box-shadow:var(--shadow)}
+    h1{margin:0;font-size:29px;letter-spacing:-.055em;font-weight:950}.sub{margin:8px 0 22px;color:var(--muted);font-size:14px;line-height:1.55;font-weight:700}
+    #googleButtonHome{display:flex;justify-content:center;min-height:44px}.divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:12px;font-weight:850}.divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--line)}
+    label{display:block;margin:12px 0 7px;font-size:13px;font-weight:850}input{width:100%;height:46px;border:1px solid var(--line);border-radius:14px;padding:0 14px;background:var(--input);color:var(--text);font:15px inherit;outline:none}
+    button{border:0;cursor:pointer;font-family:inherit}.primary{width:100%;min-height:48px;margin-top:14px;border-radius:15px;background:var(--accent);color:var(--accent-text);font-size:14px;font-weight:950}.back{width:100%;margin-top:13px;background:transparent;color:var(--muted);font-size:13px;font-weight:850}
+    .loading{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:rgba(31,35,32,.55);z-index:40}.loading.show{display:grid}.loading-card{width:min(340px,100%);padding:28px 22px;border-radius:24px;background:var(--card);text-align:center}.spinner{width:42px;height:42px;margin:0 auto 16px;border-radius:50%;border:4px solid rgba(63,64,58,.16);border-top-color:var(--accent);animation:spin .75s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading-title{font-size:17px;font-weight:950}.loading-sub{margin-top:8px;color:var(--muted);font-size:13px;font-weight:750}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);max-width:calc(100vw - 32px);padding:12px 16px;border-radius:999px;background:#1f2320;color:#fff;font-size:13px;font-weight:850;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:50}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:560px){body{padding:14px;align-items:start;padding-top:max(34px,env(safe-area-inset-top))}.card{padding:24px 20px;border-radius:24px}h1{font-size:27px}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>관리자 재인증</h1>
+    <div class="sub">패스키 삭제를 계속하려면 Google 계정 또는 관리자 계정으로 다시 인증하세요.</div>
+    <div id="googleButtonHome"><div id="googleButton"></div></div>
+    <div class="divider">또는 관리자 로그인</div>
+    <label for="adminId">관리자 ID</label><input id="adminId" autocomplete="username" placeholder="관리자 ID" />
+    <label for="adminPw">관리자 비밀번호</label><input id="adminPw" type="password" autocomplete="current-password" placeholder="비밀번호" />
+    <button id="adminBtn" class="primary" type="button" onclick="adminVerify()">관리자 계정으로 인증</button>
+    <button class="back" type="button" onclick="cancelDelete()">취소하고 대시보드로 돌아가기</button>
+  </main>
+
+  <div id="loading" class="loading"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">인증 중입니다</div><div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div></div></div>
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    const APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    const GOOGLE_CLIENT_ID="802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
+    let busy=false,googleReady=false;
+
+    document.addEventListener("DOMContentLoaded",function(){
+      if(sessionStorage.getItem("passkeyDeletePending")!=="1"||!sessionStorage.getItem("passkeyDeleteCredentialId")){location.replace("../dashboard/");return}
+      initGoogle();
+      document.getElementById("adminPw").addEventListener("keydown",e=>{if(e.key==="Enter")adminVerify()});
+    });
+
+    function initGoogle(){
+      if(googleReady)return;
+      if(!window.google||!google.accounts||!google.accounts.id){setTimeout(initGoogle,300);return}
+      googleReady=true;
+      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogle,auto_select:false,cancel_on_tap_outside:true});
+      google.accounts.id.renderButton(document.getElementById("googleButton"),{type:"standard",theme:"outline",size:"large",text:"signin_with",shape:"pill",logo_alignment:"left",width:280});
+    }
+
+    function handleGoogle(response){
+      if(busy||!response||!response.credential){toast("Google 로그인 토큰을 받지 못했습니다.");return}
+      busy=true;startLoading("Google 계정 인증 중입니다","계정을 확인합니다.");
+      const p=new URLSearchParams({action:"googleLoginJsonp",idToken:response.credential});addClientParams(p);
+      callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){
+        if(!r||!r.ok||!r.sessionToken){busy=false;stopLoading();toast((r&&r.message)||"Google 인증 실패");return}
+        saveSession("google",r);deletePasskey(r.sessionToken);
+      });
+    }
+
+    function adminVerify(){
+      if(busy)return;
+      const id=document.getElementById("adminId").value.trim(),pw=document.getElementById("adminPw").value.trim();
+      if(!id||!pw){toast("관리자 ID/PW를 입력하세요.");return}
+      busy=true;startLoading("관리자 계정 인증 중입니다",id);
+      const p=new URLSearchParams({action:"dashboardLoginJsonp",adminId:id,adminPw:pw});addClientParams(p);
+      callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){
+        if(!r||!r.ok||!r.sessionToken){busy=false;stopLoading();toast((r&&r.message)||"관리자 인증 실패");return}
+        saveSession("admin",r);deletePasskey(r.sessionToken);
+      });
+    }
+
+    function deletePasskey(sessionToken){
+      startLoading("패스키 삭제 중입니다","서버 등록 정보를 삭제합니다.");
+      const p=new URLSearchParams({action:"deletePasskeyJsonp",sessionToken:sessionToken,credentialId:sessionStorage.getItem("passkeyDeleteCredentialId")||"",origin:location.origin,hostname:location.hostname,userAgent:navigator.userAgent||""});
+      callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){
+        if(!r||!r.ok){busy=false;stopLoading();toast((r&&r.message)||"패스키 삭제 실패");return}
+        localStorage.removeItem("attendancePasskeyRegistered");
+        localStorage.removeItem("attendancePasskeyCredentialId");
+        localStorage.removeItem("attendancePasskeyDeviceName");
+        sessionStorage.removeItem("passkeyDeletePending");
+        sessionStorage.removeItem("passkeyDeleteCredentialId");
+        stopLoading();toast("패스키가 삭제되었습니다.");
+        setTimeout(()=>location.replace("../dashboard/"),700);
+      });
+    }
+
+    function saveSession(type,r){sessionStorage.setItem("loginType",type);sessionStorage.setItem("sessionToken",r.sessionToken||"");sessionStorage.setItem("loginEmail",r.email||"");sessionStorage.setItem("loginName",r.name||"");sessionStorage.setItem("loginRole",r.role||"ADMIN")}
+    function addClientParams(p){p.set("deviceName",navigator.platform||"");p.set("screenSize",innerWidth+"x"+innerHeight);p.set("clientTime",new Date().toISOString());p.set("clientTimezone",Intl.DateTimeFormat().resolvedOptions().timeZone||"");p.set("userAgent",navigator.userAgent||"")}
+    function cancelDelete(){sessionStorage.removeItem("passkeyDeletePending");sessionStorage.removeItem("passkeyDeleteCredentialId");location.replace("../dashboard/")}
+    function callJsonp(url,cb){const n="jsonp_"+Date.now()+"_"+Math.floor(Math.random()*1e5),s=document.createElement("script");let done=false;const t=setTimeout(()=>{if(done)return;done=true;delete window[n];s.remove();busy=false;stopLoading();toast("Apps Script 응답 시간 초과")},15000);window[n]=d=>{if(done)return;done=true;clearTimeout(t);try{cb(d)}finally{delete window[n];s.remove()}};s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(n);s.onerror=()=>{if(done)return;done=true;clearTimeout(t);delete window[n];s.remove();busy=false;stopLoading();toast("Apps Script 연결 실패")};document.head.appendChild(s)}
+    function startLoading(t,s){document.getElementById("loadingTitle").textContent=t;document.getElementById("loadingSub").textContent=s;document.getElementById("loading").classList.add("show")}
+    function stopLoading(){document.getElementById("loading").classList.remove("show")}
+    function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2800)}
+  </script>
+</body>
+</html>
