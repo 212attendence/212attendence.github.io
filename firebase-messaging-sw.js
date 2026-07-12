@@ -13,56 +13,51 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+self.addEventListener("install", function () {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", function (event) {
+  event.waitUntil(self.clients.claim());
+});
+
 messaging.onBackgroundMessage(function (payload) {
-  const title =
-    payload.data && payload.data.title
-      ? payload.data.title
-      : "2-12 출석 알림";
+  const data = payload.data || {};
+  const title = data.title || "2-12 출석 알림";
+  const body = data.body || "출석 상태가 업데이트되었습니다.";
+  const target = new URL(data.url || "./dashboard/", self.registration.scope).href;
 
-  const body =
-    payload.data && payload.data.body
-      ? payload.data.body
-      : "출석 상태가 업데이트되었습니다.";
-
-  const url =
-    payload.data && payload.data.url
-      ? payload.data.url
-      : "./dashboard/";
-
-  self.registration.showNotification(title, {
+  return self.registration.showNotification(title, {
     body: body,
-    icon: "./favicon.png",
-    badge: "./favicon.png",
-    data: {
-      url: url
-    }
+    icon: new URL("./favicon.png?v=12", self.registration.scope).href,
+    badge: new URL("./favicon.png?v=12", self.registration.scope).href,
+    tag: data.tag || "attendance-update",
+    renotify: Boolean(data.renotify === "true"),
+    data: { url: target }
   });
 });
 
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
-
-  const urlToOpen =
-    event.notification &&
-    event.notification.data &&
-    event.notification.data.url
-      ? event.notification.data.url
-      : "./dashboard/";
+  const targetUrl = event.notification && event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : new URL("./dashboard/", self.registration.scope).href;
 
   event.waitUntil(
-    clients.matchAll({
-      type: "window",
-      includeUncontrolled: true
-    }).then(function (clientList) {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clientList) {
       for (const client of clientList) {
-        if ("focus" in client) {
-          return client.focus();
-        }
+        try {
+          const clientUrl = new URL(client.url);
+          const target = new URL(targetUrl);
+          if (clientUrl.origin === target.origin && "focus" in client) {
+            if ("navigate" in client && clientUrl.href !== target.href) {
+              return client.navigate(target.href).then(function () { return client.focus(); });
+            }
+            return client.focus();
+          }
+        } catch (error) {}
       }
-
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      return self.clients.openWindow ? self.clients.openWindow(targetUrl) : undefined;
     })
   );
 });
