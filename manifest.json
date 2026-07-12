@@ -1,25 +1,43 @@
 {
+  "id": "./",
   "name": "2-12 출석 시스템",
   "short_name": "2-12 출석",
   "description": "2학년 12반 출석 대시보드",
-  "start_url": "./login/?v=10",
+  "lang": "ko-KR",
+  "start_url": "./login/?v=12",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#fafaf8",
-  "theme_color": "#fafaf8",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#f7f7f4",
+  "theme_color": "#f7f7f4",
   "orientation": "any",
+  "categories": ["education", "productivity", "utilities"],
   "icons": [
     {
-      "src": "./favicon.png?v=10",
+      "src": "./favicon.png?v=12",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png?v=10",
+      "src": "./favicon.png?v=12",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "출석 대시보드",
+      "short_name": "대시보드",
+      "url": "./dashboard/",
+      "icons": [{"src": "./favicon.png?v=12", "sizes": "300x300", "type": "image/png"}]
+    },
+    {
+      "name": "도움말",
+      "short_name": "도움말",
+      "url": "./?help=1",
+      "icons": [{"src": "./favicon.png?v=12", "sizes": "300x300", "type": "image/png"}]
     }
   ]
 }
