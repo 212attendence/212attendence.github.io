@@ -7,7 +7,8 @@
   <link rel="manifest" href="../manifest.json?v=8" />
   <link rel="icon" type="image/png" href="../favicon.png?v=8" />
   <link rel="apple-touch-icon" href="../favicon.png?v=8" />
-  <meta name="theme-color" content="#fafaf8" />
+  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="2-12 출석" />
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
@@ -18,6 +19,14 @@
       --muted:#74746e; --line:rgba(92,92,84,.18); --accent:#3f403a;
       --accent-hover:#2e302b; --accent-text:#fff; --red:#b7423a;
       --green:#2f8f5b; --shadow:0 18px 50px rgba(31,35,32,.07); --input:#fffefb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#1a1a1a; --bg-soft:#242424; --card:#242424; --text:#f2f0ea;
+        --muted:#aaa69e; --line:rgba(230,226,215,.14); --accent:#d8d3c5;
+        --accent-hover:#eee8d9; --accent-text:#1a1a1a; --red:#e07b73;
+        --green:#78c59a; --shadow:0 22px 60px rgba(0,0,0,.32); --input:#202020;
+      }
     }
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body {
@@ -160,6 +169,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
       localStorage.removeItem("attendancePersistentAuth");
+      initializeSystemTheme();
       applyMobileClass();
       rememberRequestedRoute();
 
@@ -174,6 +184,16 @@
 
       initializeLoginMode();
     });
+
+    function initializeSystemTheme() {
+      const systemTheme = window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+
+      sessionStorage.setItem("theme", systemTheme);
+      localStorage.setItem("attendanceTheme", systemTheme);
+    }
 
     function isMobileDevice() {
       const ua = navigator.userAgent || "";
