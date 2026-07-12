@@ -1,50 +1,62 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>홈 화면 아이콘 설정</title>
-  <link rel="manifest" href="../manifest.json?v=7" />
-  <link rel="icon" type="image/png" href="../favicon.png?v=7" />
-  <link rel="apple-touch-icon" href="../favicon.png?v=7" />
-  <meta name="theme-color" content="#fafaf8" />
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>홈 화면 앱 설치</title>
+  <link rel="manifest" href="../manifest.json?v=12">
+  <link rel="icon" href="../favicon.png?v=12">
+  <link rel="apple-touch-icon" href="../favicon.png?v=12">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=12">
+  <script src="../assets/app.js?v=12" defer></script>
   <style>
-    :root { --bg:#fafaf8; --card:#fffefb; --text:#1f2320; --muted:#74746e; --line:rgba(92,92,84,.18); --accent:#3f403a; --shadow:0 18px 50px rgba(31,35,32,.07); }
-    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { margin:0; min-height:100vh; padding:24px; background:var(--bg); color:var(--text); font-family:"Google Sans", "Google Sans Text", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
-    .wrap { width:min(640px,100%); margin:0 auto; }
-    .card { padding:28px; border:1px solid var(--line); border-radius:28px; background:var(--card); box-shadow:var(--shadow); }
-    h1 { margin:0; font-size:29px; letter-spacing:-.055em; font-weight:950; }
-    .sub { margin:9px 0 22px; color:var(--muted); font-size:14px; line-height:1.6; font-weight:700; }
-    .device { display:inline-flex; align-items:center; padding:7px 10px; border-radius:999px; background:#f1f0ec; color:var(--muted); font-size:12px; font-weight:900; }
-    ol { margin:18px 0 0; padding:0; list-style:none; counter-reset:step; display:grid; gap:12px; }
-    li { counter-increment:step; position:relative; padding:16px 16px 16px 52px; border:1px solid var(--line); border-radius:17px; background:#fff; line-height:1.55; font-size:14px; font-weight:800; }
-    li::before { content:counter(step); position:absolute; left:15px; top:14px; width:26px; height:26px; display:grid; place-items:center; border-radius:50%; background:var(--accent); color:#fff; font-size:12px; font-weight:950; }
-    .note { margin-top:16px; padding:13px 14px; border-radius:15px; background:#f1f0ec; color:var(--muted); font-size:12px; line-height:1.6; font-weight:700; }
-    .actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
-    button { min-height:46px; border:0; border-radius:15px; font-family:inherit; font-size:14px; font-weight:950; cursor:pointer; }
-    .primary { background:var(--accent); color:#fff; }
-    .soft { background:#f1f0ec; color:var(--text); border:1px solid var(--line); }
-    @media (max-width:560px) { body { padding:14px; padding-top:max(28px,env(safe-area-inset-top)); } .card { padding:24px 20px; border-radius:24px; } h1 { font-size:27px; } .actions { grid-template-columns:1fr; } }
+    .guide-wrap{width:min(680px,100%)}.device-label{margin-bottom:16px}.steps{margin:18px 0 0;padding:0;list-style:none;counter-reset:step;display:grid;gap:11px}.steps li{counter-increment:step;position:relative;padding:15px 15px 15px 52px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft);font-size:14px;line-height:1.55;font-weight:700}.steps li::before{content:counter(step);position:absolute;left:14px;top:13px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--accent-text);font-size:12px;font-weight:900}.install-state{margin-top:15px}
   </style>
 </head>
-<body>
-  <main class="wrap">
-    <section class="card">
-      <span id="deviceLabel" class="device">기기 확인 중</span>
-      <h1>홈 화면 아이콘 설정</h1>
-      <div id="guideSub" class="sub">홈 화면에서 출석 시스템을 앱처럼 실행할 수 있습니다.</div>
-      <ol id="steps"></ol>
-      <div id="note" class="note"></div>
-      <div class="actions">
-        <button class="primary" type="button" onclick="location.href='../login/'">설정 완료</button>
-        <button class="soft" type="button" onclick="location.href='../?help=1'">도움말로 돌아가기</button>
-      </div>
-    </section>
+<body class="auth-page">
+  <main class="auth-card guide-wrap">
+    <span id="deviceLabel" class="brand-chip device-label">기기 확인 중</span>
+    <h1>홈 화면 앱 설치</h1>
+    <p id="guideSub" class="subtext">출석 시스템을 브라우저 탭이 아닌 독립 앱처럼 실행할 수 있습니다.</p>
+    <ol id="steps" class="steps"></ol>
+    <div id="note" class="status-box install-state"></div>
+    <div class="actions-stack">
+      <button id="installBtn" class="btn btn-primary btn-block hidden" type="button" onclick="installApp()">앱 설치</button>
+      <button class="btn btn-soft btn-block" type="button" onclick="location.href='../login/'">로그인으로 이동</button>
+      <a class="link-button" href="../?help=1">도움말로 돌아가기</a>
+    </div>
   </main>
 
+  <div id="toast" class="toast">알림</div>
+
   <script>
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", function (event) {
+      event.preventDefault();
+      deferredPrompt = event;
+      document.getElementById("installBtn").classList.remove("hidden");
+    });
+
+    window.addEventListener("appinstalled", function () {
+      deferredPrompt = null;
+      document.getElementById("installBtn").classList.add("hidden");
+      document.getElementById("note").className = "status-box success install-state";
+      document.getElementById("note").textContent = "설치가 완료되었습니다. 홈 화면이나 시작 메뉴에서 2-12 출석을 실행하세요.";
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      AttendanceApp.Theme.init();
+      renderGuide();
+    });
+
+    function isStandalone() {
+      return navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    }
+
     function renderGuide() {
       const ua = navigator.userAgent || "";
       const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
@@ -53,7 +65,12 @@
       const note = document.getElementById("note");
       let items = [];
 
-      if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
+      if (isStandalone()) {
+        label.textContent = "설치됨";
+        items = ["현재 홈 화면 앱으로 실행 중입니다.", "로그인 후 패스키와 알림을 설정하면 더 편리하게 사용할 수 있습니다."];
+        note.className = "status-box success install-state";
+        note.textContent = "이 기기에는 이미 앱이 설치되어 있습니다.";
+      } else if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
         label.textContent = "iPhone / iPad";
         items = [
           "Safari에서 212attendence.github.io를 엽니다.",
@@ -62,32 +79,39 @@
           "이름이 ‘2-12 출석’인지 확인하고 ‘추가’를 누릅니다.",
           "홈 화면에 생성된 아이콘으로 앱을 실행합니다."
         ];
-        note.textContent = "iPhone 알림과 Face ID 기반 기기 인증은 홈 화면 앱으로 실행할 때 가장 안정적으로 동작합니다.";
+        note.textContent = "iPhone의 알림과 Face ID 기반 패스키는 홈 화면 앱으로 실행할 때 가장 안정적으로 동작합니다.";
       } else if (/Android/i.test(ua)) {
         label.textContent = "Android";
         items = [
           "Chrome에서 212attendence.github.io를 엽니다.",
           "오른쪽 위 메뉴(⋮)를 누릅니다.",
-          "‘홈 화면에 추가’ 또는 ‘앱 설치’를 선택합니다.",
-          "표시 이름을 확인하고 ‘설치’ 또는 ‘추가’를 누릅니다.",
-          "홈 화면에 생성된 아이콘으로 실행합니다."
+          "‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택합니다.",
+          "표시 이름을 확인하고 설치를 완료합니다."
         ];
-        note.textContent = "브라우저 종류에 따라 메뉴 이름이 ‘홈 화면에 추가’ 또는 ‘앱 설치’로 다르게 보일 수 있습니다.";
+        note.textContent = "설치 버튼이 표시되면 이 화면에서 바로 설치할 수도 있습니다.";
       } else {
         label.textContent = "PC / Mac";
         items = [
           "Chrome 또는 Edge에서 212attendence.github.io를 엽니다.",
-          "주소창 오른쪽의 설치 아이콘 또는 브라우저 메뉴를 엽니다.",
+          "주소창 오른쪽의 설치 아이콘이나 브라우저 메뉴를 엽니다.",
           "‘앱 설치’ 또는 ‘이 사이트를 앱으로 설치’를 선택합니다.",
-          "설치를 완료하면 바탕화면이나 시작 메뉴에서 실행할 수 있습니다."
+          "설치 후 바탕화면이나 시작 메뉴에서 실행합니다."
         ];
-        note.textContent = "모바일 전용 물음표 아이콘에서는 이 안내 화면으로 바로 이동할 수 있습니다.";
+        note.textContent = "설치 버튼이 표시되면 이 화면에서 바로 설치할 수 있습니다.";
       }
-
-      steps.innerHTML = items.map(function (item) { return "<li>" + item + "</li>"; }).join("");
+      steps.innerHTML = items.map(function (item) { return "<li>" + AttendanceApp.UI.escapeHtml(item) + "</li>"; }).join("");
     }
 
-    document.addEventListener("DOMContentLoaded", renderGuide);
+    async function installApp() {
+      if (!deferredPrompt) {
+        AttendanceApp.UI.toast("브라우저 메뉴에서 앱 설치 또는 홈 화면에 추가를 선택하세요.");
+        return;
+      }
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("installBtn").classList.add("hidden");
+    }
   </script>
 </body>
 </html>
