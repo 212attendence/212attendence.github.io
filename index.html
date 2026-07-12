@@ -22,7 +22,7 @@
     <h1>로그인 화면으로 이동 중</h1>
     <p class="subtext">잠시만 기다려주세요.</p>
     <div class="status-box">자동으로 이동하지 않으면 아래 버튼을 누르세요.</div>
-    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/">로그인 열기</a></div>
+    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/?v=12">로그인 열기</a></div>
   </main>
 
   <main id="helpCard" class="auth-card hidden">
@@ -36,7 +36,7 @@
       <a class="menu-item" href="./setup-login-method/">
         <span><strong>패스키 설정</strong><small>Face ID·Touch ID·Windows Hello를 등록합니다.</small></span><span class="arrow">›</span>
       </a>
-      <a class="menu-item" href="./login/">
+      <a class="menu-item" href="./login/?v=12">
         <span><strong>로그인으로 이동</strong><small>Google 계정 또는 관리자 계정으로 로그인합니다.</small></span><span class="arrow">›</span>
       </a>
     </div>
@@ -52,7 +52,7 @@
         document.getElementById("helpCard").classList.remove("hidden");
         return;
       }
-      setTimeout(function () { location.replace("./login/"); }, 120);
+      setTimeout(function () { location.replace("./login/?v=12"); }, 120);
     });
   </script>
 </body>
