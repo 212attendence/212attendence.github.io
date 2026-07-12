@@ -13,12 +13,13 @@
     :root{--bg:#fafaf8;--soft:#f1f0ec;--card:#fffefb;--text:#1f2320;--muted:#74746e;--line:rgba(92,92,84,.18);--accent:#3f403a;--accentText:#fff;--shadow:0 18px 50px rgba(31,35,32,.07)}
     @media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--soft:#303030;--card:#242424;--text:#f2f0ea;--muted:#aaa69e;--line:rgba(230,226,215,.14);--accent:#d8d3c5;--accentText:#1a1a1a;--shadow:0 22px 60px rgba(0,0,0,.32)}}
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--text);font-family:"Google Sans", "Google Sans Text", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif}
     .card{width:min(460px,100%);padding:28px;border:1px solid var(--line);border-radius:28px;background:var(--card);box-shadow:var(--shadow)}
     h1{margin:0;font-size:29px;letter-spacing:-.055em;font-weight:950}p{margin:10px 0 22px;color:var(--muted);line-height:1.6;font-size:14px;font-weight:700}
     .options{display:grid;gap:12px}.option{width:100%;min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 17px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--text);cursor:pointer;text-align:left;font-family:inherit}.option strong{display:block;font-size:15px;font-weight:950}.option small{display:block;margin-top:5px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:700}.option.primary{background:var(--accent);color:var(--accentText);border-color:var(--accent)}.option.primary small{color:color-mix(in srgb,var(--accentText) 72%,transparent)}.arrow{font-size:24px;opacity:.75}.skip{width:100%;margin-top:16px;border:0;background:transparent;color:var(--muted);font:850 13px inherit;cursor:pointer}.note{margin-top:14px;padding:12px 13px;border-radius:14px;background:var(--soft);color:var(--muted);font-size:12px;line-height:1.55;font-weight:700}
     @media(max-width:560px){body{padding:14px;align-items:start;padding-top:max(34px,env(safe-area-inset-top))}.card{padding:24px 20px;border-radius:24px}h1{font-size:27px}}
   </style>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
 </head>
 <body>
   <main class="card">
