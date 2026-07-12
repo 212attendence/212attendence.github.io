@@ -2,21 +2,21 @@
   "name": "2-12 출석 시스템",
   "short_name": "2-12 출석",
   "description": "2학년 12반 출석 대시보드",
-  "start_url": "./login/",
+  "start_url": "./login/?v=10",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fafaf8",
   "theme_color": "#fafaf8",
-  "orientation": "portrait",
+  "orientation": "any",
   "icons": [
     {
-      "src": "./favicon.png?v=6",
+      "src": "./favicon.png?v=10",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png?v=6",
+      "src": "./favicon.png?v=10",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "maskable"
