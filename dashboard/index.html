@@ -156,6 +156,11 @@
     .loading-sub { margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 750; line-height: 1.5; word-break: break-all; }
     .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(8px); background: #1f2320; color: #fff; border-radius: 999px; padding: 12px 16px; font-size: 13px; font-weight: 850; opacity: 0; transition: .25s ease; pointer-events: none; z-index: 300; max-width: calc(100vw - 32px); text-align: center; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .pc-hidden { display: none !important; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .push-ui { display: none !important; }
+    }
 
     @media (max-width: 860px) {
       .app { padding: 16px; }
@@ -184,7 +189,7 @@
             <button id="lightBtn" onclick="setTheme('light')">Light</button>
             <button id="darkBtn" onclick="setTheme('dark')">Dark</button>
           </div>
-          <button id="pushBtn" class="btn btn-soft" onclick="enablePushNotifications()">알림 확인중</button>
+          <button id="pushBtn" class="btn btn-soft push-ui" onclick="enablePushNotifications()">알림 확인중</button>
           <button class="btn btn-soft" onclick="loadTodayLogs(true)">새로고침</button>
           <button class="btn btn-soft" onclick="openSettingsModal()">설정</button>
           <button class="btn btn-danger" onclick="logout()">로그아웃</button>
@@ -229,7 +234,7 @@
           </div>
         </div>
 
-        <div class="device-card">
+        <div id="pushStatusCard" class="device-card push-ui">
           <div class="panel-title">알림 상태</div>
           <div class="panel-sub">iPhone 홈 화면 앱에서만 Web Push 가능</div>
           <div class="info-list">
@@ -299,6 +304,8 @@
     let espWatchTimer = null;
 
     document.addEventListener("DOMContentLoaded", function () {
+      if (!isMobilePushTarget()) hidePushUiForPc();
+
       restorePersistentAuth();
       if (!hasSession()) {
         location.replace("../login/");
@@ -315,15 +322,25 @@
       });
     });
 
-    function isMobileOrPwa() {
+    function isMobilePushTarget() {
       const ua = navigator.userAgent || "";
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-      const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-      return isMobile || isStandalone;
+      const isiOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+      return isiOS || isAndroid;
     }
 
+    function hidePushUiForPc() {
+      const pushBtn = document.getElementById("pushBtn");
+      const pushStatusCard = document.getElementById("pushStatusCard");
+      if (pushBtn) pushBtn.classList.add("pc-hidden");
+      if (pushStatusCard) pushStatusCard.classList.add("pc-hidden");
+    }
+
+    window.isMobilePushTarget = isMobilePushTarget;
+    window.hidePushUiForPc = hidePushUiForPc;
+
     function restorePersistentAuth() {
-      if (!isMobileOrPwa()) return false;
+      if (!isMobilePushTarget()) return false;
       try {
         const saved = JSON.parse(localStorage.getItem("attendancePersistentAuth") || "{}");
         if (!saved || !saved.loginType) return false;
@@ -444,8 +461,8 @@
       const counts = { total: logs.length, present: 0, late: 0, absent: 0, notYet: 0 };
       logs.forEach(function (log) {
         const s = String(log.status || "");
-        if (s.includes("출석") && !s.includes("미출석")) counts.present++;
-        else if (s.includes("지각")) counts.late++;
+        if (s.includes("지각")) counts.late++;
+        else if (s.includes("출석") && !s.includes("미출석")) counts.present++;
         else if (s.includes("결석")) counts.absent++;
         else if (s.includes("미출석")) counts.notYet++;
       });
@@ -713,8 +730,7 @@
   </script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
+    const VAPID_PUBLIC_KEY = "BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBN10jMJZ1kB-A6RMt9-HmKWTGjtdfa8iE",
@@ -726,51 +742,76 @@
       measurementId: "G-JPCLPN4HQW"
     };
 
-    const VAPID_PUBLIC_KEY = "BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
-    const firebaseApp = initializeApp(firebaseConfig);
-    const messaging = getMessaging(firebaseApp);
+    let messaging = null;
 
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initPushPermissionStatus);
+      document.addEventListener("DOMContentLoaded", initPushArea);
     } else {
-      initPushPermissionStatus();
+      initPushArea();
     }
 
-    async function initPushPermissionStatus() {
+    async function initPushArea() {
+      if (!window.isMobilePushTarget || !window.isMobilePushTarget()) {
+        if (window.hidePushUiForPc) window.hidePushUiForPc();
+        return;
+      }
+
+      try {
+        const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
+        const firebaseMessagingModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
+
+        const firebaseApp = firebaseAppModule.initializeApp(firebaseConfig);
+        messaging = firebaseMessagingModule.getMessaging(firebaseApp);
+
+        firebaseMessagingModule.onMessage(messaging, function (payload) {
+          const title = payload.data && payload.data.title ? payload.data.title : "2-12 출석 알림";
+          const body = payload.data && payload.data.body ? payload.data.body : "출석 상태가 업데이트되었습니다.";
+          if (window.toast) window.toast(title + " · " + body);
+        });
+
+        await initPushPermissionStatus(firebaseMessagingModule.getToken);
+      } catch (err) {
+        console.error(err);
+        setPushButtonState("unsupported");
+        setPushText("초기화 실패", "모바일");
+      }
+    }
+
+    async function initPushPermissionStatus(getTokenFn) {
       const btn = document.getElementById("pushBtn");
       if (!btn) return;
 
       const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-      document.getElementById("pwaText").textContent = isStandalone ? "홈 화면 앱" : "일반 브라우저";
+      setPushText("확인중", isStandalone ? "홈 화면 앱" : "일반 브라우저");
 
       if (!("Notification" in window)) {
-        document.getElementById("pushPermissionText").textContent = "미지원";
+        setPushText("미지원", isStandalone ? "홈 화면 앱" : "일반 브라우저");
         setPushButtonState("unsupported");
         return;
       }
       if (!("serviceWorker" in navigator)) {
-        document.getElementById("pushPermissionText").textContent = "SW 미지원";
+        setPushText("SW 미지원", isStandalone ? "홈 화면 앱" : "일반 브라우저");
         setPushButtonState("unsupported");
         return;
       }
       if (!isStandalone) {
-        document.getElementById("pushPermissionText").textContent = Notification.permission;
+        setPushText(Notification.permission, "일반 브라우저");
         setPushButtonState("needHomeScreen");
         return;
       }
 
-      document.getElementById("pushPermissionText").textContent = Notification.permission;
+      setPushText(Notification.permission, "홈 화면 앱");
 
       if (Notification.permission === "granted") {
         setPushButtonState("checking");
         try {
-          await registerAndSavePushToken();
+          await registerAndSavePushToken(getTokenFn);
           setPushButtonState("on");
-          document.getElementById("pushPermissionText").textContent = "granted / token 저장됨";
+          setPushText("granted / token 저장됨", "홈 화면 앱");
         } catch (err) {
           console.error(err);
           setPushButtonState("retry");
-          document.getElementById("pushPermissionText").textContent = "허용됨 / 토큰 재저장 필요";
+          setPushText("허용됨 / 토큰 재저장 필요", "홈 화면 앱");
         }
         return;
       }
@@ -785,56 +826,62 @@
 
     window.enablePushNotifications = async function () {
       try {
+        if (!window.isMobilePushTarget || !window.isMobilePushTarget()) {
+          if (window.hidePushUiForPc) window.hidePushUiForPc();
+          return;
+        }
+
         const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
 
         if (!isStandalone) {
-          toast("아이폰에서는 Safari 공유 버튼 → 홈 화면에 추가 후 앱에서 알림 허용하세요.");
+          if (window.toast) window.toast("아이폰에서는 Safari 공유 버튼 → 홈 화면에 추가 후 앱에서 알림 허용하세요.");
           setPushButtonState("needHomeScreen");
           return;
         }
         if (!("Notification" in window)) {
-          toast("이 브라우저는 알림을 지원하지 않습니다.");
+          if (window.toast) window.toast("이 브라우저는 알림을 지원하지 않습니다.");
           setPushButtonState("unsupported");
           return;
         }
         if (!("serviceWorker" in navigator)) {
-          toast("Service Worker를 지원하지 않습니다.");
+          if (window.toast) window.toast("Service Worker를 지원하지 않습니다.");
           setPushButtonState("unsupported");
           return;
         }
         if (Notification.permission === "denied") {
-          toast("알림이 차단되어 있습니다. iPhone 설정 → 알림 → 2-12 출석에서 허용하세요.");
+          if (window.toast) window.toast("알림이 차단되어 있습니다. iPhone 설정 → 알림 → 2-12 출석에서 허용하세요.");
           setPushButtonState("blocked");
           return;
         }
 
-        startLoading("알림 권한 확인 중입니다", "아이폰 알림 권한을 요청합니다.");
+        if (window.startLoading) window.startLoading("알림 권한 확인 중입니다", "아이폰 알림 권한을 요청합니다.");
         const permission = await Notification.requestPermission();
-        document.getElementById("pushPermissionText").textContent = permission;
+        setPushText(permission, "홈 화면 앱");
 
         if (permission !== "granted") {
-          stopLoading();
+          if (window.stopLoading) window.stopLoading();
           setPushButtonState(permission === "denied" ? "blocked" : "ready");
-          toast("알림 권한이 허용되지 않았습니다.");
+          if (window.toast) window.toast("알림 권한이 허용되지 않았습니다.");
           return;
         }
 
-        await registerAndSavePushToken();
-        stopLoading();
+        const firebaseMessagingModule = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
+        await registerAndSavePushToken(firebaseMessagingModule.getToken);
+        if (window.stopLoading) window.stopLoading();
         setPushButtonState("on");
-        document.getElementById("pushPermissionText").textContent = "granted / token 저장됨";
-        toast("아이폰 알림 등록 완료");
+        setPushText("granted / token 저장됨", "홈 화면 앱");
+        if (window.toast) window.toast("아이폰 알림 등록 완료");
       } catch (err) {
-        stopLoading();
+        if (window.stopLoading) window.stopLoading();
         console.error(err);
         setPushButtonState("retry");
-        toast("알림 등록 실패: " + (err && err.message ? err.message : err));
+        if (window.toast) window.toast("알림 등록 실패: " + (err && err.message ? err.message : err));
       }
     };
 
-    async function registerAndSavePushToken() {
+    async function registerAndSavePushToken(getTokenFn) {
       const registration = await navigator.serviceWorker.register("../firebase-messaging-sw.js?v=5", { scope: "../" });
-      const token = await getToken(messaging, {
+      const token = await getTokenFn(messaging, {
         vapidKey: VAPID_PUBLIC_KEY,
         serviceWorkerRegistration: registration
       });
@@ -847,18 +894,20 @@
       return new Promise(function (resolve, reject) {
         const params = new URLSearchParams();
         params.set("action", "savePushTokenJsonp");
-        if (typeof addAuthParams === "function") addAuthParams(params);
+        if (typeof window.addAuthParams === "function") window.addAuthParams(params);
+        else if (typeof addAuthParams === "function") addAuthParams(params);
         params.set("token", token);
         params.set("platform", "ios-pwa");
         params.set("userAgent", navigator.userAgent || "");
         params.set("createdAt", new Date().toISOString());
 
-        if (typeof callJsonp !== "function") {
+        if (typeof window.callJsonp !== "function" && typeof callJsonp !== "function") {
           reject(new Error("callJsonp 함수가 없습니다."));
           return;
         }
 
-        callJsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
+        const jsonp = window.callJsonp || callJsonp;
+        jsonp(APPS_SCRIPT_URL + "?" + params.toString(), function (res) {
           if (!res || !res.ok) {
             reject(new Error((res && res.message) ? res.message : "토큰 저장 실패"));
             return;
@@ -866,6 +915,13 @@
           resolve(res);
         });
       });
+    }
+
+    function setPushText(permissionText, pwaText) {
+      const permissionEl = document.getElementById("pushPermissionText");
+      const pwaEl = document.getElementById("pwaText");
+      if (permissionEl) permissionEl.textContent = permissionText || "-";
+      if (pwaEl) pwaEl.textContent = pwaText || "-";
     }
 
     function setPushButtonState(state) {
@@ -893,12 +949,6 @@
       }
       btn.textContent = "알림 허용";
     }
-
-    onMessage(messaging, function (payload) {
-      const title = payload.data && payload.data.title ? payload.data.title : "2-12 출석 알림";
-      const body = payload.data && payload.data.body ? payload.data.body : "출석 상태가 업데이트되었습니다.";
-      toast(title + " · " + body);
-    });
   </script>
 </body>
 </html>
