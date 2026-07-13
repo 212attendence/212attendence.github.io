@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>2-12 출석 시스템</title>
-  <link rel="manifest" href="./manifest.json?v=16">
-  <link rel="icon" href="./favicon.png?v=16">
-  <link rel="apple-touch-icon" href="./favicon.png?v=16">
+  <link rel="manifest" href="./manifest.json?v=17">
+  <link rel="icon" href="./favicon.png?v=17">
+  <link rel="apple-touch-icon" href="./favicon.png?v=17">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="./assets/app.css?v=16">
-  <script src="./assets/app.js?v=16" defer></script>
+  <link rel="stylesheet" href="./assets/app.css?v=17">
+  <script src="./assets/app.js?v=17" defer></script>
   <style>
     .help-card{width:min(620px,100%)}
     .menu{display:grid;gap:11px}.menu-item{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:72px;padding:15px 16px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);color:var(--text);text-decoration:none;transition:transform .16s ease,border-color .2s ease,background-color .2s ease}.menu-item strong{display:block;font-size:15px;font-weight:900}.menu-item small{display:block;margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:650}.arrow{color:var(--muted);font-size:24px}
@@ -25,7 +25,7 @@
     <h1>로그인 화면으로 이동 중</h1>
     <p class="subtext">잠시만 기다려주세요.</p>
     <div class="status-box">자동으로 이동하지 않으면 아래 버튼을 누르세요.</div>
-    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/?v=16">로그인 열기</a></div>
+    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/?v=17">로그인 열기</a></div>
   </main>
 
   <main id="helpCard" class="auth-card help-card hidden">
@@ -34,18 +34,10 @@
     <p class="subtext">학생 등록, 홈 화면 설치와 로그인 보안 설정을 안내합니다.</p>
 
     <div class="menu">
-      <a class="menu-item" href="#student-registration">
-        <span><strong>학생 등록 절차</strong><small>사용자 시트와 지문센서에 같은 ID로 학생을 등록합니다.</small></span><span class="arrow">›</span>
-      </a>
-      <a class="menu-item" href="./home-icon-setting/">
-        <span><strong>홈 화면 앱 설치</strong><small>iPhone·Android·PC에 앱처럼 설치합니다.</small></span><span class="arrow">›</span>
-      </a>
-      <a class="menu-item" href="./setup-login-method/">
-        <span><strong>패스키 설정</strong><small>Face ID·Touch ID·Windows Hello를 등록합니다.</small></span><span class="arrow">›</span>
-      </a>
-      <a class="menu-item" href="./login/?v=16">
-        <span><strong>로그인으로 이동</strong><small>Google 계정 또는 관리자 계정으로 로그인합니다.</small></span><span class="arrow">›</span>
-      </a>
+      <a class="menu-item" href="#student-registration"><span><strong>학생 등록 절차</strong><small>사용자 시트와 지문센서에 같은 ID로 학생을 등록합니다.</small></span><span class="arrow">›</span></a>
+      <a class="menu-item" href="./home-icon-setting/"><span><strong>홈 화면 앱 설치</strong><small>iPhone·Android·PC에 앱처럼 설치합니다.</small></span><span class="arrow">›</span></a>
+      <a class="menu-item" href="./setup-login-method/"><span><strong>패스키 설정</strong><small>Face ID·Touch ID·Windows Hello를 등록합니다.</small></span><span class="arrow">›</span></a>
+      <a class="menu-item" href="./login/?v=17"><span><strong>로그인으로 이동</strong><small>Google 계정 또는 관리자 계정으로 로그인합니다.</small></span><span class="arrow">›</span></a>
     </div>
 
     <details id="student-registration" class="help-section" open>
@@ -59,14 +51,11 @@
           <li><strong>ESP32 지문 등록 모드에서 같은 fingerId로 지문을 등록합니다.</strong><br>시트의 fingerId와 센서의 등록 번호가 반드시 같아야 합니다.</li>
           <li><strong>대시보드로 돌아가 새로고침합니다.</strong><br>전체 학생 수가 표시되면 등록이 완료된 것입니다.</li>
         </ol>
-        <div class="column-note">
-          사용자 시트 열 순서: <code>name · fingerId · active · memo</code><br>
-          fingerId는 1부터 시작하지 않아도 되지만, 다른 학생과 중복되면 안 됩니다.
-        </div>
+        <div class="column-note">사용자 시트 열 순서: <code>name · fingerId · active · memo</code><br>fingerId는 1부터 시작하지 않아도 되지만, 다른 학생과 중복되면 안 됩니다.</div>
       </div>
     </details>
 
-    <div class="actions-stack"><a class="btn btn-soft btn-block" href="./dashboard/">대시보드로 이동</a></div>
+    <div class="actions-stack"><a class="btn btn-soft btn-block" href="./dashboard/?resume=1" onclick="sessionStorage.setItem('dashboardFastReturn','1')">대시보드로 이동</a></div>
   </main>
 
   <script>
@@ -85,7 +74,7 @@
         }
         return;
       }
-      setTimeout(function(){location.replace("./login/?v=16")},120);
+      setTimeout(function(){location.replace("./login/?v=17")},120);
     });
   </script>
 </body>
