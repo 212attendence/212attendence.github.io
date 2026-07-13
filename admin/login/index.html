@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base href="/admin/login/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>로그인 · 2-12 출석</title>
+  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="icon" href="../favicon.png?v=21">
+  <link rel="apple-touch-icon" href="../favicon.png?v=21">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 출석">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com">
+  <link rel="preconnect" href="https://accounts.google.com">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=21">
+  <script src="../assets/app.js?v=21" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    .google-wrap{display:grid;place-items:center;min-height:44px}.device-hint{margin-top:9px;color:var(--muted);text-align:center;font-size:12px;font-weight:700}.session-note{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:13px;color:var(--muted);font-size:12px;font-weight:650}.session-note::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--success)}
+    .desktop-help{position:fixed;right:22px;top:22px;z-index:20;display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 88%,transparent);color:var(--text);box-shadow:var(--shadow-soft);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);text-decoration:none;font-size:13px;font-weight:850}.desktop-help kbd{padding:3px 7px;border:1px solid var(--line);border-radius:7px;background:var(--surface-soft);color:var(--muted);font:700 10px var(--font)}
+    @media(max-width:720px){.desktop-help{display:none}}
+  </style>
+</head>
+<body class="auth-page">
+  <a class="desktop-help" href="/admin/help/" title="도움말 열기">? 도움말 <kbd>F1</kbd></a>
+  <main class="auth-card">
+    <div class="brand-chip">2-12 출석</div>
+
+    <section id="normalPanel">
+      <h1>관리자 로그인</h1>
+      <p class="subtext">Google 계정 또는 관리자 계정으로 로그인하세요.</p>
+
+      <div class="google-wrap">
+        <div id="googleButton"></div>
+        <div id="googleLoading" class="small-note">Google 로그인 불러오는 중…</div>
+      </div>
+
+      <div class="divider">또는 관리자 로그인</div>
+
+      <div class="field">
+        <label for="adminId">관리자 ID</label>
+        <input id="adminId" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="관리자 ID">
+      </div>
+      <div class="field">
+        <label for="adminPw">관리자 비밀번호</label>
+        <div class="input-wrap">
+          <input id="adminPw" type="password" autocomplete="current-password" placeholder="비밀번호" style="padding-right:70px">
+          <button class="input-action" type="button" onclick="togglePassword()">표시</button>
+        </div>
+      </div>
+      <div class="actions-stack">
+        <button id="adminLoginBtn" class="btn btn-primary btn-block" type="button" onclick="adminLogin()">관리자 로그인</button>
+      </div>
+      <a class="link-button" href="/admin/help/">도움말</a>
+      <div class="session-note">로그인 세션은 이 기기에서 14일간 유지됩니다.</div>
+    </section>
+
+    <section id="passkeyPanel" class="hidden">
+      <h1 id="passkeyTitle">기기 인증 로그인</h1>
+      <p id="passkeySub" class="subtext">등록된 기기 인증을 요청합니다.</p>
+      <button id="passkeyLoginBtn" class="btn btn-primary btn-block" type="button" onclick="passkeyLogin(false)">
+        <span id="passkeyButtonText">기기 인증 다시 시도</span>
+      </button>
+      <div id="deviceHint" class="device-hint">생체인식 · 기기 PIN</div>
+      <div id="passkeyStatus" class="status-box success" style="margin-top:14px">기기 인증을 시작합니다.</div>
+      <button class="btn btn-soft btn-block" style="margin-top:12px" type="button" onclick="showNormal('다른 로그인 방법을 표시합니다.')">다른 방법으로 로그인</button>
+      <a class="link-button" href="/admin/help/">도움말</a>
+    </section>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">로그인 중입니다</div><div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div></div>
+  </div>
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    const GOOGLE_CLIENT_ID = "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
+    const ALLOWED_NEXT = ["/admin/dashboard/", "/admin/choose-login-method/", "/admin/setup-login-method/"];
+    const PASSKEY_TIMEOUT_MS = 35000;
+    let loginBusy = false;
+    let googleReady = false;
+    let googleAttempts = 0;
+    let autoPasskeyStarted = false;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      AttendanceApp.Theme.init();
+      rememberNextRoute();
+      document.getElementById("adminPw").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") adminLogin();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "F1") {
+          event.preventDefault();
+          location.href = "/admin/help/";
+        }
+      });
+
+      if (shouldRestoreSession()) {
+        if (AttendanceApp.Session.restore()) {
+          routeAfterLogin();
+          return;
+        }
+      } else {
+        AttendanceApp.Session.clear();
+      }
+
+      initGoogleButton();
+      if (AttendanceApp.Passkey.isRegistered() && AttendanceApp.Passkey.supported()) {
+        showPasskey();
+        setDeviceCopy();
+        autoPasskeyStarted = true;
+        setTimeout(function () { passkeyLogin(true); }, 420);
+      } else {
+        showNormal();
+      }
+    });
+
+    window.addEventListener("pageshow", function (event) {
+      if (event.persisted && AttendanceApp.Session.restore()) routeAfterLogin();
+    });
+
+    function detectedDeviceInfo() {
+      const ua = navigator.userAgent || "";
+      const uaPlatform = navigator.userAgentData && navigator.userAgentData.platform || "";
+      const platform = [uaPlatform, navigator.platform || "", ua].join(" ");
+      const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+      if (/Windows|Win32|Win64|Win86/i.test(platform)) {
+        return { kind:"windows", name:"Windows PC · Windows Hello", title:"Windows Hello", hint:"얼굴 · 지문 · Windows Hello PIN" };
+      }
+      if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
+        return { kind:"apple-mobile", name:/iPhone/i.test(ua) ? "iPhone · Face ID" : "iPad · Face ID/Touch ID", title:/iPhone/i.test(ua) ? "Face ID" : "기기 인증", hint:"Face ID · Touch ID · 기기 암호" };
+      }
+      if (/Macintosh|Mac OS X/i.test(platform)) {
+        return { kind:"mac", name:"Mac · Touch ID", title:"Touch ID", hint:"Touch ID · Mac 로그인 암호" };
+      }
+      if (/Android/i.test(ua)) {
+        return { kind:"android", name:"Android 기기 인증", title:"기기 인증", hint:"지문 · 얼굴 · 화면 잠금 PIN" };
+      }
+      return AttendanceApp.Passkey.deviceInfo();
+    }
+
+    function compactUserAgent() {
+      const ua = navigator.userAgent || "";
+      return ua.length > 140 ? ua.slice(0, 140) : ua;
+    }
+
+    function shouldRestoreSession() {
+      const params = new URLSearchParams(location.search);
+      if (params.has("v") || params.has("next") || params.get("resume") === "1") return true;
+      try {
+        const referrer = new URL(document.referrer);
+        if (referrer.origin === location.origin && referrer.pathname.includes("/admin/dashboard/")) return false;
+      } catch (error) {}
+      return true;
+    }
+
+    function rememberNextRoute() {
+      const requested = new URLSearchParams(location.search).get("next") || "";
+      if (ALLOWED_NEXT.includes(requested)) sessionStorage.setItem("postLoginRoute", requested);
+    }
+
+    function routeAfterLogin() {
+      const requested = sessionStorage.getItem("postLoginRoute") || "";
+      if (requested && ALLOWED_NEXT.includes(requested)) {
+        sessionStorage.removeItem("postLoginRoute");
+        location.replace(".." + requested);
+        return;
+      }
+      location.replace(AttendanceApp.Passkey.isRegistered() ? "/admin/dashboard/" : "/admin/choose-login-method/");
+    }
+
+    function showPasskey() {
+      document.getElementById("normalPanel").classList.add("hidden");
+      document.getElementById("passkeyPanel").classList.remove("hidden");
+    }
+
+    function showNormal(message) {
+      AttendanceApp.UI.stopLoading();
+      loginBusy = false;
+      setDisabled(false);
+      document.getElementById("passkeyPanel").classList.add("hidden");
+      document.getElementById("normalPanel").classList.remove("hidden");
+      initGoogleButton();
+      if (message) AttendanceApp.UI.toast(message);
+    }
+
+    function setDeviceCopy() {
+      const device = detectedDeviceInfo();
+      document.getElementById("passkeyTitle").textContent = device.title + " 로그인";
+      document.getElementById("passkeySub").textContent = "등록된 " + device.title + " 인증을 요청합니다.";
+      document.getElementById("passkeyButtonText").textContent = device.title + " 다시 시도";
+      document.getElementById("deviceHint").textContent = device.hint;
+    }
+
+    function togglePassword() {
+      const input = document.getElementById("adminPw");
+      const button = input.parentElement.querySelector("button");
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "표시" : "숨김";
+    }
+
+    async function passkeyLogin(autoStarted) {
+      if (loginBusy || !AttendanceApp.Passkey.isRegistered()) return;
+      if (!AttendanceApp.Passkey.supported()) {
+        showNormal("이 브라우저는 기기 인증을 지원하지 않습니다.");
+        return;
+      }
+
+      loginBusy = true;
+      setDisabled(true);
+      AttendanceApp.UI.loading("기기 인증 준비 중입니다", autoStarted ? "등록된 로그인 방법을 불러옵니다." : "로그인 요청을 생성합니다.");
+
+      try {
+        const device = detectedDeviceInfo();
+        const optionParams = new URLSearchParams({
+          action: "passkeyLoginOptionsJsonp",
+          origin: location.origin,
+          hostname: location.hostname,
+          credentialId: AttendanceApp.Passkey.getCredentialId(),
+          deviceName: device.name,
+          userAgent: compactUserAgent()
+        });
+        const optionResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, optionParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
+        if (!optionResponse || !optionResponse.ok) throw new Error(optionResponse && optionResponse.message || "기기 인증 정보를 불러오지 못했습니다.");
+
+        const source = optionResponse.publicKey || optionResponse.options || optionResponse.data;
+        if (!source || !source.challenge) throw new Error("기기 인증 요청 형식이 올바르지 않습니다.");
+
+        const publicKey = normalizeRequestOptions(source);
+        AttendanceApp.UI.stopLoading();
+        const credential = await navigator.credentials.get({ publicKey: publicKey });
+        if (!credential) throw new Error("기기 인증 결과를 받지 못했습니다.");
+
+        AttendanceApp.UI.loading("기기 인증 확인 중입니다", "서명을 확인하고 로그인합니다.");
+        const verifyParams = new URLSearchParams({
+          action: "passkeyLoginVerifyJsonp",
+          requestId: optionResponse.requestId || optionResponse.challengeId || "",
+          credential: JSON.stringify(serializeAssertion(credential)),
+          origin: location.origin,
+          hostname: location.hostname,
+          userAgent: compactUserAgent()
+        });
+        const verifyResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, verifyParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
+        if (!verifyResponse || !verifyResponse.ok || !verifyResponse.sessionToken) throw new Error(verifyResponse && verifyResponse.message || "기기 인증 검증에 실패했습니다.");
+
+        AttendanceApp.Session.save("passkey", verifyResponse);
+        location.replace("/admin/dashboard/");
+      } catch (error) {
+        const message = error && error.name === "NotAllowedError"
+          ? "기기 인증이 취소되어 일반 로그인을 표시합니다."
+          : error && error.message || String(error);
+        showNormal(message);
+      } finally {
+        loginBusy = false;
+        setDisabled(false);
+      }
+    }
+
+    function initGoogleButton() {
+      if (googleReady) return;
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        googleAttempts += 1;
+        if (googleAttempts < 40) setTimeout(initGoogleButton, 250);
+        else document.getElementById("googleLoading").textContent = "Google 로그인을 불러오지 못했습니다. 관리자 로그인을 이용하세요.";
+        return;
+      }
+
+      googleReady = true;
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      google.accounts.id.renderButton(document.getElementById("googleButton"), {
+        type: "standard",
+        theme: document.documentElement.getAttribute("data-theme") === "dark" ? "filled_black" : "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "pill",
+        logo_alignment: "left",
+        width: 280
+      });
+      document.getElementById("googleLoading").classList.add("hidden");
+    }
+
+    async function handleGoogleCredential(response) {
+      if (loginBusy || !response || !response.credential) {
+        if (!response || !response.credential) AttendanceApp.UI.toast("Google 로그인 토큰을 받지 못했습니다.");
+        return;
+      }
+
+      loginBusy = true;
+      setDisabled(true);
+      AttendanceApp.UI.loading("Google 계정 로그인 중입니다", "허용된 계정인지 확인합니다.");
+      try {
+        const params = new URLSearchParams({ action: "googleLoginJsonp", idToken: response.credential });
+        AttendanceApp.addClientParams(params);
+        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));
+        if (!result || !result.ok || !result.sessionToken) throw new Error(result && result.message || "Google 로그인에 실패했습니다.");
+        AttendanceApp.Session.save("google", result);
+        routeAfterLogin();
+      } catch (error) {
+        AttendanceApp.UI.toast(error && error.message || String(error));
+      } finally {
+        loginBusy = false;
+        setDisabled(false);
+        AttendanceApp.UI.stopLoading();
+      }
+    }
+
+    async function adminLogin() {
+      if (loginBusy) return;
+      const adminId = document.getElementById("adminId").value.trim();
+      const adminPw = document.getElementById("adminPw").value;
+      if (!adminId || !adminPw) {
+        AttendanceApp.UI.toast("관리자 ID와 비밀번호를 입력하세요.");
+        return;
+      }
+
+      loginBusy = true;
+      setDisabled(true);
+      AttendanceApp.UI.loading("관리자 계정 로그인 중입니다", adminId);
+      try {
+        const params = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: adminId, adminPw: adminPw });
+        AttendanceApp.addClientParams(params);
+        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));
+        if (!result || !result.ok || !result.sessionToken) throw new Error(result && result.message || "관리자 로그인에 실패했습니다.");
+        AttendanceApp.Session.save("admin", result);
+        routeAfterLogin();
+      } catch (error) {
+        AttendanceApp.UI.toast(error && error.message || String(error));
+      } finally {
+        loginBusy = false;
+        setDisabled(false);
+        AttendanceApp.UI.stopLoading();
+      }
+    }
+
+    function normalizeRequestOptions(source) {
+      const result = Object.assign({}, source, { challenge: AttendanceApp.base64UrlToBytes(source.challenge) });
+      if (Array.isArray(source.allowCredentials)) {
+        result.allowCredentials = source.allowCredentials.map(function (item) {
+          return Object.assign({}, item, { id: AttendanceApp.base64UrlToBytes(item.id) });
+        });
+      }
+      return result;
+    }
+
+    function serializeAssertion(credential) {
+      return {
+        id: credential.id,
+        rawId: AttendanceApp.bytesToBase64Url(credential.rawId),
+        response: {
+          authenticatorData: AttendanceApp.bytesToBase64Url(credential.response.authenticatorData),
+          clientDataJSON: AttendanceApp.bytesToBase64Url(credential.response.clientDataJSON),
+          signature: AttendanceApp.bytesToBase64Url(credential.response.signature),
+          userHandle: credential.response.userHandle ? AttendanceApp.bytesToBase64Url(credential.response.userHandle) : ""
+        }
+      };
+    }
+
+    function setDisabled(disabled) {
+      ["passkeyLoginBtn", "adminId", "adminPw", "adminLoginBtn"].forEach(function (id) {
+        const element = document.getElementById(id);
+        if (element) element.disabled = disabled;
+      });
+    }
+  </script>
+</body>
+</html>

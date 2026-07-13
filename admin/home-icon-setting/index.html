@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base href="/admin/home-icon-setting/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>홈 화면 앱 설치</title>
+  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="icon" href="../favicon.png?v=21">
+  <link rel="apple-touch-icon" href="../favicon.png?v=21">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=21">
+  <script src="../assets/app.js?v=21" defer></script>
+  <style>
+    .guide-wrap{width:min(680px,100%)}.device-label{margin-bottom:16px}.steps{margin:18px 0 0;padding:0;list-style:none;counter-reset:step;display:grid;gap:11px}.steps li{counter-increment:step;position:relative;padding:15px 15px 15px 52px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft);font-size:14px;line-height:1.55;font-weight:700}.steps li::before{content:counter(step);position:absolute;left:14px;top:13px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--accent-text);font-size:12px;font-weight:900}.install-state{margin-top:15px}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card guide-wrap">
+    <span id="deviceLabel" class="brand-chip device-label">기기 확인 중</span>
+    <h1>홈 화면 앱 설치</h1>
+    <p id="guideSub" class="subtext">출석 시스템을 브라우저 탭이 아닌 독립 앱처럼 실행할 수 있습니다.</p>
+    <ol id="steps" class="steps"></ol>
+    <div id="note" class="status-box install-state"></div>
+    <div class="actions-stack">
+      <button id="installBtn" class="btn btn-primary btn-block hidden" type="button" onclick="installApp()">앱 설치</button>
+      <button class="btn btn-soft btn-block" type="button" onclick="location.href='/admin/login/'">로그인으로 이동</button>
+      <a class="link-button" href="/admin/help/">도움말로 돌아가기</a>
+    </div>
+  </main>
+
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", function (event) {
+      event.preventDefault();
+      deferredPrompt = event;
+      document.getElementById("installBtn").classList.remove("hidden");
+    });
+
+    window.addEventListener("appinstalled", function () {
+      deferredPrompt = null;
+      document.getElementById("installBtn").classList.add("hidden");
+      document.getElementById("note").className = "status-box success install-state";
+      document.getElementById("note").textContent = "설치가 완료되었습니다. 홈 화면이나 시작 메뉴에서 2-12 출석을 실행하세요.";
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      AttendanceApp.Theme.init();
+      renderGuide();
+    });
+
+    function isStandalone() {
+      return navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    }
+
+    function renderGuide() {
+      const ua = navigator.userAgent || "";
+      const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+      const label = document.getElementById("deviceLabel");
+      const steps = document.getElementById("steps");
+      const note = document.getElementById("note");
+      let items = [];
+
+      if (isStandalone()) {
+        label.textContent = "설치됨";
+        items = ["현재 홈 화면 앱으로 실행 중입니다.", "로그인 후 패스키와 알림을 설정하면 더 편리하게 사용할 수 있습니다."];
+        note.className = "status-box success install-state";
+        note.textContent = "이 기기에는 이미 앱이 설치되어 있습니다.";
+      } else if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
+        label.textContent = "iPhone / iPad";
+        items = [
+          "Safari에서 212attendence.github.io를 엽니다.",
+          "화면 아래 또는 위의 공유 버튼을 누릅니다.",
+          "메뉴에서 ‘홈 화면에 추가’를 선택합니다.",
+          "이름이 ‘2-12 출석’인지 확인하고 ‘추가’를 누릅니다.",
+          "홈 화면에 생성된 아이콘으로 앱을 실행합니다."
+        ];
+        note.textContent = "iPhone의 알림과 Face ID 기반 패스키는 홈 화면 앱으로 실행할 때 가장 안정적으로 동작합니다.";
+      } else if (/Android/i.test(ua)) {
+        label.textContent = "Android";
+        items = [
+          "Chrome에서 212attendence.github.io를 엽니다.",
+          "오른쪽 위 메뉴(⋮)를 누릅니다.",
+          "‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택합니다.",
+          "표시 이름을 확인하고 설치를 완료합니다."
+        ];
+        note.textContent = "설치 버튼이 표시되면 이 화면에서 바로 설치할 수도 있습니다.";
+      } else {
+        label.textContent = "PC / Mac";
+        items = [
+          "Chrome 또는 Edge에서 212attendence.github.io를 엽니다.",
+          "주소창 오른쪽의 설치 아이콘이나 브라우저 메뉴를 엽니다.",
+          "‘앱 설치’ 또는 ‘이 사이트를 앱으로 설치’를 선택합니다.",
+          "설치 후 바탕화면이나 시작 메뉴에서 실행합니다."
+        ];
+        note.textContent = "설치 버튼이 표시되면 이 화면에서 바로 설치할 수 있습니다.";
+      }
+      steps.innerHTML = items.map(function (item) { return "<li>" + AttendanceApp.UI.escapeHtml(item) + "</li>"; }).join("");
+    }
+
+    async function installApp() {
+      if (!deferredPrompt) {
+        AttendanceApp.UI.toast("브라우저 메뉴에서 앱 설치 또는 홈 화면에 추가를 선택하세요.");
+        return;
+      }
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("installBtn").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>

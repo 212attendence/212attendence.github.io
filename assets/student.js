@@ -112,7 +112,7 @@
   }
 
   function goGpsError(error) {
-    location.replace("../error-gps/?reason=" + encodeURIComponent(gpsErrorReason(error)));
+    location.replace("/student/error/gps/?reason=" + encodeURIComponent(gpsErrorReason(error)));
   }
 
   window.StudentAttendance = {

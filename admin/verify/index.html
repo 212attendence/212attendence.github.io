@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base href="/admin/verify/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>관리자 재인증</title>
+  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="icon" href="../favicon.png?v=21">
+  <link rel="apple-touch-icon" href="../favicon.png?v=21">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=21">
+  <script src="../assets/app.js?v=21" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    .google-wrap{display:grid;place-items:center;min-height:44px}.success-mark{width:60px;height:60px;display:grid;place-items:center;margin-bottom:18px;border-radius:20px;background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success);font-size:26px;font-weight:900}.device-instruction{margin-top:14px}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <section id="verifyPanel">
+      <div class="brand-chip">보안 확인</div>
+      <h1>관리자 재인증</h1>
+      <p class="subtext">패스키 삭제를 계속하려면 허용된 Google 계정 또는 관리자 계정으로 다시 인증하세요.</p>
+
+      <div class="google-wrap"><div id="googleButton"></div><div id="googleLoading" class="small-note">Google 로그인 불러오는 중…</div></div>
+      <div class="divider">또는 관리자 로그인</div>
+
+      <div class="field"><label for="adminId">관리자 ID</label><input id="adminId" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="관리자 ID"></div>
+      <div class="field"><label for="adminPw">관리자 비밀번호</label><div class="input-wrap"><input id="adminPw" type="password" autocomplete="current-password" placeholder="비밀번호" style="padding-right:70px"><button class="input-action" type="button" onclick="togglePassword()">표시</button></div></div>
+      <div class="actions-stack">
+        <button id="adminBtn" class="btn btn-primary btn-block" type="button" onclick="adminVerify()">관리자 계정으로 인증</button>
+        <button class="btn btn-soft btn-block" type="button" onclick="cancelDelete()">취소하고 대시보드로 돌아가기</button>
+      </div>
+    </section>
+
+    <section id="successPanel" class="hidden">
+      <div class="success-mark">✓</div>
+      <h1>패스키를 삭제했습니다</h1>
+      <p class="subtext">서버 등록과 이 브라우저의 연결 정보가 삭제되었습니다.</p>
+      <div id="deviceInstruction" class="status-box device-instruction"></div>
+      <div class="actions-stack"><button class="btn btn-primary btn-block" type="button" onclick="location.replace('/admin/dashboard/')">대시보드로 돌아가기</button></div>
+    </section>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">인증 중입니다</div><div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div></div>
+  </div>
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    const GOOGLE_CLIENT_ID = "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
+    let busy = false;
+    let googleReady = false;
+    let googleAttempts = 0;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      AttendanceApp.Theme.init();
+      if (!AttendanceApp.Session.require("/admin/login/", "/admin/dashboard/")) return;
+      if (sessionStorage.getItem("passkeyDeletePending") !== "1" || !sessionStorage.getItem("passkeyDeleteCredentialId")) {
+        location.replace("/admin/dashboard/");
+        return;
+      }
+      document.getElementById("adminPw").addEventListener("keydown", function (event) { if (event.key === "Enter") adminVerify(); });
+      initGoogleButton();
+    });
+
+    function togglePassword() {
+      const input = document.getElementById("adminPw");
+      const button = input.parentElement.querySelector("button");
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "표시" : "숨김";
+    }
+
+    function initGoogleButton() {
+      if (googleReady) return;
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        googleAttempts += 1;
+        if (googleAttempts < 40) setTimeout(initGoogleButton, 250);
+        else document.getElementById("googleLoading").textContent = "Google 로그인을 불러오지 못했습니다. 관리자 로그인을 이용하세요.";
+        return;
+      }
+      googleReady = true;
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogle, auto_select: false, cancel_on_tap_outside: true });
+      google.accounts.id.renderButton(document.getElementById("googleButton"), {
+        type: "standard",
+        theme: document.documentElement.getAttribute("data-theme") === "dark" ? "filled_black" : "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "pill",
+        logo_alignment: "left",
+        width: 280
+      });
+      document.getElementById("googleLoading").classList.add("hidden");
+    }
+
+    async function handleGoogle(response) {
+      if (busy || !response || !response.credential) {
+        if (!response || !response.credential) AttendanceApp.UI.toast("Google 로그인 토큰을 받지 못했습니다.");
+        return;
+      }
+      busy = true;
+      setDisabled(true);
+      AttendanceApp.UI.loading("Google 계정 인증 중입니다", "허용된 계정인지 확인합니다.");
+      try {
+        const params = new URLSearchParams({ action: "googleLoginJsonp", idToken: response.credential });
+        AttendanceApp.addClientParams(params);
+        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));
+        if (!result || !result.ok || !result.sessionToken) throw new Error(result && result.message || "Google 인증에 실패했습니다.");
+        AttendanceApp.Session.save("google", result);
+        await deletePasskey();
+      } catch (error) {
+        AttendanceApp.UI.toast(error && error.message || String(error));
+      } finally {
+        busy = false;
+        setDisabled(false);
+        AttendanceApp.UI.stopLoading();
+      }
+    }
+
+    async function adminVerify() {
+      if (busy) return;
+      const adminId = document.getElementById("adminId").value.trim();
+      const adminPw = document.getElementById("adminPw").value;
+      if (!adminId || !adminPw) {
+        AttendanceApp.UI.toast("관리자 ID와 비밀번호를 입력하세요.");
+        return;
+      }
+
+      busy = true;
+      setDisabled(true);
+      AttendanceApp.UI.loading("관리자 계정 인증 중입니다", adminId);
+      try {
+        const params = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: adminId, adminPw: adminPw });
+        AttendanceApp.addClientParams(params);
+        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));
+        if (!result || !result.ok || !result.sessionToken) throw new Error(result && result.message || "관리자 인증에 실패했습니다.");
+        AttendanceApp.Session.save("admin", result);
+        await deletePasskey();
+      } catch (error) {
+        AttendanceApp.UI.toast(error && error.message || String(error));
+      } finally {
+        busy = false;
+        setDisabled(false);
+        AttendanceApp.UI.stopLoading();
+      }
+    }
+
+    async function deletePasskey() {
+      AttendanceApp.UI.loading("패스키 삭제 중입니다", "서버 등록 정보를 비활성화합니다.");
+      const params = new URLSearchParams({
+        action: "deletePasskeyJsonp",
+        credentialId: sessionStorage.getItem("passkeyDeleteCredentialId") || "",
+        origin: location.origin,
+        hostname: location.hostname,
+        userAgent: navigator.userAgent || ""
+      });
+      AttendanceApp.Session.addAuthParams(params);
+      const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));
+      if (!result || !result.ok) throw new Error(result && result.message || "패스키 삭제에 실패했습니다.");
+
+      const deviceName = sessionStorage.getItem("passkeyDeleteDeviceName") || AttendanceApp.Passkey.getDeviceName() || "기기";
+      AttendanceApp.Passkey.clear();
+      clearPending();
+      showSuccess(deviceName);
+    }
+
+    function showSuccess(deviceName) {
+      document.getElementById("verifyPanel").classList.add("hidden");
+      document.getElementById("successPanel").classList.remove("hidden");
+      document.getElementById("deviceInstruction").textContent = getDeviceInstruction(deviceName);
+      AttendanceApp.UI.stopLoading();
+    }
+
+    function getDeviceInstruction(deviceName) {
+      const device = AttendanceApp.Passkey.deviceInfo();
+      if (device.kind === "windows") return "Windows 설정 → 계정 → 패스키에서 212attendence.github.io 항목도 삭제할 수 있습니다.";
+      if (device.kind === "apple-mobile") return "iPhone 또는 iPad의 비밀번호 앱에서 212attendence.github.io 패스키도 삭제할 수 있습니다.";
+      if (device.kind === "mac") return "Mac의 암호 설정 또는 iCloud 키체인에서 212attendence.github.io 패스키도 삭제할 수 있습니다.";
+      if (device.kind === "android") return "Google 비밀번호 관리자에서 212attendence.github.io 패스키도 삭제할 수 있습니다.";
+      return deviceName + "의 패스키 관리자에서 212attendence.github.io 항목도 삭제할 수 있습니다.";
+    }
+
+    function cancelDelete() {
+      clearPending();
+      location.replace("/admin/dashboard/");
+    }
+
+    function clearPending() {
+      ["passkeyDeletePending", "passkeyDeleteCredentialId", "passkeyDeleteDeviceName"].forEach(function (key) { sessionStorage.removeItem(key); });
+    }
+
+    function setDisabled(disabled) {
+      ["adminId", "adminPw", "adminBtn"].forEach(function (id) {
+        const element = document.getElementById(id);
+        if (element) element.disabled = disabled;
+      });
+    }
+  </script>
+</body>
+</html>

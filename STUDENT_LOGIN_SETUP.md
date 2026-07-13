@@ -59,9 +59,13 @@ setupStudentAuth_();
 ## 5. 화면 경로
 
 - `/` — 학생·관리자 선택
-- `/student-login/` — 학생 로그인 및 관리자 승인 대기
-- `/student-attendance/` — GPS 출석 인증
+- `/student/admin/login/` — 학생 로그인 및 관리자 승인 대기
+- `/student/identity/` — GPS 출석 인증
 - `/?-student` — 학생 도움말
-- `/error-gps/` — 위치 권한 오류 안내
-- `/login/` — 관리자 로그인
-- `/dashboard/` — 관리자 대시보드 및 학생 승인 알림
+- `/student/error/gps/` — 위치 권한 오류 안내
+- `/admin/admin/login/` — 관리자 로그인
+- `/admin/admin/dashboard/` — 관리자 대시보드 및 학생 승인 알림
+
+
+학교 위치 기준점: `35.16408333333333, 129.13574722222222`  
+허용 반경: `100m`

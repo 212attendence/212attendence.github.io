@@ -60,9 +60,9 @@ function setupStudentAuth_() {
   studentEnsureSheet_(ss, STUDENT_SESSION_SHEET, STUDENT_SESSION_HEADERS);
   studentEnsureSheet_(ss, STUDENT_ATTENDANCE_SHEET, STUDENT_ATTENDANCE_HEADERS);
   studentEnsureSetting_('schoolName', '해강중학교');
-  studentEnsureSetting_('schoolRadiusM', '10');
-  studentEnsureSetting_('schoolLat', '');
-  studentEnsureSetting_('schoolLng', '');
+  studentEnsureSetting_('schoolRadiusM', '100');
+  studentEnsureSetting_('schoolLat', '35.16408333333333');
+  studentEnsureSetting_('schoolLng', '129.13574722222222');
   studentGetSalt_();
   return true;
 }
@@ -117,7 +117,7 @@ function studentLoginJsonp_(e) {
   studentTryPushAdmin_({
     title: '학생 로그인 승인 요청',
     body: (account.name || account.studentId) + ' 학생이 로그인을 요청했습니다.',
-    url: 'https://212attendence.github.io/dashboard/?student-requests=1'
+    url: 'https://212attendence.github.io/admin/dashboard/?student-requests=1'
   });
 
   return {
@@ -277,7 +277,7 @@ function adminSaveSchoolLocationJsonp_(e) {
   setupStudentAuth_();
   studentRequireAdmin_(e);
   var p = e && e.parameter || {};
-  var lat = Number(p.latitude), lng = Number(p.longitude), radius = Number(p.radiusM || 10);
+  var lat = Number(p.latitude), lng = Number(p.longitude), radius = Number(p.radiusM || 1000);
   if (!isFinite(lat) || !isFinite(lng)) return studentFail_('GPS_INVALID', '학교 기준 위치가 올바르지 않습니다.');
   radius = Math.max(1, Math.min(500, radius));
   studentSetSetting_('schoolName', String(p.schoolName || '해강중학교'));
@@ -366,7 +366,7 @@ function studentGetSalt_() {
 function studentLocationConfig_() {
   var lat = Number(studentGetSetting_('schoolLat', ''));
   var lng = Number(studentGetSetting_('schoolLng', ''));
-  var radius = Number(studentGetSetting_('schoolRadiusM', '10')) || 10;
+  var radius = Number(studentGetSetting_('schoolRadiusM', '100')) || 10;
   return {
     schoolName: studentGetSetting_('schoolName', '해강중학교'),
     lat: lat,

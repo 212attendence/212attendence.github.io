@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <base href="/student/identity/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>학생 출석 인증</title>
+  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="icon" href="../favicon.png?v=21">
+  <link rel="apple-touch-icon" href="../favicon.png?v=21">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=21">
+  <script src="../assets/app.js?v=21" defer></script>
+  <script src="../assets/student.js?v=21" defer></script>
+  <style>
+    :root{--student:#315f84;--student-soft:rgba(49,95,132,.12);--ok:#2f8254;--bad:#b6423a}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12);--ok:#77c495;--bad:#e47e76}
+    body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(76px)}body::before{width:34rem;height:34rem;left:-14rem;top:-13rem;background:var(--student-soft)}body::after{width:28rem;height:28rem;right:-12rem;bottom:-13rem;background:rgba(47,130,84,.08)}
+    .student-card{width:min(520px,100%)}.profile{display:flex;align-items:center;gap:13px;margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:19px;background:var(--surface-soft)}.avatar{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:var(--student-soft);color:var(--student);font-size:20px;font-weight:900}.profile strong{display:block;font-size:16px}.profile small{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:650}
+    .location-card{padding:17px;border:1px solid var(--line);border-radius:21px;background:linear-gradient(145deg,var(--surface),var(--surface-soft))}.location-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.location-title{font-size:15px;font-weight:900}.location-badge{padding:5px 9px;border-radius:999px;background:var(--student-soft);color:var(--student);font-size:11px;font-weight:900}.location-desc{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6;font-weight:650}.meter{height:9px;margin-top:14px;border-radius:999px;background:var(--surface-strong);overflow:hidden}.meter-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--ok),var(--student));transition:width .6s ease}
+    .result{display:none;margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.result.show{display:block}.result.ok{border-color:color-mix(in srgb,var(--ok) 34%,var(--line))}.result.bad{border-color:color-mix(in srgb,var(--bad) 34%,var(--line))}.result-title{font-size:16px;font-weight:900}.result-text{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.footer-links{display:flex;justify-content:center;gap:16px;margin-top:16px}.footer-links a,.footer-links button{border:0;background:none;color:var(--muted);font-size:12px;font-weight:800;text-decoration:none;cursor:pointer}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card student-card">
+    <div class="brand-chip">해강중학교 · 학생 출석</div>
+    <h1>위치 출석 인증</h1>
+    <p class="subtext">학교 반경 100m 안에서 위치를 확인한 뒤 출석을 인증합니다.</p>
+
+    <div class="profile"><div class="avatar">S</div><div><strong id="studentName">학생</strong><small id="studentMeta">계정 확인 중</small></div></div>
+
+    <div class="location-card">
+      <div class="location-head"><div class="location-title">위치 권한 상태</div><span id="permissionBadge" class="location-badge">확인 중</span></div>
+      <div id="locationDesc" class="location-desc">정확한 위치 사용을 켜고 아래 버튼을 누르세요. 실제 좌표는 저장하지 않고 학교와의 거리 및 정확도만 기록합니다.</div>
+      <div class="meter"><div id="accuracyMeter" class="meter-fill"></div></div>
+    </div>
+
+    <div id="resultBox" class="result"><div id="resultTitle" class="result-title">결과</div><div id="resultText" class="result-text"></div></div>
+
+    <div class="actions-stack"><button id="attendanceBtn" class="btn btn-primary btn-block" type="button" onclick="submitAttendance()">위치 확인 및 출석 인증</button></div>
+    <div class="footer-links"><a href="/student/help/">도움말</a><button type="button" onclick="forgetDevice()">이 기기 로그인 해제</button></div>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">위치 확인 중입니다</div><div id="loadingSub" class="loading-sub">정확한 GPS 위치를 불러옵니다.</div></div></div>
+  <div id="toast" class="toast">알림</div>
+
+  <script>
+    let busy=false,session=null;
+    document.addEventListener("DOMContentLoaded",async function(){
+      AttendanceApp.Theme.init();
+      session=await StudentAttendance.Session.validate();
+      if(!session){location.replace("/student/login/");return}
+      document.getElementById("studentName").textContent=session.name||"학생";
+      document.getElementById("studentMeta").textContent=(session.studentId||"학생 계정")+(session.fingerId?" · 지문ID "+session.fingerId:"");
+      const state=await StudentAttendance.permissionState();renderPermission(state);
+    });
+
+    function renderPermission(state){
+      const badge=document.getElementById("permissionBadge"),desc=document.getElementById("locationDesc");
+      if(state==="granted"){badge.textContent="허용됨";badge.style.color="var(--ok)";desc.textContent="위치 권한이 허용되어 있습니다. 버튼을 누르면 학교와의 거리를 확인합니다."}
+      else if(state==="denied"){badge.textContent="차단됨";badge.style.color="var(--bad)";desc.textContent="위치 권한이 차단되어 있습니다. 권한 설정 도움말을 확인하세요."}
+      else if(state==="unsupported"){badge.textContent="지원 안 됨";badge.style.color="var(--bad)";desc.textContent="이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다."}
+      else{badge.textContent="허용 필요";desc.textContent="버튼을 누르면 위치 권한 요청이 표시됩니다. 정확한 위치를 허용하세요."}
+    }
+
+    async function submitAttendance(){
+      if(busy||!session)return;
+      busy=true;document.getElementById("attendanceBtn").disabled=true;AttendanceApp.UI.loading("위치 확인 중입니다","해강중학교 반경 100m 여부를 확인합니다.");
+      try{
+        const position=await StudentAttendance.getPosition(),coords=position.coords;
+        const accuracy=Math.round(Number(coords.accuracy||0));
+        document.getElementById("accuracyMeter").style.width=Math.max(8,Math.min(100,100-accuracy))+"%";
+        const response=await StudentAttendance.api("studentAttendanceJsonp",{
+          studentToken:session.token,
+          latitude:String(coords.latitude),
+          longitude:String(coords.longitude),
+          accuracy:String(coords.accuracy||0)
+        },30000);
+        if(!response||!response.ok){
+          if(response&&response.code==="GPS_OUTSIDE"){
+            showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||10))+"m");return
+          }
+          if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");
+          if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();location.replace("/student/login/");return}
+          throw new Error(response&&response.message||"출석 인증에 실패했습니다.");
+        }
+        showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+accuracy+"m");
+      }catch(error){
+        if(error&&typeof error.code==="number"){StudentAttendance.goGpsError(error);return}
+        showResult(false,"출석 인증 실패",error.message||String(error));
+      }finally{AttendanceApp.UI.stopLoading();busy=false;document.getElementById("attendanceBtn").disabled=false}
+    }
+
+    function showResult(ok,title,text){const box=document.getElementById("resultBox");box.className="result show "+(ok?"ok":"bad");document.getElementById("resultTitle").textContent=title;document.getElementById("resultText").textContent=text}
+    function forgetDevice(){StudentAttendance.Session.clear();StudentAttendance.Pending.clear();location.replace("/student/login/")}
+  </script>
+</body>
+</html>

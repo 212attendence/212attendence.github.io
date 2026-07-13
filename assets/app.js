@@ -352,7 +352,7 @@
 
       const overlay = document.createElement("div");
       overlay.className = "student-request-overlay";
-      overlay.innerHTML = '<section class="student-request-modal"><header class="student-request-head"><div><h2>학생 로그인 알림</h2><div style="margin-top:4px;color:var(--muted);font-size:12px;font-weight:650">승인된 기기는 만료 없이 로그인됩니다.</div></div><button class="btn btn-soft" type="button" data-close>닫기</button></header><div class="student-request-body"><div class="student-request-status">학생 로그인 요청을 확인하는 중입니다.</div><div class="student-request-list"></div><div class="student-school-config"><h3>해강중학교 위치 기준</h3><p>학교 안에서 현재 위치를 저장하면 학생 출석 허용 반경을 10m로 설정합니다.</p><button class="btn btn-soft btn-block" type="button" data-location>현재 위치를 학교 중심으로 저장</button></div></div></section>';
+      overlay.innerHTML = '<section class="student-request-modal"><header class="student-request-head"><div><h2>학생 로그인 알림</h2><div style="margin-top:4px;color:var(--muted);font-size:12px;font-weight:650">승인된 기기는 만료 없이 로그인됩니다.</div></div><button class="btn btn-soft" type="button" data-close>닫기</button></header><div class="student-request-body"><div class="student-request-status">학생 로그인 요청을 확인하는 중입니다.</div><div class="student-request-list"></div><div class="student-school-config"><h3>해강중학교 위치 기준</h3><p>학교 안에서 현재 위치를 저장하면 학생 출석 허용 반경을 100m로 설정합니다.</p><button class="btn btn-soft btn-block" type="button" data-location>현재 위치를 학교 중심으로 저장</button></div></div></section>';
       document.body.appendChild(overlay);
       this.modal = overlay;
       this.status = overlay.querySelector(".student-request-status");
@@ -435,11 +435,11 @@
           const result = await jsonp(apiUrl(STUDENT_API_BASE, self.adminParams("adminSaveSchoolLocationJsonp", {
             latitude: String(position.coords.latitude),
             longitude: String(position.coords.longitude),
-            radiusM: "10",
+            radiusM: "100",
             schoolName: "해강중학교"
           })), { timeoutMs: 25000 });
           if (!result || !result.ok) throw new Error(result && result.message || "학교 위치를 저장하지 못했습니다.");
-          UI.toast("해강중학교 위치와 반경 10m를 저장했습니다.", 4200);
+          UI.toast("해강중학교 위치와 반경 100m를 저장했습니다.", 4200);
           self.refresh(false);
         } catch (error) { UI.toast(error.message || String(error), 4200); }
         finally { UI.stopLoading(); }
