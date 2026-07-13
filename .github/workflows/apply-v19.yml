@@ -1,0 +1,42 @@
+name: Apply v19 cache references
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-v19.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-cache-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check assets/app.js
+          node --check assets/student.js
+
+      - name: Update static asset versions
+        run: |
+          find . -type f \( -name '*.html' -o -name '*.json' -o -name '*.js' \) \
+            -not -path './.git/*' \
+            -not -path './.github/workflows/*' \
+            -print0 | xargs -0 sed -i -E 's/\?v=(12|15|16|17|18)/?v=19/g'
+
+      - name: Commit cache references
+        run: |
+          if git diff --quiet; then
+            echo "No cache references needed updating."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Refresh all static assets to v19 [skip ci]"
+          git push
