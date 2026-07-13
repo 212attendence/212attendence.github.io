@@ -27,9 +27,10 @@
     <section id="loginPanel">
       <h1>학생 로그인</h1>
       <p class="subtext">학생 계정으로 로그인한 뒤 관리자 승인을 받습니다.</p>
+      <div id="serverState" class="status-box">학생 로그인 서버를 확인하는 중입니다.</div>
       <div class="field"><label for="studentId">학생 ID</label><input id="studentId" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="학생 ID"></div>
       <div class="field"><label for="studentPw">비밀번호</label><div class="input-wrap"><input id="studentPw" type="password" autocomplete="current-password" placeholder="비밀번호" style="padding-right:70px"><button class="input-action" type="button" onclick="togglePassword()">표시</button></div></div>
-      <div class="actions-stack"><button id="loginBtn" class="btn btn-primary btn-block" type="button" onclick="requestLogin()">로그인 승인 요청</button></div>
+      <div class="actions-stack"><button id="loginBtn" class="btn btn-primary btn-block" type="button" onclick="requestLogin()" disabled>로그인 승인 요청</button></div>
       <a class="link-button" href="../?-student">학생 도움말</a>
       <div class="privacy-note">Google 로그인과 패스키는 사용하지 않습니다.<br>승인된 기기 토큰은 관리자가 해제하기 전까지 유지됩니다.</div>
     </section>
@@ -47,23 +48,33 @@
   <div id="toast" class="toast">알림</div>
 
   <script>
-    let busy=false,pollTimer=null;
+    let busy=false,pollTimer=null,serverReady=false;
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
       document.getElementById("studentPw").addEventListener("keydown",function(event){if(event.key==="Enter")requestLogin()});
       const session=await StudentAttendance.Session.validate();
       if(session){location.replace("../student-attendance/");return}
       const pending=StudentAttendance.Pending.current();
-      if(pending&&pending.requestId&&pending.requestSecret){showPending();startPolling(pending)}
+      if(pending&&pending.requestId&&pending.requestSecret){showPending();startPolling(pending);return}
+      await checkServer();
     });
 
+    async function checkServer(){
+      const state=document.getElementById("serverState"),button=document.getElementById("loginBtn");
+      try{
+        const result=await StudentAttendance.api("studentFeaturePingJsonp",{},22000);
+        if(!result||!result.ok)throw new Error(result&&result.message||"학생 로그인 서버 준비가 필요합니다.");
+        serverReady=true;button.disabled=false;state.className="status-box success";state.textContent="학생 로그인 사용 가능 · "+(result.schoolName||"해강중학교")+" 반경 "+Number(result.radiusM||10)+"m";
+      }catch(error){serverReady=false;button.disabled=true;state.className="status-box danger";state.textContent="학생 로그인 서버가 아직 배포되지 않았습니다. 관리자에게 문의하세요."}
+    }
+
     function togglePassword(){const input=document.getElementById("studentPw"),button=input.parentElement.querySelector("button"),visible=input.type==="text";input.type=visible?"password":"text";button.textContent=visible?"표시":"숨김"}
-    function setBusy(value){busy=value;document.getElementById("loginBtn").disabled=value;document.getElementById("studentId").disabled=value;document.getElementById("studentPw").disabled=value}
+    function setBusy(value){busy=value;document.getElementById("loginBtn").disabled=value||!serverReady;document.getElementById("studentId").disabled=value;document.getElementById("studentPw").disabled=value}
     function showPending(){document.getElementById("loginPanel").classList.add("hidden");document.getElementById("pendingPanel").classList.remove("hidden")}
-    function showLogin(){document.getElementById("pendingPanel").classList.add("hidden");document.getElementById("loginPanel").classList.remove("hidden")}
+    function showLogin(){document.getElementById("pendingPanel").classList.add("hidden");document.getElementById("loginPanel").classList.remove("hidden");checkServer()}
 
     async function requestLogin(){
-      if(busy)return;
+      if(busy||!serverReady)return;
       const studentId=document.getElementById("studentId").value.trim(),studentPw=document.getElementById("studentPw").value;
       if(!studentId||!studentPw){AttendanceApp.UI.toast("학생 ID와 비밀번호를 입력하세요.");return}
       setBusy(true);AttendanceApp.UI.loading("학생 계정 확인 중입니다","관리자 승인 요청을 준비합니다.");
