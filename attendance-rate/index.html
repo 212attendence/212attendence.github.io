@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>오늘 출석률</title>
-  <link rel="manifest" href="../manifest.json?v=15">
-  <link rel="icon" href="../favicon.png?v=15">
-  <link rel="apple-touch-icon" href="../favicon.png?v=15">
+  <link rel="manifest" href="../manifest.json?v=16">
+  <link rel="icon" href="../favicon.png?v=16">
+  <link rel="apple-touch-icon" href="../favicon.png?v=16">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=15">
-  <script src="../assets/app.js?v=15" defer></script>
+  <link rel="stylesheet" href="../assets/app.css?v=16">
+  <script src="../assets/app.js?v=16" defer></script>
   <style>
     :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--gray:#8a8d86;--glass:rgba(255,255,252,.82);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.11)}
     html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--gray:#aaa9a1;--glass:rgba(34,35,33,.82);--glow-a:rgba(119,196,149,.08);--glow-b:rgba(132,179,205,.07)}
@@ -31,6 +31,8 @@
     .ring-bg{fill:none;stroke:var(--surface-soft);stroke-width:27}.ring{fill:none;stroke-width:27;stroke-linecap:butt;stroke-dasharray:0 999;transition:stroke-dasharray .9s cubic-bezier(.22,1,.36,1),stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)}.ring.present{stroke:var(--green)}.ring.late{stroke:var(--orange)}.ring.absent{stroke:var(--red)}.ring.notyet{stroke:var(--gray)}
     .chart-center{position:absolute;inset:24%;display:grid;place-items:center;align-content:center;border:1px solid var(--line);border-radius:50%;background:color-mix(in srgb,var(--surface-strong) 92%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 46%,transparent)}.rate{font-size:52px;line-height:1;font-weight:900;letter-spacing:-.07em}.rate-label{margin-top:9px;color:var(--muted);font-size:13px;font-weight:750}.total{margin-top:4px;color:var(--muted);font-size:11px;font-weight:650}
     .legend-card{padding:22px}.legend-title{font-size:18px;font-weight:900}.legend-sub{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.5;font-weight:650}.legend{display:grid;gap:10px;margin-top:18px}.legend-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:11px;padding:13px;border:1px solid var(--line);border-radius:17px;background:color-mix(in srgb,var(--surface-soft) 72%,transparent)}.dot{width:11px;height:11px;border-radius:50%}.dot.present{background:var(--green)}.dot.late{background:var(--orange)}.dot.absent{background:var(--red)}.dot.notyet{background:var(--gray)}.legend-name{font-size:13px;font-weight:850}.legend-desc{margin-top:2px;color:var(--muted);font-size:11px;font-weight:650}.legend-value{font-size:23px;font-weight:900;letter-spacing:-.04em}.rule{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:17px;background:color-mix(in srgb,var(--surface-soft) 72%,transparent);color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.rule strong{color:var(--text)}.refresh{width:100%;margin-top:14px}
+    .loading-overlay.show{background:color-mix(in srgb,var(--overlay) 82%,transparent);backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%)}
+    .loading-overlay .loading-card{background:color-mix(in srgb,var(--surface-strong) 88%,transparent);backdrop-filter:blur(22px) saturate(120%);-webkit-backdrop-filter:blur(22px) saturate(120%)}
     @media(max-width:760px){.page{padding:14px}.page-head{align-items:flex-start;flex-direction:column}.head-actions{width:100%}.segmented{width:100%}.layout{grid-template-columns:1fr}.chart-card{min-height:430px;padding:20px}.chart-wrap{width:min(330px,100%)}.rate{font-size:44px}}
     @media(prefers-reduced-motion:reduce){.ring{transition:none}}
   </style>
@@ -38,7 +40,7 @@
 <body>
   <main class="page">
     <header class="page-head">
-      <div class="head-title"><button class="btn btn-soft back" onclick="location.href='../dashboard/'" aria-label="대시보드로 돌아가기">‹</button><div class="title"><h1>오늘 출석률</h1><p id="dateText">2학년 12반 · 오늘 현황</p></div></div>
+      <div class="head-title"><button class="btn btn-soft back" onclick="returnToDashboard()" aria-label="대시보드로 돌아가기">‹</button><div class="title"><h1>오늘 출석률</h1><p id="dateText">2학년 12반 · 오늘 현황</p></div></div>
       <div class="head-actions"><div class="segmented" aria-label="테마"><button data-theme-choice="system" onclick="switchTheme('system')">자동</button><button data-theme-choice="light" onclick="switchTheme('light')">Light</button><button data-theme-choice="dark" onclick="switchTheme('dark')">Dark</button></div></div>
     </header>
 
@@ -92,6 +94,14 @@
         loadData(false,true);
       }
     });
+
+    function returnToDashboard(){
+      const fromDashboard=sessionStorage.getItem("attendanceReturnToDashboard")==="1";
+      sessionStorage.removeItem("attendanceReturnToDashboard");
+      AttendanceApp.UI.stopLoading();
+      if(fromDashboard&&history.length>1){history.back();return}
+      location.replace("../dashboard/");
+    }
 
     function switchTheme(mode){
       const apply=function(){AttendanceApp.Theme.apply(mode)};
