@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>학생 도움말</title>
+  <link rel="manifest" href="../manifest.json?v=19">
+  <link rel="icon" href="../favicon.png?v=19">
+  <link rel="apple-touch-icon" href="../favicon.png?v=19">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=19">
+  <script src="../assets/app.js?v=19" defer></script>
+  <style>
+    :root{--student:#315f84;--student-soft:rgba(49,95,132,.12)}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12)}
+    .help-card{width:min(680px,100%)}.section{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:20px;background:var(--surface-soft);scroll-margin-top:20px}.section h2{font-size:17px}.section p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.65;font-weight:650}.steps{display:grid;gap:9px;margin:13px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:12px 12px 12px 45px;border:1px solid var(--line);border-radius:15px;background:var(--surface);font-size:13px;line-height:1.55;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:12px;top:12px;display:grid;place-items:center;width:23px;height:23px;border-radius:8px;background:var(--student);color:#fff;font-size:11px;font-weight:900}.warning{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:12px;line-height:1.6}.quick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}.quick a{padding:13px;border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);color:var(--text);text-decoration:none;font-size:13px;font-weight:850;text-align:center}@media(max-width:520px){.quick{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card help-card">
+    <div class="brand-chip">학생 도움말</div>
+    <h1>학생 로그인과 출석 인증</h1>
+    <p class="subtext">처음 로그인부터 위치 권한 설정, 출석 인증까지 순서대로 안내합니다.</p>
+
+    <div class="quick"><a href="#login">로그인 방법</a><a href="#approval">관리자 승인</a><a href="#location-permission">위치 권한</a><a href="#attendance">출석 인증</a></div>
+
+    <section id="login" class="section"><h2>1. 학생 로그인</h2><p>학생용 계정은 Google 계정을 사용하지 않습니다. 학교에서 받은 학생 ID와 비밀번호를 사용합니다.</p><ol class="steps"><li><strong>학생 로그인 페이지</strong>를 엽니다.</li><li>학생 ID와 비밀번호를 입력합니다.</li><li><strong>로그인 승인 요청</strong>을 누릅니다.</li></ol></section>
+
+    <section id="approval" class="section"><h2>2. 관리자 승인</h2><p>처음 로그인하는 기기는 관리자의 승인이 필요합니다.</p><ol class="steps"><li>로그인 요청을 보내면 승인 대기 화면이 나타납니다.</li><li>관리자가 알림에서 학생 이름과 기기를 확인합니다.</li><li>관리자가 승인하면 학생 화면이 자동으로 다음 단계로 이동합니다.</li></ol><div class="warning">거절되면 학생 ID와 기기를 확인한 뒤 다시 요청하세요.</div></section>
+
+    <section id="location-permission" class="section"><h2>3. 위치 권한 허용</h2><p>해강중학교 반경 10m 안에서 출석을 인증하기 위해 위치 권한과 정확한 위치가 필요합니다.</p><ol class="steps"><li><strong>iPhone·iPad</strong>: 위치 요청에서 허용을 누르고, 설정에서 정확한 위치를 켭니다.</li><li><strong>Android</strong>: 앱 사용 중 허용과 정확한 위치 사용을 선택합니다.</li><li><strong>PC</strong>: 주소창 자물쇠 → 사이트 설정 → 위치 → 허용으로 변경합니다.</li></ol><div class="warning">웹사이트는 운영체제 권한을 강제로 ‘항상 허용’으로 설정할 수 없습니다. 기기에서 제공하는 가장 넓은 허용 범위를 선택하세요.</div></section>
+
+    <section id="attendance" class="section"><h2>4. 위치 출석 인증</h2><p>학교 도착 후 학생 출석 화면에서 인증합니다.</p><ol class="steps"><li><strong>위치 확인 및 출석 인증</strong>을 누릅니다.</li><li>학교와의 거리 및 GPS 정확도를 서버가 확인합니다.</li><li>범위 안이면 출석이 기록되고 완료 메시지가 표시됩니다.</li></ol><div class="warning">건물 안에서는 GPS 오차가 커질 수 있습니다. 위치 확인이 실패하면 창가나 야외에서 다시 시도하세요. 실제 좌표는 출석 로그에 저장하지 않고 거리와 정확도만 기록합니다.</div></section>
+
+    <section class="section"><h2>5. 자동 로그인</h2><p>관리자가 승인한 학생 기기는 패스키 없이 계속 사용할 수 있습니다. 학생 토큰은 만료일 없이 유지되며, 관리자가 계정을 비활성화하거나 기기 토큰을 해제하면 다시 승인을 받아야 합니다.</p></section>
+
+    <div class="actions-stack"><a class="btn btn-primary btn-block" href="../student-login/">학생 로그인으로 이동</a><a class="btn btn-soft btn-block" href="../">처음 화면으로 이동</a></div>
+  </main>
+  <script>document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init();if(location.hash){setTimeout(function(){const target=document.querySelector(location.hash);if(target)target.scrollIntoView({behavior:"smooth",block:"start"})},120)}});</script>
+</body>
+</html>
