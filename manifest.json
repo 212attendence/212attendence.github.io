@@ -4,7 +4,7 @@
   "short_name": "2-12 출석",
   "description": "2학년 12반 출석 대시보드",
   "lang": "ko-KR",
-  "start_url": "./login/?v=15",
+  "start_url": "./login/?v=16",
   "scope": "./",
   "display": "standalone",
   "display_override": [
@@ -22,13 +22,13 @@
   ],
   "icons": [
     {
-      "src": "./favicon.png?v=15",
+      "src": "./favicon.png?v=16",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png?v=15",
+      "src": "./favicon.png?v=16",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "maskable"
@@ -38,10 +38,10 @@
     {
       "name": "출석 대시보드",
       "short_name": "대시보드",
-      "url": "./login/?v=15&next=/dashboard/",
+      "url": "./login/?v=16&next=/dashboard/",
       "icons": [
         {
-          "src": "./favicon.png?v=15",
+          "src": "./favicon.png?v=16",
           "sizes": "300x300",
           "type": "image/png"
         }
@@ -53,7 +53,7 @@
       "url": "./?help=1",
       "icons": [
         {
-          "src": "./favicon.png?v=15",
+          "src": "./favicon.png?v=16",
           "sizes": "300x300",
           "type": "image/png"
         }
