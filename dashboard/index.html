@@ -1,229 +1,81 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>출석 대시보드</title>
-  <link rel="manifest" href="../manifest.json?v=13" />
-  <link rel="icon" type="image/png" href="../favicon.png?v=13" />
-  <link rel="apple-touch-icon" href="../favicon.png?v=13" />
-  <meta name="theme-color" content="#fafaf8" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="2-12 출석" />
-  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="manifest" href="../manifest.json?v=14">
+  <link rel="icon" href="../favicon.png?v=14">
+  <link rel="apple-touch-icon" href="../favicon.png?v=14">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="../assets/app.css?v=14">
+  <script src="../assets/app.js?v=14" defer></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
-    :root {
-      color-scheme:light;
-      --bg:#f7f7f4; --soft:#efefea; --card:rgba(255,255,252,.92); --solid:#fffefb;
-      --text:#20231f; --muted:#73756f; --line:rgba(67,72,64,.16); --accent:#343832;
-      --accent-text:#fff; --green:#277a4d; --orange:#ad661f; --red:#b6423a; --blue:#3a647c;
-      --shadow:0 18px 56px rgba(36,40,33,.08); --overlay:rgba(26,29,25,.54); --input:#fffefb;
-      --highlight:rgba(255,255,255,.68);
-    }
-    html[data-theme="dark"] {
-      color-scheme:dark;
-      --bg:#171817; --soft:#2d2f2c; --card:rgba(35,36,34,.92); --solid:#222321;
-      --text:#f2f1eb; --muted:#aaa9a1; --line:rgba(235,232,220,.14); --accent:#ddd9cd;
-      --accent-text:#171817; --green:#77c495; --orange:#dda164; --red:#e47e76; --blue:#84b3cd;
-      --shadow:0 22px 64px rgba(0,0,0,.34); --overlay:rgba(0,0,0,.62); --input:#1c1d1c;
-      --highlight:rgba(255,255,255,.06);
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html{min-height:100%;background:var(--bg)}
-    body{position:relative;overflow-x:hidden;margin:0;min-height:100vh;background:radial-gradient(circle at 7% 3%,rgba(47,143,91,.12),transparent 29rem),radial-gradient(circle at 94% 10%,rgba(72,112,162,.10),transparent 27rem),radial-gradient(circle at 52% 105%,rgba(184,106,43,.08),transparent 34rem),var(--bg);color:var(--text);font-family:"Google Sans","Google Sans Text","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
-    body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.28;background-image:radial-gradient(circle,rgba(92,92,84,.22) .65px,transparent .75px);background-size:27px 27px;mask-image:linear-gradient(to bottom,#000,transparent 78%)}
-    button,input{font:inherit}button{border:0;cursor:pointer}button:disabled,input:disabled{opacity:.55;cursor:not-allowed}
-    .app{width:min(1160px,100%);margin:auto;padding:22px}
-    .topbar{position:sticky;top:0;z-index:20;padding:14px 0;background:linear-gradient(to bottom,var(--bg),transparent);backdrop-filter:blur(10px)}
-    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;border:1px solid var(--line);border-radius:22px;background:color-mix(in srgb,var(--card) 84%,transparent);box-shadow:0 12px 34px rgba(31,35,32,.06),inset 0 1px 0 var(--highlight);backdrop-filter:blur(18px) saturate(120%)}
-    .title-wrap{min-width:0}.title-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-    h1{margin:0;font-size:24px;line-height:1.1;letter-spacing:-.05em;font-weight:950}
-    .live-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:rgba(47,143,91,.13);color:var(--green);font-size:10px;letter-spacing:.06em;font-weight:950}.live-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px rgba(47,143,91,.10);animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.82)}}
-    .sub{margin-top:5px;color:var(--muted);font-size:13px;font-weight:700}
-    .actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:11px 14px;border-radius:14px;font-size:14px;font-weight:900;transition:transform .16s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease}
-    .btn:active{transform:scale(.98)}.btn-soft{background:var(--soft);color:var(--text);border:1px solid var(--line)}
-    .btn-soft:hover{border-color:color-mix(in srgb,var(--accent) 28%,var(--line));box-shadow:0 8px 20px rgba(31,35,32,.07)}
-    .btn-primary{width:100%;margin-top:14px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 82%,var(--blue)));color:var(--accent-text);box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 18%,transparent)}
-    .btn-danger{background:rgba(183,66,58,.11);color:var(--red);border:1px solid rgba(183,66,58,.2)}
-    .btn.refresh::before{content:"↻";font-size:16px}.btn.settings::before{content:"⚙";font-size:14px}.btn.logout::before{content:"↗";font-size:14px}
-    .theme-switch{display:grid;grid-template-columns:1fr 1fr;width:142px;height:40px;padding:4px;border-radius:999px;background:var(--soft);border:1px solid var(--line);box-shadow:inset 0 1px 2px rgba(31,35,32,.08)}
-    .theme-switch button{border-radius:999px;background:transparent;color:var(--muted);font-size:12px;font-weight:950}.theme-switch button.active{background:var(--accent);color:var(--accent-text);box-shadow:0 5px 14px rgba(31,35,32,.12)}
-    .grid{display:grid;gap:14px}.summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin:12px 0}
-    .summary-card,.panel,.device-card,.progress-card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow),inset 0 1px 0 var(--highlight);backdrop-filter:blur(15px);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
-    .summary-card{padding:20px 18px 18px}.summary-card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--accent)}
-    .summary-card:nth-child(2)::before{background:var(--green)}.summary-card:nth-child(3)::before{background:var(--orange)}.summary-card:nth-child(4)::before{background:var(--red)}.summary-card:nth-child(5)::before{background:var(--muted)}
-    .summary-card::after{content:"";position:absolute;width:92px;height:92px;right:-46px;bottom:-54px;border-radius:50%;background:currentColor;opacity:.035}
-    .summary-icon{display:grid;place-items:center;width:30px;height:30px;margin-bottom:12px;border-radius:10px;background:var(--soft);color:var(--muted);font-size:13px;font-weight:950}
-    .summary-card:nth-child(2) .summary-icon{color:var(--green);background:rgba(47,143,91,.12)}.summary-card:nth-child(3) .summary-icon{color:var(--orange);background:rgba(184,106,43,.12)}.summary-card:nth-child(4) .summary-icon{color:var(--red);background:rgba(183,66,58,.11)}
-    .summary-label{color:var(--muted);font-size:13px;font-weight:850}.summary-value{margin-top:7px;font-size:34px;line-height:1;font-weight:950;letter-spacing:-.06em}
-    .progress-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:14px 17px;margin-bottom:14px}
-    .progress-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;background:rgba(47,143,91,.13);color:var(--green);font-weight:950}.progress-main{min-width:0}.progress-title{font-size:13px;font-weight:950}.progress-track{height:8px;margin-top:8px;border-radius:999px;background:var(--soft);overflow:hidden}.progress-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),color-mix(in srgb,var(--green) 65%,var(--blue)));transition:width .55s cubic-bezier(.22,1,.36,1)}.progress-value{min-width:52px;text-align:right;font-size:21px;font-weight:950;letter-spacing:-.04em}
-    .content-grid{grid-template-columns:1.4fr .8fr;align-items:start}.panel{overflow:hidden}
-    .panel-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(92,92,84,.055),transparent)}
-    .panel-title{font-size:17px;font-weight:950;letter-spacing:-.03em}.panel-sub{margin-top:4px;color:var(--muted);font-size:12px;font-weight:700}
-    .log-row{display:grid;grid-template-columns:72px 82px 1fr 80px;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px}.log-row:not(.log-header){transition:background .18s ease}.log-row:not(.log-header):hover{background:rgba(92,92,84,.055)}
-    .log-header{background:rgba(92,92,84,.06);color:var(--muted);font-size:12px;font-weight:950}
-    .status-chip{display:inline-flex;justify-content:center;min-width:62px;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:950}.present{background:rgba(47,143,91,.14);color:var(--green)}.late{background:rgba(184,106,43,.14);color:var(--orange)}.notyet{background:rgba(116,116,110,.14);color:var(--muted)}.bad{background:rgba(183,66,58,.13);color:var(--red)}
-    .badge{border-radius:999px;padding:5px 8px;font-size:11px;font-weight:950}.online{background:rgba(47,143,91,.14);color:var(--green)}.offline{background:rgba(183,66,58,.13);color:var(--red)}.connecting{background:rgba(184,106,43,.14);color:var(--orange)}
-    .device-card{padding:18px}.device-card::before{content:"";position:absolute;width:120px;height:120px;right:-68px;top:-70px;border-radius:50%;background:radial-gradient(circle,rgba(72,112,162,.13),transparent 68%)}
-    .info-list{display:grid;gap:10px;margin-top:14px}.info-item{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:16px;background:rgba(92,92,84,.06);border:1px solid var(--line);font-size:13px;transition:transform .18s ease,border-color .18s ease,background .18s ease}.info-item:hover{transform:translateX(2px);border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
-    .info-label{color:var(--muted);font-weight:850}.info-value{font-weight:900;text-align:right;word-break:break-all}
-    .modal-backdrop,.loading{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:var(--overlay);backdrop-filter:blur(8px) saturate(115%);z-index:100}.modal-backdrop.show,.loading.show{display:grid}
-    .modal{width:min(540px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--solid);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow),inset 0 1px 0 var(--highlight)}
-    .modal-head{position:sticky;top:0;background:var(--solid);padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.modal-body{padding:18px 20px 22px}.section-title{margin:18px 0 8px;font-size:14px;font-weight:950}.section-title:first-child{margin-top:0}
-    .passkey-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--soft);box-shadow:inset 0 1px 0 var(--highlight)}.passkey-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:750}
-    label{display:block;margin:12px 0 7px;font-size:13px;font-weight:850}input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--input);color:var(--text);outline:none}input:focus{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent)}
-    .toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);max-width:calc(100vw - 32px);padding:12px 16px;border-radius:999px;background:#1f2320;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.24);font-size:13px;font-weight:850;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:300}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    .spinner{width:42px;height:42px;margin:0 auto 16px;border-radius:50%;border:4px solid rgba(63,64,58,.16);border-top-color:var(--accent);animation:spin .75s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading-card{width:min(360px,100%);padding:26px 22px;border-radius:28px;background:var(--solid);text-align:center}.loading-title{font-size:18px;font-weight:950}.loading-sub{margin-top:8px;color:var(--muted);font-size:13px;font-weight:750}.pc-hidden{display:none!important}
-    @media(hover:hover) and (pointer:fine){.push-ui{display:none!important}.summary-card:hover,.panel:hover,.device-card:hover,.progress-card:hover{transform:translateY(-2px);box-shadow:0 24px 68px rgba(31,35,32,.11),inset 0 1px 0 var(--highlight)}.btn:hover{transform:translateY(-1px)}}
-    @media(max-width:860px){.app{padding:16px}.topbar-inner{align-items:flex-start;flex-direction:column;padding:12px}.actions{justify-content:flex-start}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-card:first-child{grid-column:span 2}.content-grid{grid-template-columns:1fr}.log-row{grid-template-columns:64px 72px 1fr 62px;padding:13px 14px;font-size:13px}.progress-card{grid-template-columns:auto 1fr}.progress-value{grid-column:2;text-align:left;margin-top:-5px}.summary-card:hover,.panel:hover,.device-card:hover,.progress-card:hover{transform:none}}
+    :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--blue:#3a647c;--glass:rgba(255,255,252,.78);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.12);--glow-c:rgba(173,102,31,.09)}
+    html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--blue:#84b3cd;--glass:rgba(34,35,33,.78);--glow-a:rgba(119,196,149,.09);--glow-b:rgba(132,179,205,.08);--glow-c:rgba(221,161,100,.07)}
+    html.theme-transition,html.theme-transition body,html.theme-transition .topbar-inner,html.theme-transition .summary-card,html.theme-transition .panel,html.theme-transition .device-card,html.theme-transition .progress-card,html.theme-transition .btn,html.theme-transition .theme-switch,html.theme-transition .modal,html.theme-transition input{transition:background-color .3s ease,color .3s ease,border-color .3s ease,box-shadow .3s ease,filter .3s ease}
+    body{position:relative;overflow-x:hidden;background:var(--bg)}body::before,body::after{content:"";position:fixed;z-index:-2;pointer-events:none;filter:blur(72px);border-radius:50%}body::before{width:34rem;height:34rem;left:-12rem;top:-13rem;background:var(--glow-a)}body::after{width:33rem;height:33rem;right:-13rem;top:-9rem;background:var(--glow-b)}
+    .ambient-bottom{position:fixed;z-index:-2;pointer-events:none;width:38rem;height:22rem;left:35%;bottom:-16rem;border-radius:50%;background:var(--glow-c);filter:blur(80px)}
+    .app{width:min(1160px,100%);margin:auto;padding:22px}.topbar{position:sticky;top:0;z-index:20;padding:14px 0;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 46%,transparent),transparent);backdrop-filter:blur(18px) saturate(120%);-webkit-backdrop-filter:blur(18px) saturate(120%)}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--glass) 96%,transparent),color-mix(in srgb,var(--glass) 76%,transparent));box-shadow:0 14px 40px color-mix(in srgb,var(--text) 7%,transparent),inset 0 1px 0 color-mix(in srgb,#fff 58%,transparent);backdrop-filter:blur(24px) saturate(128%);-webkit-backdrop-filter:blur(24px) saturate(128%)}
+    .title-wrap{min-width:0}.title-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.title-line h1{font-size:24px}.live-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:color-mix(in srgb,var(--green) 13%,transparent);color:var(--green);font-size:10px;letter-spacing:.06em;font-weight:900}.live-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 11%,transparent);animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.82)}}.sub{margin-top:5px;color:var(--muted);font-size:13px;font-weight:650}
+    .actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.theme-switch{display:grid;grid-template-columns:repeat(3,1fr);width:190px;height:40px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--surface-soft)}.theme-switch button{border-radius:999px;background:transparent;color:var(--muted);font-size:11px;font-weight:850}.theme-switch button.active{background:var(--accent);color:var(--accent-text);box-shadow:var(--shadow-soft)}.btn.refresh::before{content:"↻";font-size:16px}.btn.settings::before{content:"⚙";font-size:14px}.btn.logout::before{content:"↗";font-size:14px}
+    .grid{display:grid;gap:14px}.summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin:12px 0}.summary-card,.panel,.device-card,.progress-card{position:relative;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 96%,transparent),color-mix(in srgb,var(--surface) 82%,transparent));border:1px solid var(--line);box-shadow:var(--shadow),inset 0 1px 0 color-mix(in srgb,#fff 46%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .summary-card{padding:20px 18px 18px;border-radius:26px;transition:transform .22s ease,box-shadow .22s ease}.summary-card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--accent)}.summary-card:nth-child(2)::before{background:var(--green)}.summary-card:nth-child(3)::before{background:var(--orange)}.summary-card:nth-child(4)::before{background:var(--red)}.summary-card:nth-child(5)::before{background:var(--muted)}.summary-card::after{content:"";position:absolute;width:106px;height:106px;right:-48px;bottom:-62px;border-radius:50%;background:radial-gradient(circle,currentColor,transparent 70%);opacity:.07}.summary-icon{display:grid;place-items:center;width:31px;height:31px;margin-bottom:12px;border-radius:10px;background:var(--surface-soft);color:var(--muted);font-size:13px;font-weight:900}.summary-card:nth-child(2) .summary-icon{color:var(--green);background:color-mix(in srgb,var(--green) 13%,transparent)}.summary-card:nth-child(3) .summary-icon{color:var(--orange);background:color-mix(in srgb,var(--orange) 13%,transparent)}.summary-card:nth-child(4) .summary-icon{color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}.summary-label{color:var(--muted);font-size:13px;font-weight:800}.summary-value{margin-top:7px;font-size:34px;line-height:1;font-weight:900;letter-spacing:-.06em}
+    .progress-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:14px 17px;margin-bottom:14px;border-radius:24px;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.progress-card:focus-visible{outline:3px solid var(--focus);outline-offset:2px}.progress-card::after{content:"›";position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:25px;opacity:.58}.progress-card .progress-value{margin-right:22px}.progress-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--green) 14%,transparent);color:var(--green);font-weight:900}.progress-main{min-width:0}.progress-title{font-size:13px;font-weight:900}.progress-sub{margin-top:2px;color:var(--muted);font-size:11px;font-weight:650}.progress-track{height:9px;margin-top:8px;border-radius:999px;background:var(--surface-soft);overflow:hidden}.progress-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),color-mix(in srgb,var(--green) 62%,var(--blue)));box-shadow:0 0 14px color-mix(in srgb,var(--green) 28%,transparent);transition:width .9s cubic-bezier(.22,1,.36,1)}.progress-value{min-width:52px;text-align:right;font-size:21px;font-weight:900;letter-spacing:-.04em}
+    .content-grid{grid-template-columns:1.4fr .8fr;align-items:start}.panel{overflow:hidden;border-radius:26px}.panel-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,color-mix(in srgb,var(--surface-soft) 72%,transparent),transparent)}.panel-title{font-size:17px;font-weight:900;letter-spacing:-.03em}.panel-sub{margin-top:4px;color:var(--muted);font-size:12px;font-weight:650}.log-row{display:grid;grid-template-columns:72px 82px 1fr 80px;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px}.log-row:not(.log-header){transition:background .18s ease}.log-row:not(.log-header):hover{background:color-mix(in srgb,var(--surface-soft) 55%,transparent)}.log-header{background:color-mix(in srgb,var(--surface-soft) 62%,transparent);color:var(--muted);font-size:12px;font-weight:900}.status-chip{display:inline-flex;justify-content:center;min-width:62px;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:900}.present{background:color-mix(in srgb,var(--green) 14%,transparent);color:var(--green)}.late{background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange)}.notyet{background:var(--surface-soft);color:var(--muted)}.bad{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}
+    .device-card{padding:18px;border-radius:26px}.device-card::before{content:"";position:absolute;width:130px;height:130px;right:-72px;top:-72px;border-radius:50%;background:radial-gradient(circle,var(--glow-b),transparent 70%)}.info-list{display:grid;gap:9px;margin-top:14px}.info-item{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:15px;background:color-mix(in srgb,var(--surface-soft) 70%,transparent);border:1px solid var(--line);font-size:13px}.info-label{color:var(--muted);font-weight:800}.info-value{font-weight:850;text-align:right;word-break:break-all}.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.online{background:color-mix(in srgb,var(--green) 14%,transparent);color:var(--green)}.offline{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}.connecting{background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange)}
+    .modal-backdrop,.loading-overlay{backdrop-filter:blur(9px) saturate(115%);-webkit-backdrop-filter:blur(9px) saturate(115%)}.modal{border-radius:28px}.passkey-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.passkey-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.section-title{margin:18px 0 8px;font-size:14px;font-weight:900}.section-title:first-child{margin-top:0}
+    @media(hover:hover) and (pointer:fine){.summary-card:hover,.panel:hover,.device-card:hover,.progress-card:hover{transform:translateY(-2px);box-shadow:0 25px 72px color-mix(in srgb,var(--text) 11%,transparent),inset 0 1px 0 color-mix(in srgb,#fff 46%,transparent)}.progress-card:hover{border-color:color-mix(in srgb,var(--green) 34%,var(--line))}.btn:hover{transform:translateY(-1px)}}
+    @media(max-width:860px){.app{padding:16px}.topbar-inner{align-items:flex-start;flex-direction:column;padding:12px}.actions{justify-content:flex-start}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-card:first-child{grid-column:span 2}.content-grid{grid-template-columns:1fr}.log-row{grid-template-columns:64px 72px 1fr 62px;padding:13px 14px;font-size:13px}.progress-card{grid-template-columns:auto 1fr}.progress-value{grid-column:2;text-align:left;margin:-5px 0 0}.progress-card::after{right:14px}}
     @media(max-width:520px){.actions{width:100%}.theme-switch{width:100%}.actions .btn{flex:1}.summary-value{font-size:31px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
+  <div class="ambient-bottom"></div>
   <main class="app">
-    <section class="topbar">
-      <div class="topbar-inner">
-        <div class="title-wrap"><div class="title-line"><h1>출석 대시보드</h1><span class="live-pill">LIVE</span></div><div id="todayText" class="sub">2학년 12반 · 오늘 출석 현황</div></div>
-        <div class="actions">
-          <div class="theme-switch"><button id="lightBtn" onclick="setTheme('light')">Light</button><button id="darkBtn" onclick="setTheme('dark')">Dark</button></div>
-          <button id="pushBtn" class="btn btn-soft push-ui" onclick="enablePushNotifications()">알림 확인중</button>
-          <button class="btn btn-soft refresh" onclick="loadTodayLogs(true)">새로고침</button>
-          <button class="btn btn-soft settings" onclick="openSettingsModal()">설정</button>
-          <button class="btn btn-danger logout" onclick="logout()">로그아웃</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="grid summary-grid">
-      <div class="summary-card"><div class="summary-icon">∑</div><div class="summary-label">전체</div><div id="sumTotal" class="summary-value">-</div></div>
-      <div class="summary-card"><div class="summary-icon">✓</div><div class="summary-label">출석</div><div id="sumPresent" class="summary-value">-</div></div>
-      <div class="summary-card"><div class="summary-icon">↗</div><div class="summary-label">지각</div><div id="sumLate" class="summary-value">-</div></div>
-      <div class="summary-card"><div class="summary-icon">!</div><div class="summary-label">결석</div><div id="sumAbsent" class="summary-value">-</div></div>
-      <div class="summary-card"><div class="summary-icon">…</div><div class="summary-label">미출석</div><div id="sumNotYet" class="summary-value">-</div></div>
-    </section>
-
-    <section class="progress-card" aria-label="오늘 출석률">
-      <div class="progress-icon">%</div>
-      <div class="progress-main"><div class="progress-title">오늘 출석률</div><div class="progress-track"><div id="attendanceProgressBar" class="progress-fill"></div></div></div>
-      <div id="attendanceProgressText" class="progress-value">0%</div>
-    </section>
-
-    <section class="grid content-grid">
-      <div class="panel">
-        <div class="panel-head"><div><div class="panel-title">오늘 출석 로그</div><div id="logSub" class="panel-sub">Google Sheets에서 불러오는 중</div></div><span id="mqttBadge" class="badge offline">MQTT OFFLINE</span></div>
-        <div class="log-row log-header"><div>시간</div><div>상태</div><div>이름</div><div>지문ID</div></div>
-        <div id="logList"></div>
-      </div>
-      <aside class="grid">
-        <div class="device-card">
-          <div class="panel-title">ESP32 장치 상태</div><div class="panel-sub">MQTT heartbeat 기준</div>
-          <div class="info-list">
-            <div class="info-item"><span class="info-label">장치</span><span id="espBadge" class="badge offline">OFFLINE</span></div>
-            <div class="info-item"><span class="info-label">Wi-Fi</span><span id="deviceWifi" class="info-value">-</span></div>
-            <div class="info-item"><span class="info-label">IP</span><span id="deviceIp" class="info-value">-</span></div>
-            <div class="info-item"><span class="info-label">RSSI</span><span id="deviceRssi" class="info-value">-</span></div>
-            <div class="info-item"><span class="info-label">Queue</span><span id="deviceQueue" class="info-value">-</span></div>
-            <div class="info-item"><span class="info-label">Last seen</span><span id="deviceSeen" class="info-value">-</span></div>
-          </div>
-        </div>
-        <div id="pushStatusCard" class="device-card push-ui">
-          <div class="panel-title">알림 상태</div><div class="panel-sub">모바일 홈 화면 앱</div>
-          <div class="info-list"><div class="info-item"><span class="info-label">권한</span><span id="pushPermissionText" class="info-value">확인중</span></div><div class="info-item"><span class="info-label">PWA</span><span id="pwaText" class="info-value">확인중</span></div></div>
-        </div>
-      </aside>
-    </section>
+    <section class="topbar"><div class="topbar-inner"><div class="title-wrap"><div class="title-line"><h1>출석 대시보드</h1><span class="live-pill">LIVE</span></div><div id="todayText" class="sub">2학년 12반 · 오늘 출석 현황</div></div><div class="actions"><div class="theme-switch" aria-label="테마"><button data-theme-choice="system" onclick="switchTheme('system')">자동</button><button data-theme-choice="light" onclick="switchTheme('light')">Light</button><button data-theme-choice="dark" onclick="switchTheme('dark')">Dark</button></div><button class="btn btn-soft refresh" onclick="loadTodayLogs(true)">새로고침</button><button class="btn btn-soft settings" onclick="openSettingsModal()">설정</button><button class="btn btn-danger logout" onclick="logout()">로그아웃</button></div></div></section>
+    <section class="grid summary-grid"><div class="summary-card"><div class="summary-icon">∑</div><div class="summary-label">전체</div><div id="sumTotal" class="summary-value">-</div></div><div class="summary-card"><div class="summary-icon">✓</div><div class="summary-label">출석</div><div id="sumPresent" class="summary-value">-</div></div><div class="summary-card"><div class="summary-icon">↗</div><div class="summary-label">지각</div><div id="sumLate" class="summary-value">-</div></div><div class="summary-card"><div class="summary-icon">!</div><div class="summary-label">결석</div><div id="sumAbsent" class="summary-value">-</div></div><div class="summary-card"><div class="summary-icon">…</div><div class="summary-label">미출석</div><div id="sumNotYet" class="summary-value">-</div></div></section>
+    <section class="progress-card" role="link" tabindex="0" aria-label="오늘 출석률 상세 보기" onclick="location.href='../attendance-rate/'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='../attendance-rate/'}"><div class="progress-icon">%</div><div class="progress-main"><div class="progress-title">오늘 출석률</div><div id="progressSub" class="progress-sub">상세 원 그래프 보기</div><div class="progress-track"><div id="attendanceProgressBar" class="progress-fill" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div></div><div id="attendanceProgressText" class="progress-value">0%</div></section>
+    <section class="grid content-grid"><div class="panel"><div class="panel-head"><div><div class="panel-title">오늘 출석 로그</div><div id="logSub" class="panel-sub">Google Sheets에서 불러오는 중</div></div><span id="mqttBadge" class="badge offline">MQTT OFFLINE</span></div><div class="log-row log-header"><div>시간</div><div>상태</div><div>이름</div><div>지문ID</div></div><div id="logList"></div></div><aside class="grid"><div class="device-card"><div class="panel-title">ESP32 장치 상태</div><div class="panel-sub">MQTT heartbeat 기준</div><div class="info-list"><div class="info-item"><span class="info-label">장치</span><span id="espBadge" class="badge offline">OFFLINE</span></div><div class="info-item"><span class="info-label">Wi-Fi</span><span id="deviceWifi" class="info-value">-</span></div><div class="info-item"><span class="info-label">IP</span><span id="deviceIp" class="info-value">-</span></div><div class="info-item"><span class="info-label">RSSI</span><span id="deviceRssi" class="info-value">-</span></div><div class="info-item"><span class="info-label">Queue</span><span id="deviceQueue" class="info-value">-</span></div><div class="info-item"><span class="info-label">Last seen</span><span id="deviceSeen" class="info-value">-</span></div></div></div></aside></section>
   </main>
-
-  <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal">
-      <div class="modal-head"><div class="panel-title">설정</div><button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button></div>
-      <div class="modal-body">
-        <div class="section-title">로그인 방법</div>
-        <div class="passkey-card"><p id="passkeyActionText">이 기기의 패스키 상태를 확인합니다.</p><button id="passkeyActionBtn" class="btn btn-soft" style="width:100%" onclick="handlePasskeySetting()">확인 중</button></div>
-        <div class="section-title">MQTT 설정</div>
-        <label for="setMqttHost">MQTT Host</label><input id="setMqttHost" placeholder="HiveMQ host" />
-        <label for="setMqttPort">MQTT WebSocket TLS Port</label><input id="setMqttPort" placeholder="8884" />
-        <label for="setMqttUser">MQTT User</label><input id="setMqttUser" placeholder="username" />
-        <label for="setMqttPass">MQTT Password</label><input id="setMqttPass" type="password" placeholder="password" />
-        <label for="setTopicStatus">Status Topic</label><input id="setTopicStatus" />
-        <label for="setTopicEvent">Event Topic</label><input id="setTopicEvent" />
-        <label for="setTopicHeartbeat">Heartbeat Topic</label><input id="setTopicHeartbeat" />
-        <label for="setEspOfflineSec">ESP Offline 기준 초</label><input id="setEspOfflineSec" placeholder="25" />
-        <button class="btn btn-primary" onclick="saveSettings()">저장</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="loadingOverlay" class="loading" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div><div id="loadingSub" class="loading-sub">처리 중입니다.</div></div></div>
-  <div id="toast" class="toast">알림</div>
-
+  <div id="settingsModal" class="modal-backdrop" aria-hidden="true"><div class="modal"><div class="modal-head"><h2>설정</h2><button class="btn btn-soft" onclick="closeSettingsModal()">닫기</button></div><div class="modal-body"><div class="section-title">로그인 방법</div><div class="passkey-card"><p id="passkeyActionText">이 기기의 패스키 상태를 확인합니다.</p><button id="passkeyActionBtn" class="btn btn-soft btn-block" onclick="handlePasskeySetting()">확인 중</button></div><details style="margin-top:18px"><summary>고급 MQTT 설정</summary><div class="details-body"><div class="field"><label for="setMqttHost">MQTT Host</label><input id="setMqttHost"></div><div class="field"><label for="setMqttPort">WebSocket TLS Port</label><input id="setMqttPort" placeholder="8884"></div><div class="field"><label for="setMqttUser">MQTT User</label><input id="setMqttUser"></div><div class="field"><label for="setMqttPass">MQTT Password</label><input id="setMqttPass" type="password"></div><div class="field"><label for="setTopicStatus">Status Topic</label><input id="setTopicStatus"></div><div class="field"><label for="setTopicEvent">Event Topic</label><input id="setTopicEvent"></div><div class="field"><label for="setTopicHeartbeat">Heartbeat Topic</label><input id="setTopicHeartbeat"></div><div class="field"><label for="setEspOfflineSec">ESP Offline 기준 초</label><input id="setEspOfflineSec" placeholder="25"></div><button class="btn btn-primary btn-block" style="margin-top:14px" onclick="saveSettings()">저장</button></div></details></div></div></div>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">잠시만 기다려주세요</div><div id="loadingSub" class="loading-sub">처리 중입니다.</div></div></div><div id="toast" class="toast">알림</div>
   <script>
     const APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
-    window.APPS_SCRIPT_URL=APPS_SCRIPT_URL;
-    const DEFAULT_SETTINGS={mqttHost:"793e777e3e64408cafd9c5b413d3bd16.s1.eu.hivemq.cloud",mqttPort:"8884",mqttUser:"",mqttPass:"",topicStatus:"attendance/2-12/status",topicEvent:"attendance/2-12/event",topicHeartbeat:"attendance/2-12/heartbeat",espOfflineSec:"25"};
-    let appSettings={...DEFAULT_SETTINGS},mqttClient=null,lastEspSeenAt=0,espWatchTimer=null;
-
-    document.addEventListener("DOMContentLoaded",function(){
-      localStorage.removeItem("attendancePersistentAuth");
-      if(!hasSession()){location.replace("../login/");return}
-      if(!isMobilePushTarget())hidePushUiForPc();
-      document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";
-      applyStoredTheme();renderPasskeySetting();
-      startLoading("대시보드 로딩 중입니다","설정과 오늘 로그를 불러옵니다.");
-      loadRemoteSettings(function(){connectMqtt();startEspWatchdog();loadTodayLogs(false,stopLoading)});
-    });
-
-    function hasSession(){return!!(sessionStorage.getItem("sessionToken")||sessionStorage.getItem("adminId"))}
-    function addAuthParams(p){const t=sessionStorage.getItem("sessionToken")||"";if(t)p.set("sessionToken",t);else{p.set("adminId",sessionStorage.getItem("adminId")||"");p.set("adminPw",sessionStorage.getItem("adminPw")||"")}}
-    function logout(){sessionStorage.clear();disconnectMqtt();location.replace("../login/")}
-    function hasLocalPasskey(){return localStorage.getItem("attendancePasskeyRegistered")==="1"&&!!localStorage.getItem("attendancePasskeyCredentialId")}
-    function renderPasskeySetting(){const btn=document.getElementById("passkeyActionBtn"),text=document.getElementById("passkeyActionText"),loginType=sessionStorage.getItem("loginType")||"";if(loginType==="passkey"&&hasLocalPasskey()){btn.textContent="패스키 삭제";btn.className="btn btn-danger";btn.disabled=false;text.textContent="현재 패스키로 로그인했습니다. 이 기기의 패스키를 삭제할 수 있습니다.";return}if(!hasLocalPasskey()){btn.textContent="패스키 생성";btn.className="btn btn-soft";btn.disabled=false;text.textContent="이 기기에 등록된 패스키가 없습니다. 새 패스키를 생성할 수 있습니다.";return}btn.textContent="패스키가 등록되어 있습니다";btn.className="btn btn-soft";btn.disabled=true;text.textContent="패스키를 삭제하려면 다음 로그인에서 패스키로 로그인한 뒤 설정을 여세요."}
-    function handlePasskeySetting(){const loginType=sessionStorage.getItem("loginType")||"";if(loginType==="passkey"&&hasLocalPasskey())location.href="../delete-passkey/";else if(!hasLocalPasskey())location.href="../setup-login-method/"}
-    function applyStoredTheme(){setTheme(sessionStorage.getItem("theme")||localStorage.getItem("attendanceTheme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),true)}
-    function setTheme(theme,silent){const next=theme==="dark"?"dark":"light";document.documentElement.setAttribute("data-theme",next);sessionStorage.setItem("theme",next);localStorage.setItem("attendanceTheme",next);document.getElementById("lightBtn").classList.toggle("active",next==="light");document.getElementById("darkBtn").classList.toggle("active",next==="dark")}
-
-    function loadRemoteSettings(done){const p=new URLSearchParams({action:"getDashboardSettingsJsonp"});addAuthParams(p);callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){if(r&&r.ok)appSettings={...DEFAULT_SETTINGS,...(r.settings||r.data||{})};else toast((r&&r.message)||"원격 설정을 불러오지 못했습니다.");if(done)done()})}
-    function loadTodayLogs(showToast,done){const p=new URLSearchParams({action:"todayLogs"});addAuthParams(p);callJsonp(APPS_SCRIPT_URL+"?"+p,function(r){if(!r||!r.ok){toast((r&&r.message)||"로그 불러오기 실패");if(done)done();return}const logs=normalizeLogs(r.logs||[]);renderLogs(logs);renderSummary(logs,r.summary||null);document.getElementById("logSub").textContent="마지막 업데이트 "+new Date().toLocaleTimeString("ko-KR");if(showToast)toast("새로고침 완료");if(done)done()})}
+    const DEFAULT_SETTINGS={mqttHost:"",mqttPort:"8884",mqttUser:"",mqttPass:"",topicStatus:"attendance/2-12/status",topicEvent:"attendance/2-12/event",topicHeartbeat:"attendance/2-12/heartbeat",espOfflineSec:"25"};
+    let appSettings={...DEFAULT_SETTINGS},mqttClient=null,lastEspSeenAt=0,espWatchTimer=null,progressTimer=null;
+    document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init();if(!AttendanceApp.Session.require("../login/","/dashboard/"))return;document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";renderPasskeySetting();AttendanceApp.UI.loading("대시보드 로딩 중입니다","설정과 오늘 로그를 불러옵니다.");loadRemoteSettings(function(){connectMqtt();startEspWatchdog();loadTodayLogs(false,function(){AttendanceApp.UI.stopLoading()})})});
+    function switchTheme(mode){const root=document.documentElement;root.classList.add("theme-transition");AttendanceApp.Theme.apply(mode);clearTimeout(switchTheme.timer);switchTheme.timer=setTimeout(()=>root.classList.remove("theme-transition"),320)}
+    function logout(){disconnectMqtt();AttendanceApp.Session.clear();location.replace("../login/")}
+    function hasLocalPasskey(){return AttendanceApp.Passkey.isRegistered()}
+    function renderPasskeySetting(){const btn=document.getElementById("passkeyActionBtn"),text=document.getElementById("passkeyActionText"),session=AttendanceApp.Session.current(),loginType=session&&session.loginType||"";if(loginType==="passkey"&&hasLocalPasskey()){btn.textContent="패스키 삭제";btn.className="btn btn-danger btn-block";btn.disabled=false;text.textContent="현재 패스키로 로그인했습니다. 이 기기의 패스키를 삭제할 수 있습니다.";return}if(!hasLocalPasskey()){btn.textContent="패스키 생성";btn.className="btn btn-soft btn-block";btn.disabled=false;text.textContent="이 기기에 등록된 패스키가 없습니다. 새 패스키를 생성할 수 있습니다.";return}btn.textContent="패스키가 등록되어 있습니다";btn.className="btn btn-soft btn-block";btn.disabled=true;text.textContent="패스키 삭제는 패스키로 로그인한 다음 이용할 수 있습니다."}
+    function handlePasskeySetting(){const session=AttendanceApp.Session.current(),loginType=session&&session.loginType||"";if(loginType==="passkey"&&hasLocalPasskey())location.href="../delete-passkey/";else if(!hasLocalPasskey())location.href="../setup-login-method/"}
+    function authParams(action){const p=new URLSearchParams({action:action});AttendanceApp.Session.addAuthParams(p);return p}
+    async function loadRemoteSettings(done){try{const r=await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,authParams("getDashboardSettingsJsonp")));if(r&&r.ok)appSettings={...DEFAULT_SETTINGS,...(r.settings||r.data||{})};else if(AttendanceApp.Session.isUnauthorizedResponse(r)){AttendanceApp.Session.clear();location.replace("../login/?next=/dashboard/");return}else AttendanceApp.UI.toast(r&&r.message||"원격 설정을 불러오지 못했습니다.")}catch(e){AttendanceApp.UI.toast(e.message||String(e))}finally{if(done)done()}}
+    async function loadTodayLogs(showToast,done){try{const r=await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,authParams("todayLogs")));if(!r||!r.ok){if(AttendanceApp.Session.isUnauthorizedResponse(r)){AttendanceApp.Session.clear();location.replace("../login/?next=/dashboard/");return}throw new Error(r&&r.message||"로그 불러오기 실패")}const logs=normalizeLogs(r.logs||[]);renderLogs(logs);renderSummary(logs,r.summary||{});document.getElementById("logSub").textContent="마지막 업데이트 "+new Date().toLocaleTimeString("ko-KR");if(showToast)AttendanceApp.UI.toast("새로고침 완료")}catch(e){AttendanceApp.UI.toast(e.message||String(e))}finally{if(done)done()}}
     function normalizeLogs(rows){return Array.isArray(rows)?rows.map(r=>({time:r.time||r.시간||r.timestamp||"-",status:r.status||r.상태||"-",name:r.name||r.이름||"-",fingerId:r.fingerId||r.지문ID||"-"})).reverse():[]}
-    function renderLogs(logs){const el=document.getElementById("logList");if(!logs.length){el.innerHTML='<div class="log-row"><div>-</div><div><span class="status-chip notyet">없음</span></div><div>오늘 로그가 없습니다.</div><div>-</div></div>';return}el.innerHTML=logs.map(x=>'<div class="log-row"><div>'+esc(formatTime(x.time))+'</div><div><span class="status-chip '+statusClass(x.status)+'">'+esc(x.status)+'</span></div><div>'+esc(x.name)+'</div><div>'+esc(x.fingerId)+'</div></div>').join("")}
-    function renderSummary(logs,s){const c={total:logs.length,present:0,late:0,absent:0,notYet:0};logs.forEach(x=>{const v=String(x.status);if(v.includes("지각"))c.late++;else if(v.includes("출석")&&!v.includes("미출석"))c.present++;else if(v.includes("결석"))c.absent++;else if(v.includes("미출석"))c.notYet++});if(s)Object.keys(c).forEach(k=>{if(s[k]!=null)c[k]=Number(s[k])||0});["Total","Present","Late","Absent","NotYet"].forEach(k=>document.getElementById("sum"+k).textContent=c[k.charAt(0).toLowerCase()+k.slice(1)]);const rate=c.total>0?Math.min(100,Math.round(((c.present+c.late)/c.total)*100)):0;document.getElementById("attendanceProgressBar").style.width=rate+"%";document.getElementById("attendanceProgressText").textContent=rate+"%"}
+    function renderLogs(logs){const el=document.getElementById("logList");if(!logs.length){el.innerHTML='<div class="log-row"><div>-</div><div><span class="status-chip notyet">없음</span></div><div>오늘 로그가 없습니다.</div><div>-</div></div>';return}el.innerHTML=logs.map(x=>'<div class="log-row"><div>'+AttendanceApp.UI.escapeHtml(formatTime(x.time))+'</div><div><span class="status-chip '+statusClass(x.status)+'">'+AttendanceApp.UI.escapeHtml(x.status)+'</span></div><div>'+AttendanceApp.UI.escapeHtml(x.name)+'</div><div>'+AttendanceApp.UI.escapeHtml(x.fingerId)+'</div></div>').join("")}
+    function rawCounts(logs,summary){const c={total:logs.length,present:0,late:0,absent:0,notYet:0};logs.forEach(x=>{const v=String(x.status);if(v.includes("지각"))c.late++;else if(v.includes("출석")&&!v.includes("미출석"))c.present++;else if(v.includes("결석"))c.absent++;else if(v.includes("미출석"))c.notYet++});const aliases={total:["total","전체"],present:["present","출석"],late:["late","지각"],absent:["absent","결석"],notYet:["notYet","notyet","미출석"]};Object.keys(aliases).forEach(k=>{for(const key of aliases[k]){if(summary&&summary[key]!=null){c[k]=Number(summary[key])||0;break}}});return c}
+    function applyCutoff(c){const afterFour=new Date().getHours()>=16,known=c.present+c.late+c.absent+c.notYet;c.total=Math.max(c.total,known);const remainder=Math.max(0,c.total-known);if(afterFour){c.absent+=c.notYet+remainder;c.notYet=0}else{c.notYet+=c.absent+remainder;c.absent=0}return{...c,afterFour:afterFour}}
+    function renderSummary(logs,summary){const c=applyCutoff(rawCounts(logs,summary));document.getElementById("sumTotal").textContent=c.total;document.getElementById("sumPresent").textContent=c.present;document.getElementById("sumLate").textContent=c.late;document.getElementById("sumAbsent").textContent=c.absent;document.getElementById("sumNotYet").textContent=c.notYet;document.getElementById("progressSub").textContent=c.afterFour?"오후 4시 이후 미출석 인원은 결석으로 표시":"오후 4시 전 미확인 인원은 미출석으로 표시";const rate=c.total>0?Math.min(100,Math.round(((c.present+c.late)/c.total)*100)):0;animateProgress(rate)}
+    function animateProgress(rate){const bar=document.getElementById("attendanceProgressBar"),text=document.getElementById("attendanceProgressText");clearTimeout(progressTimer);bar.style.width="0%";bar.setAttribute("aria-valuenow","0");text.textContent=rate+"%";progressTimer=setTimeout(()=>requestAnimationFrame(()=>{bar.style.width=rate+"%";bar.setAttribute("aria-valuenow",String(rate))}),130)}
     function statusClass(s){s=String(s);if(s.includes("지각"))return"late";if(s.includes("출석")&&!s.includes("미출석"))return"present";if(s.includes("결석")||s.includes("오류")||s.includes("미등록"))return"bad";return"notyet"}
     function formatTime(v){const m=String(v||"").match(/(\d{1,2}:\d{2}(?::\d{2})?)/);return m?m[1]:(v||"-")}
-
     function connectMqtt(){disconnectMqtt();if(!window.mqtt||!appSettings.mqttHost||!appSettings.mqttUser||!appSettings.mqttPass){setMqttBadge("offline");return}setMqttBadge("connecting");mqttClient=mqtt.connect("wss://"+appSettings.mqttHost+":"+(appSettings.mqttPort||"8884")+"/mqtt",{username:appSettings.mqttUser,password:appSettings.mqttPass,clean:true,connectTimeout:8000,reconnectPeriod:4000,clientId:"dashboard_2_12_"+Math.random().toString(16).slice(2)});mqttClient.on("connect",()=>{setMqttBadge("online");[appSettings.topicStatus,appSettings.topicEvent,appSettings.topicHeartbeat].forEach(t=>t&&mqttClient.subscribe(t))});mqttClient.on("reconnect",()=>setMqttBadge("connecting"));mqttClient.on("close",()=>setMqttBadge("offline"));mqttClient.on("error",()=>setMqttBadge("offline"));mqttClient.on("message",(topic,payload)=>{let d={};try{d=JSON.parse(payload.toString())}catch(e){}if(topic===appSettings.topicHeartbeat||topic===appSettings.topicStatus||topic===appSettings.topicEvent){lastEspSeenAt=Date.now();setEspBadge(true);updateDeviceInfo(d)}if(topic===appSettings.topicEvent)setTimeout(()=>loadTodayLogs(false),600)})}
     function disconnectMqtt(){if(mqttClient){try{mqttClient.end(true)}catch(e){}mqttClient=null}}
     function startEspWatchdog(){clearInterval(espWatchTimer);espWatchTimer=setInterval(()=>{if(!lastEspSeenAt||Date.now()-lastEspSeenAt>Number(appSettings.espOfflineSec||25)*1000)setEspBadge(false)},3000)}
     function updateDeviceInfo(d){document.getElementById("deviceWifi").textContent=d.wifiSsid||d.ssid||"-";document.getElementById("deviceIp").textContent=d.ip||"-";document.getElementById("deviceRssi").textContent=d.wifiRssi==null?"-":d.wifiRssi+" dBm";document.getElementById("deviceQueue").textContent=d.queueCount==null?"-":d.queueCount;document.getElementById("deviceSeen").textContent=new Date().toLocaleTimeString("ko-KR")}
     function setMqttBadge(s){const e=document.getElementById("mqttBadge");e.textContent="MQTT "+(s==="online"?"ONLINE":s==="connecting"?"CONNECTING":"OFFLINE");e.className="badge "+s}
     function setEspBadge(on){const e=document.getElementById("espBadge");e.textContent=on?"ONLINE":"OFFLINE";e.className="badge "+(on?"online":"offline")}
-
-    function openSettingsModal(){fillSettingsForm();renderPasskeySetting();document.getElementById("settingsModal").classList.add("show")}
-    function closeSettingsModal(){document.getElementById("settingsModal").classList.remove("show")}
+    function openSettingsModal(){fillSettingsForm();renderPasskeySetting();const m=document.getElementById("settingsModal");m.classList.add("show");m.setAttribute("aria-hidden","false")}
+    function closeSettingsModal(){const m=document.getElementById("settingsModal");m.classList.remove("show");m.setAttribute("aria-hidden","true")}
     function fillSettingsForm(){["mqttHost","mqttPort","mqttUser","mqttPass","topicStatus","topicEvent","topicHeartbeat","espOfflineSec"].forEach(k=>document.getElementById("set"+k.charAt(0).toUpperCase()+k.slice(1)).value=appSettings[k]||"")}
-    function saveSettings(){["mqttHost","mqttPort","mqttUser","mqttPass","topicStatus","topicEvent","topicHeartbeat","espOfflineSec"].forEach(k=>appSettings[k]=document.getElementById("set"+k.charAt(0).toUpperCase()+k.slice(1)).value.trim());const p=new URLSearchParams({action:"saveDashboardSettingsJsonp"});addAuthParams(p);Object.keys(appSettings).forEach(k=>p.set(k,appSettings[k]));callJsonp(APPS_SCRIPT_URL+"?"+p,()=>{});connectMqtt();closeSettingsModal();toast("설정 저장 완료")}
-    function isMobilePushTarget(){const ua=navigator.userAgent||"";return/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
-    function hidePushUiForPc(){document.getElementById("pushBtn")?.classList.add("pc-hidden");document.getElementById("pushStatusCard")?.classList.add("pc-hidden")}
-    window.isMobilePushTarget=isMobilePushTarget;window.hidePushUiForPc=hidePushUiForPc;
-    function startLoading(t,s){document.getElementById("loadingTitle").textContent=t;document.getElementById("loadingSub").textContent=s||"";document.getElementById("loadingOverlay").classList.add("show")}
-    function stopLoading(){document.getElementById("loadingOverlay").classList.remove("show")}
-    function callJsonp(url,cb){const n="jsonp_"+Date.now()+"_"+Math.floor(Math.random()*1e5),sc=document.createElement("script");let done=false;const tm=setTimeout(()=>{if(done)return;done=true;delete window[n];sc.remove();stopLoading();toast("Apps Script 응답 시간 초과")},15000);window[n]=d=>{if(done)return;done=true;clearTimeout(tm);try{cb(d)}finally{delete window[n];sc.remove()}};sc.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(n);sc.onerror=()=>{if(done)return;done=true;clearTimeout(tm);delete window[n];sc.remove();stopLoading();toast("Apps Script 연결 실패")};document.head.appendChild(sc)}
-    function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
-    function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
-  </script>
-
-  <script type="module">
-    const VAPID_PUBLIC_KEY="BKoS4YRC0BtgNd5jHL8F2CLz6jOqGFLt2bVaKbSeF1pzn1mGez2O0jajKZbDO6HlwxcVsxITwp1xwghoxj7nIlg";
-    const firebaseConfig={apiKey:"AIzaSyBN10jMJZ1kB-A6RMt9-HmKWTGjtdfa8iE",authDomain:"attendence-f157b.firebaseapp.com",projectId:"attendence-f157b",storageBucket:"attendence-f157b.firebasestorage.app",messagingSenderId:"382183347016",appId:"1:382183347016:web:ae6aca56ac3a3058f6597d",measurementId:"G-JPCLPN4HQW"};
-    let messaging,getTokenFn;
-    async function initPush(){if(!window.isMobilePushTarget||!window.isMobilePushTarget()){window.hidePushUiForPc?.();return}const standalone=navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;document.getElementById("pwaText").textContent=standalone?"홈 화면 앱":"일반 브라우저";if(!("Notification"in window)||!("serviceWorker"in navigator)){setPush("미지원","unsupported");return}try{const a=await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js"),m=await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");messaging=m.getMessaging(a.initializeApp(firebaseConfig));getTokenFn=m.getToken;document.getElementById("pushPermissionText").textContent=Notification.permission;setPush(Notification.permission==="granted"?"알림 사용 중":Notification.permission==="denied"?"알림 차단됨":"알림 켜기",Notification.permission==="granted"?"on":"ready")}catch(e){setPush("초기화 실패","unsupported")}}
-    function setPush(text,state){const b=document.getElementById("pushBtn");if(b){b.textContent=text;b.disabled=state==="unsupported"}}
-    window.enablePushNotifications=async function(){if(!getTokenFn||Notification.permission==="denied"){toast("브라우저 알림 설정을 확인하세요.");return}const permission=await Notification.requestPermission();document.getElementById("pushPermissionText").textContent=permission;if(permission!=="granted"){setPush("알림 허용 필요","ready");return}try{const reg=await navigator.serviceWorker.register("../firebase-messaging-sw.js");const token=await getTokenFn(messaging,{vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:reg});const p=new URLSearchParams({action:"savePushTokenJsonp",token:token,platform:navigator.platform||"web",userAgent:navigator.userAgent||""});const st=sessionStorage.getItem("sessionToken")||"";if(st)p.set("sessionToken",st);callJsonp(window.APPS_SCRIPT_URL+"?"+p,()=>{});setPush("알림 사용 중","on");toast("알림 설정 완료")}catch(e){toast(e.message||String(e))}}
-    document.readyState==="loading"?document.addEventListener("DOMContentLoaded",initPush):initPush();
+    async function saveSettings(){["mqttHost","mqttPort","mqttUser","mqttPass","topicStatus","topicEvent","topicHeartbeat","espOfflineSec"].forEach(k=>appSettings[k]=document.getElementById("set"+k.charAt(0).toUpperCase()+k.slice(1)).value.trim());const p=authParams("saveDashboardSettingsJsonp");Object.keys(appSettings).forEach(k=>p.set(k,appSettings[k]));try{const r=await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,p));if(!r||!r.ok)throw new Error(r&&r.message||"설정 저장 실패");connectMqtt();closeSettingsModal();AttendanceApp.UI.toast("설정 저장 완료")}catch(e){AttendanceApp.UI.toast(e.message||String(e))}}
   </script>
 </body>
 </html>
