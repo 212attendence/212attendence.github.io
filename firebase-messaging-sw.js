@@ -29,8 +29,8 @@ messaging.onBackgroundMessage(function (payload) {
 
   return self.registration.showNotification(title, {
     body: body,
-    icon: new URL("./favicon.png?v=12", self.registration.scope).href,
-    badge: new URL("./favicon.png?v=12", self.registration.scope).href,
+    icon: new URL("./favicon.png?v=19", self.registration.scope).href,
+    badge: new URL("./favicon.png?v=19", self.registration.scope).href,
     tag: data.tag || "attendance-update",
     renotify: Boolean(data.renotify === "true"),
     data: { url: target }
