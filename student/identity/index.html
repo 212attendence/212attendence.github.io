@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
-  <base href="/student/identity/">
+  <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>학생 출석 인증</title>
@@ -81,7 +81,7 @@
         },30000);
         if(!response||!response.ok){
           if(response&&response.code==="GPS_OUTSIDE"){
-            showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||10))+"m");return
+            showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||100))+"m");return
           }
           if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");
           if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();location.replace("/student/login/");return}

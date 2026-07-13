@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
-  <base href="/student/login/">
+  <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>학생 로그인 · 2-12 출석</title>
@@ -65,7 +65,7 @@
       try{
         const result=await StudentAttendance.api("studentFeaturePingJsonp",{},22000);
         if(!result||!result.ok)throw new Error(result&&result.message||"학생 로그인 서버 준비가 필요합니다.");
-        serverReady=true;button.disabled=false;state.className="status-box success";state.textContent="학생 로그인 사용 가능 · "+(result.schoolName||"해강중학교")+" 반경 "+Number(result.radiusM||10)+"m";
+        serverReady=true;button.disabled=false;state.className="status-box success";state.textContent="학생 로그인 사용 가능 · "+(result.schoolName||"해강중학교")+" 반경 "+Number(result.radiusM||100)+"m";
       }catch(error){serverReady=false;button.disabled=true;state.className="status-box danger";state.textContent="학생 로그인 서버가 아직 배포되지 않았습니다. 관리자에게 문의하세요."}
     }
 
