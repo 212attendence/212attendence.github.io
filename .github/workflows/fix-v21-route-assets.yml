@@ -1,0 +1,79 @@
+name: Fix v21 route assets and GPS defaults
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-v21-route-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          for namespace in ('student', 'admin'):
+              for path in Path(namespace).rglob('*.html'):
+                  text = path.read_text(encoding='utf-8')
+                  text = re.sub(r'<base href="[^"]+">', '<base href="/">', text, count=1)
+                  text = text.replace('radiusM||10', 'radiusM||100').replace('radiusM || 10', 'radiusM || 100')
+                  path.write_text(text, encoding='utf-8')
+
+          addon_path = Path('apps-script/student-auth-addon.gs')
+          addon = addon_path.read_text(encoding='utf-8')
+          addon = addon.replace("studentEnsureSetting_('schoolName', '해강중학교');", "studentSetSetting_('schoolName', '해강중학교');")
+          addon = addon.replace("studentEnsureSetting_('schoolRadiusM', '100');", "studentSetSetting_('schoolRadiusM', '100');")
+          addon = addon.replace("studentEnsureSetting_('schoolLat', '35.16408333333333');", "studentSetSetting_('schoolLat', '35.16408333333333');")
+          addon = addon.replace("studentEnsureSetting_('schoolLng', '129.13574722222222');", "studentSetSetting_('schoolLng', '129.13574722222222');")
+          addon = addon.replace('Number(p.radiusM || 1000)', 'Number(p.radiusM || 100)')
+          addon = addon.replace("Number(studentGetSetting_('schoolRadiusM', '100')) || 10", "Number(studentGetSetting_('schoolRadiusM', '100')) || 100")
+          addon_path.write_text(addon, encoding='utf-8')
+
+          app_path = Path('assets/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          old = '<p>학교 안에서 현재 위치를 저장하면 학생 출석 허용 반경을 100m로 설정합니다.</p><button class="btn btn-soft btn-block" type="button" data-location>현재 위치를 학교 중심으로 저장</button>'
+          new = '<p>기준 좌표 35°09\'50.70&quot;N 129°08\'08.69&quot;E · 허용 반경 100m로 고정되어 있습니다.</p>'
+          app = app.replace(old, new)
+          app = app.replace('overlay.querySelector("[data-location]").addEventListener("click", this.saveSchoolLocation.bind(this));', 'const locationButton=overlay.querySelector("[data-location]");if(locationButton)locationButton.addEventListener("click", this.saveSchoolLocation.bind(this));')
+          app_path.write_text(app, encoding='utf-8')
+
+          for doc_name in ('README.md', 'STUDENT_LOGIN_SETUP.md'):
+              path = Path(doc_name)
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('관리자가 학교 안에서 대시보드 `알림` 창을 열고 **현재 위치를 학교 중심으로 저장**을 누릅니다.', '학교 기준점은 `35°09\'50.70"N 129°08\'08.69"E`로 고정되어 있습니다.')
+              text = text.replace('대시보드 알림 창에서 관리자가 학교 안의 현재 위치를 해강중학교 기준점으로 저장하면 허용 반경은 100m로 설정됩니다.', '해강중학교 기준점은 `35.16408333333333, 129.13574722222222`, 허용 반경은 `100m`로 고정됩니다.')
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate fixes
+        run: |
+          node --check assets/app.js
+          node --check assets/student.js
+          cp apps-script/student-auth-addon.gs /tmp/student-auth-addon.js
+          node --check /tmp/student-auth-addon.js
+          ! grep -R '<base href="/student/' student admin
+          ! grep -R '<base href="/admin/' student admin
+          grep -q "studentSetSetting_('schoolRadiusM', '100')" apps-script/student-auth-addon.gs
+          grep -q "Number(p.radiusM || 100)" apps-script/student-auth-addon.gs
+          grep -q "|| 100" apps-script/student-auth-addon.gs
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Fix canonical route assets and lock GPS radius to 100m [skip ci]"
+          git push
