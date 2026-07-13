@@ -4,18 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>2-12 출석 시스템</title>
-  <link rel="manifest" href="./manifest.json?v=15">
-  <link rel="icon" href="./favicon.png?v=15">
-  <link rel="apple-touch-icon" href="./favicon.png?v=15">
+  <link rel="manifest" href="./manifest.json?v=16">
+  <link rel="icon" href="./favicon.png?v=16">
+  <link rel="apple-touch-icon" href="./favicon.png?v=16">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="./assets/app.css?v=15">
-  <script src="./assets/app.js?v=15" defer></script>
+  <link rel="stylesheet" href="./assets/app.css?v=16">
+  <script src="./assets/app.js?v=16" defer></script>
   <style>
     .help-card{width:min(620px,100%)}
     .menu{display:grid;gap:11px}.menu-item{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:72px;padding:15px 16px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);color:var(--text);text-decoration:none;transition:transform .16s ease,border-color .2s ease,background-color .2s ease}.menu-item strong{display:block;font-size:15px;font-weight:900}.menu-item small{display:block;margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:650}.arrow{color:var(--muted);font-size:24px}
-    .help-section{margin-top:18px;scroll-margin-top:18px}.steps{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:13px 13px 13px 48px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--surface-soft) 74%,transparent);font-size:13px;line-height:1.58;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:13px;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--accent);color:var(--accent-text);font-size:11px;font-weight:900}.steps strong{font-weight:900}.column-note{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px;line-height:1.58}.column-note code{color:var(--text);font-family:var(--font);font-weight:850}
+    .help-section{margin-top:18px;scroll-margin-top:18px}.steps{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:13px 13px 13px 48px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--surface-soft) 74%,transparent);font-size:13px;line-height:1.58;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:13px;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--accent);color:var(--accent-text);font-size:11px;font-weight:900}.steps strong{font-weight:900}.column-note{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px;line-height:1.58}.column-note code{color:var(--text);font-family:var(--font);font-weight:850}.sheet-link{margin-top:2px}
     @media(hover:hover) and (pointer:fine){.menu-item:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}}
   </style>
 </head>
@@ -25,7 +25,7 @@
     <h1>로그인 화면으로 이동 중</h1>
     <p class="subtext">잠시만 기다려주세요.</p>
     <div class="status-box">자동으로 이동하지 않으면 아래 버튼을 누르세요.</div>
-    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/?v=15">로그인 열기</a></div>
+    <div class="actions-stack"><a class="btn btn-primary btn-block" href="./login/?v=16">로그인 열기</a></div>
   </main>
 
   <main id="helpCard" class="auth-card help-card hidden">
@@ -43,7 +43,7 @@
       <a class="menu-item" href="./setup-login-method/">
         <span><strong>패스키 설정</strong><small>Face ID·Touch ID·Windows Hello를 등록합니다.</small></span><span class="arrow">›</span>
       </a>
-      <a class="menu-item" href="./login/?v=15">
+      <a class="menu-item" href="./login/?v=16">
         <span><strong>로그인으로 이동</strong><small>Google 계정 또는 관리자 계정으로 로그인합니다.</small></span><span class="arrow">›</span>
       </a>
     </div>
@@ -51,8 +51,9 @@
     <details id="student-registration" class="help-section" open>
       <summary>학생 등록 절차 자세히 보기</summary>
       <div class="details-body">
+        <a class="btn btn-primary btn-block sheet-link" href="https://docs.google.com/spreadsheets/d/1l2pyOTzEKNn2xkAbro7T88T2kdR3hswcaE5YBVClK0U/edit?gid=1297974158#gid=1297974158" target="_blank" rel="noopener noreferrer">학생 등록 시트 바로 열기</a>
         <ol class="steps">
-          <li><strong>Google Sheets를 열고 ‘사용자’ 시트로 이동합니다.</strong><br>학생 정보는 이 시트에서 관리합니다.</li>
+          <li><strong>위 버튼을 눌러 Google Sheets의 ‘사용자’ 시트를 엽니다.</strong><br>학생 정보는 이 시트에서 관리합니다.</li>
           <li><strong>새 행에 학생 정보를 입력합니다.</strong><br><code>name</code>에는 학생 이름, <code>fingerId</code>에는 지문센서에서 사용할 숫자 ID를 입력합니다.</li>
           <li><strong><code>active</code>를 TRUE로 설정합니다.</strong><br>TRUE 사용을 권장합니다. 현재 빈칸도 활성으로 처리되며, FALSE는 출석 대상에서 제외됩니다. <code>memo</code>는 선택 사항입니다.</li>
           <li><strong>ESP32 지문 등록 모드에서 같은 fingerId로 지문을 등록합니다.</strong><br>시트의 fingerId와 센서의 등록 번호가 반드시 같아야 합니다.</li>
@@ -84,7 +85,7 @@
         }
         return;
       }
-      setTimeout(function(){location.replace("./login/?v=15")},120);
+      setTimeout(function(){location.replace("./login/?v=16")},120);
     });
   </script>
 </body>
