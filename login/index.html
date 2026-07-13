@@ -4,22 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>로그인 · 2-12 출석</title>
-  <link rel="manifest" href="../manifest.json?v=12">
-  <link rel="icon" href="../favicon.png?v=12">
-  <link rel="apple-touch-icon" href="../favicon.png?v=12">
+  <link rel="manifest" href="../manifest.json?v=18">
+  <link rel="icon" href="../favicon.png?v=18">
+  <link rel="apple-touch-icon" href="../favicon.png?v=18">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="2-12 출석">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com">
+  <link rel="preconnect" href="https://accounts.google.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=12">
-  <script src="../assets/app.js?v=12" defer></script>
+  <link rel="stylesheet" href="../assets/app.css?v=18">
+  <script src="../assets/app.js?v=18" defer></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     .google-wrap{display:grid;place-items:center;min-height:44px}.device-hint{margin-top:9px;color:var(--muted);text-align:center;font-size:12px;font-weight:700}.session-note{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:13px;color:var(--muted);font-size:12px;font-weight:650}.session-note::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--success)}
+    .desktop-help{position:fixed;right:22px;top:22px;z-index:20;display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 88%,transparent);color:var(--text);box-shadow:var(--shadow-soft);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);text-decoration:none;font-size:13px;font-weight:850}.desktop-help kbd{padding:3px 7px;border:1px solid var(--line);border-radius:7px;background:var(--surface-soft);color:var(--muted);font:700 10px var(--font)}
+    @media(max-width:720px){.desktop-help{display:none}}
   </style>
 </head>
 <body class="auth-page">
+  <a class="desktop-help" href="../?help=1" title="도움말 열기">? 도움말 <kbd>F1</kbd></a>
   <main class="auth-card">
     <div class="brand-chip">2-12 출석</div>
 
@@ -74,6 +80,7 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
     const GOOGLE_CLIENT_ID = "802531292497-rjso2clr980pru87nc3sbf1nofq31kcc.apps.googleusercontent.com";
     const ALLOWED_NEXT = ["/dashboard/", "/choose-login-method/", "/setup-login-method/"];
+    const PASSKEY_TIMEOUT_MS = 35000;
     let loginBusy = false;
     let googleReady = false;
     let googleAttempts = 0;
@@ -84,6 +91,12 @@
       rememberNextRoute();
       document.getElementById("adminPw").addEventListener("keydown", function (event) {
         if (event.key === "Enter") adminLogin();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "F1") {
+          event.preventDefault();
+          location.href = "../?help=1";
+        }
       });
 
       if (shouldRestoreSession()) {
@@ -109,6 +122,32 @@
     window.addEventListener("pageshow", function (event) {
       if (event.persisted && AttendanceApp.Session.restore()) routeAfterLogin();
     });
+
+    function detectedDeviceInfo() {
+      const ua = navigator.userAgent || "";
+      const uaPlatform = navigator.userAgentData && navigator.userAgentData.platform || "";
+      const platform = [uaPlatform, navigator.platform || "", ua].join(" ");
+      const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+      if (/Windows|Win32|Win64|Win86/i.test(platform)) {
+        return { kind:"windows", name:"Windows PC · Windows Hello", title:"Windows Hello", hint:"얼굴 · 지문 · Windows Hello PIN" };
+      }
+      if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
+        return { kind:"apple-mobile", name:/iPhone/i.test(ua) ? "iPhone · Face ID" : "iPad · Face ID/Touch ID", title:/iPhone/i.test(ua) ? "Face ID" : "기기 인증", hint:"Face ID · Touch ID · 기기 암호" };
+      }
+      if (/Macintosh|Mac OS X/i.test(platform)) {
+        return { kind:"mac", name:"Mac · Touch ID", title:"Touch ID", hint:"Touch ID · Mac 로그인 암호" };
+      }
+      if (/Android/i.test(ua)) {
+        return { kind:"android", name:"Android 기기 인증", title:"기기 인증", hint:"지문 · 얼굴 · 화면 잠금 PIN" };
+      }
+      return AttendanceApp.Passkey.deviceInfo();
+    }
+
+    function compactUserAgent() {
+      const ua = navigator.userAgent || "";
+      return ua.length > 140 ? ua.slice(0, 140) : ua;
+    }
 
     function shouldRestoreSession() {
       const params = new URLSearchParams(location.search);
@@ -151,7 +190,7 @@
     }
 
     function setDeviceCopy() {
-      const device = AttendanceApp.Passkey.deviceInfo();
+      const device = detectedDeviceInfo();
       document.getElementById("passkeyTitle").textContent = device.title + " 로그인";
       document.getElementById("passkeySub").textContent = "등록된 " + device.title + " 인증을 요청합니다.";
       document.getElementById("passkeyButtonText").textContent = device.title + " 다시 시도";
@@ -178,15 +217,16 @@
       AttendanceApp.UI.loading("기기 인증 준비 중입니다", autoStarted ? "등록된 로그인 방법을 불러옵니다." : "로그인 요청을 생성합니다.");
 
       try {
+        const device = detectedDeviceInfo();
         const optionParams = new URLSearchParams({
           action: "passkeyLoginOptionsJsonp",
           origin: location.origin,
           hostname: location.hostname,
           credentialId: AttendanceApp.Passkey.getCredentialId(),
-          deviceName: AttendanceApp.Passkey.getDeviceName() || navigator.platform || "",
-          userAgent: navigator.userAgent || ""
+          deviceName: device.name,
+          userAgent: compactUserAgent()
         });
-        const optionResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, optionParams));
+        const optionResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, optionParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
         if (!optionResponse || !optionResponse.ok) throw new Error(optionResponse && optionResponse.message || "기기 인증 정보를 불러오지 못했습니다.");
 
         const source = optionResponse.publicKey || optionResponse.options || optionResponse.data;
@@ -204,9 +244,9 @@
           credential: JSON.stringify(serializeAssertion(credential)),
           origin: location.origin,
           hostname: location.hostname,
-          userAgent: navigator.userAgent || ""
+          userAgent: compactUserAgent()
         });
-        const verifyResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, verifyParams));
+        const verifyResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, verifyParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
         if (!verifyResponse || !verifyResponse.ok || !verifyResponse.sessionToken) throw new Error(verifyResponse && verifyResponse.message || "기기 인증 검증에 실패했습니다.");
 
         AttendanceApp.Session.save("passkey", verifyResponse);
@@ -317,14 +357,12 @@
       return {
         id: credential.id,
         rawId: AttendanceApp.bytesToBase64Url(credential.rawId),
-        type: credential.type,
         response: {
           authenticatorData: AttendanceApp.bytesToBase64Url(credential.response.authenticatorData),
           clientDataJSON: AttendanceApp.bytesToBase64Url(credential.response.clientDataJSON),
           signature: AttendanceApp.bytesToBase64Url(credential.response.signature),
           userHandle: credential.response.userHandle ? AttendanceApp.bytesToBase64Url(credential.response.userHandle) : ""
-        },
-        clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
+        }
       };
     }
 
