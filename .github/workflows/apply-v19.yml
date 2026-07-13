@@ -21,6 +21,8 @@ jobs:
         run: |
           node --check assets/app.js
           node --check assets/student.js
+          cp apps-script/student-auth-addon.gs /tmp/student-auth-addon.js
+          node --check /tmp/student-auth-addon.js
 
       - name: Update static asset versions
         run: |
