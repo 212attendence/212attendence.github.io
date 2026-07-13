@@ -4,14 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>패스키 설정</title>
-  <link rel="manifest" href="../manifest.json?v=12">
-  <link rel="icon" href="../favicon.png?v=12">
-  <link rel="apple-touch-icon" href="../favicon.png?v=12">
+  <link rel="manifest" href="../manifest.json?v=18">
+  <link rel="icon" href="../favicon.png?v=18">
+  <link rel="apple-touch-icon" href="../favicon.png?v=18">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=12">
-  <script src="../assets/app.js?v=12" defer></script>
+  <link rel="stylesheet" href="../assets/app.css?v=18">
+  <script src="../assets/app.js?v=18" defer></script>
   <style>
     .check-list{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:9px}.check-list li{position:relative;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.55;font-weight:650}.check-list li::before{content:"✓";position:absolute;left:0;color:var(--success);font-weight:900}.device-card{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}
   </style>
@@ -36,7 +38,7 @@
 
     <div class="actions-stack">
       <button id="registerBtn" class="btn btn-primary btn-block" type="button" onclick="registerPasskey()">패스키 등록 시작</button>
-      <button class="btn btn-soft btn-block" type="button" onclick="location.href='../dashboard/'">대시보드로 돌아가기</button>
+      <button class="btn btn-soft btn-block" type="button" onclick="location.href='../dashboard/?resume=1'">대시보드로 돌아가기</button>
       <a class="link-button" href="../?help=1">도움말</a>
     </div>
   </main>
@@ -48,6 +50,7 @@
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
+    const PASSKEY_TIMEOUT_MS = 45000;
     let registering = false;
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -55,10 +58,42 @@
       if (!AttendanceApp.Session.require("../login/", "/setup-login-method/")) return;
       setDeviceCopy();
       checkSupport();
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "F1") {
+          event.preventDefault();
+          location.href = "../?help=1";
+        }
+      });
     });
 
+    function detectedDeviceInfo() {
+      const ua = navigator.userAgent || "";
+      const uaPlatform = navigator.userAgentData && navigator.userAgentData.platform || "";
+      const platform = [uaPlatform, navigator.platform || "", ua].join(" ");
+      const iPadDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+      if (/Windows|Win32|Win64|Win86/i.test(platform)) {
+        return { kind:"windows", name:"Windows PC · Windows Hello", title:"Windows Hello", hint:"얼굴 · 지문 · Windows Hello PIN" };
+      }
+      if (/iPhone|iPad|iPod/i.test(ua) || iPadDesktop) {
+        return { kind:"apple-mobile", name:/iPhone/i.test(ua) ? "iPhone · Face ID" : "iPad · Face ID/Touch ID", title:/iPhone/i.test(ua) ? "Face ID" : "기기 인증", hint:"Face ID · Touch ID · 기기 암호" };
+      }
+      if (/Macintosh|Mac OS X/i.test(platform)) {
+        return { kind:"mac", name:"Mac · Touch ID", title:"Touch ID", hint:"Touch ID · Mac 로그인 암호" };
+      }
+      if (/Android/i.test(ua)) {
+        return { kind:"android", name:"Android 기기 인증", title:"기기 인증", hint:"지문 · 얼굴 · 화면 잠금 PIN" };
+      }
+      return AttendanceApp.Passkey.deviceInfo();
+    }
+
+    function compactUserAgent() {
+      const ua = navigator.userAgent || "";
+      return ua.length > 140 ? ua.slice(0, 140) : ua;
+    }
+
     function setDeviceCopy() {
-      const device = AttendanceApp.Passkey.deviceInfo();
+      const device = detectedDeviceInfo();
       document.getElementById("pageTitle").textContent = device.title + " 설정";
       document.getElementById("pageSub").textContent = device.hint + "을 이 사이트의 패스키로 등록합니다.";
       document.getElementById("deviceName").textContent = device.name;
@@ -108,16 +143,16 @@
       AttendanceApp.UI.loading("등록 요청 생성 중입니다", "안전한 패스키 등록 요청을 준비합니다.");
 
       try {
-        const device = AttendanceApp.Passkey.deviceInfo();
+        const device = detectedDeviceInfo();
         const optionParams = new URLSearchParams({
           action: "passkeyRegisterOptionsJsonp",
           origin: location.origin,
           hostname: location.hostname,
           deviceName: device.name,
-          userAgent: navigator.userAgent || ""
+          userAgent: compactUserAgent()
         });
         AttendanceApp.Session.addAuthParams(optionParams);
-        const optionResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, optionParams));
+        const optionResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, optionParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
         if (!optionResponse || !optionResponse.ok) {
           if (AttendanceApp.Session.isUnauthorizedResponse(optionResponse)) {
             AttendanceApp.Session.clear();
@@ -142,20 +177,27 @@
           origin: location.origin,
           hostname: location.hostname,
           deviceName: device.name,
-          userAgent: navigator.userAgent || ""
+          userAgent: compactUserAgent()
         });
         AttendanceApp.Session.addAuthParams(verifyParams);
-        const verifyResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, verifyParams));
+        const verifyResponse = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, verifyParams), { timeoutMs: PASSKEY_TIMEOUT_MS });
         if (!verifyResponse || !verifyResponse.ok) throw new Error(verifyResponse && verifyResponse.message || "패스키 등록 검증에 실패했습니다.");
 
         AttendanceApp.Passkey.save(credential.id || "", device.name);
         setDeviceCopy();
         AttendanceApp.UI.stopLoading();
         AttendanceApp.UI.toast("패스키 등록이 완료되었습니다.");
-        setTimeout(function () { location.replace("../dashboard/"); }, 800);
+        sessionStorage.setItem("dashboardFastReturn", "1");
+        setTimeout(function () { location.replace("../dashboard/?resume=1"); }, 650);
       } catch (error) {
         AttendanceApp.UI.stopLoading();
-        AttendanceApp.UI.toast(error && error.name === "NotAllowedError" ? "패스키 등록이 취소되었습니다." : error && error.message || String(error));
+        const raw = error && error.message || String(error);
+        const message = error && error.name === "NotAllowedError"
+          ? "패스키 등록이 취소되었습니다."
+          : /서버에 연결하지 못했습니다|응답 시간이 초과/.test(raw)
+            ? "서버 응답이 지연되었습니다. 네트워크를 확인한 뒤 등록 버튼을 다시 눌러주세요."
+            : raw;
+        AttendanceApp.UI.toast(message, 4200);
       } finally {
         registering = false;
         document.getElementById("registerBtn").disabled = false;
@@ -179,13 +221,10 @@
       return {
         id: credential.id,
         rawId: AttendanceApp.bytesToBase64Url(credential.rawId),
-        type: credential.type,
         response: {
           clientDataJSON: AttendanceApp.bytesToBase64Url(credential.response.clientDataJSON),
-          attestationObject: AttendanceApp.bytesToBase64Url(credential.response.attestationObject),
-          transports: credential.response.getTransports ? credential.response.getTransports() : []
-        },
-        clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {}
+          attestationObject: AttendanceApp.bytesToBase64Url(credential.response.attestationObject)
+        }
       };
     }
   </script>
