@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>출석 대시보드</title>
-  <link rel="manifest" href="../manifest.json?v=15">
-  <link rel="icon" href="../favicon.png?v=15">
-  <link rel="apple-touch-icon" href="../favicon.png?v=15">
+  <link rel="manifest" href="../manifest.json?v=16">
+  <link rel="icon" href="../favicon.png?v=16">
+  <link rel="apple-touch-icon" href="../favicon.png?v=16">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=15">
-  <script src="../assets/app.js?v=15" defer></script>
+  <link rel="stylesheet" href="../assets/app.css?v=16">
+  <script src="../assets/app.js?v=16" defer></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--blue:#3a647c;--glass:rgba(255,255,252,.78);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.12);--glow-c:rgba(173,102,31,.09)}
@@ -53,7 +53,7 @@
     .log-row{display:grid;grid-template-columns:72px 82px 1fr 80px;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px}.log-row:not(.log-header){transition:background .18s ease}.log-row:not(.log-header):hover{background:color-mix(in srgb,var(--surface-soft) 55%,transparent)}.log-header{background:color-mix(in srgb,var(--surface-soft) 62%,transparent);color:var(--muted);font-size:12px;font-weight:900}
     .status-chip{display:inline-flex;justify-content:center;min-width:62px;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:900}.present{background:color-mix(in srgb,var(--green) 14%,transparent);color:var(--green)}.late{background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange)}.notyet{background:var(--surface-soft);color:var(--muted)}.bad{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}
     .device-card{padding:18px;border-radius:26px}.device-card::before{content:"";position:absolute;width:130px;height:130px;right:-72px;top:-72px;border-radius:50%;background:radial-gradient(circle,var(--glow-b),transparent 70%)}.info-list{display:grid;gap:9px;margin-top:14px}.info-item{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:15px;background:color-mix(in srgb,var(--surface-soft) 70%,transparent);border:1px solid var(--line);font-size:13px}.info-label{color:var(--muted);font-weight:800}.info-value{font-weight:850;text-align:right;word-break:break-all}.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.online{background:color-mix(in srgb,var(--green) 14%,transparent);color:var(--green)}.offline{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}.connecting{background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange)}
-    .modal-backdrop,.loading-overlay{backdrop-filter:blur(9px) saturate(115%);-webkit-backdrop-filter:blur(9px) saturate(115%)}.modal{border-radius:28px}.passkey-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.passkey-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.section-title{margin:18px 0 8px;font-size:14px;font-weight:900}.section-title:first-child{margin-top:0}
+    .modal-backdrop,.loading-overlay{backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%)}.modal{border-radius:28px}.passkey-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.passkey-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.section-title{margin:18px 0 8px;font-size:14px;font-weight:900}.section-title:first-child{margin-top:0}
     @media(hover:hover) and (pointer:fine){.summary-card:hover,.panel:hover,.device-card:hover,.progress-card:hover{transform:translateY(-2px);box-shadow:0 25px 72px color-mix(in srgb,var(--text) 11%,transparent),inset 0 1px 0 color-mix(in srgb,#fff 46%,transparent)}.progress-card:hover{border-color:color-mix(in srgb,var(--green) 34%,var(--line))}.btn:hover{transform:translateY(-1px)}}
     @media(max-width:860px){.app{padding:16px}.topbar-inner{align-items:flex-start;flex-direction:column;padding:12px}.actions{justify-content:flex-start}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-card:first-child{grid-column:span 2}.content-grid{grid-template-columns:1fr}.log-row{grid-template-columns:64px 72px 1fr 62px;padding:13px 14px;font-size:13px}.progress-card{grid-template-columns:auto 1fr}.progress-value{grid-column:2;text-align:left;margin:-5px 0 0}.progress-card::after{right:14px}}
     @media(max-width:520px){.actions{width:100%}.theme-switch{width:100%}.actions .btn{flex:1}.summary-value{font-size:31px}}
@@ -68,7 +68,7 @@
         <div class="title-wrap"><div class="title-line"><h1>출석 대시보드</h1><span class="live-pill">LIVE</span></div><div id="todayText" class="sub">2학년 12반 · 오늘 출석 현황</div></div>
         <div class="actions">
           <div class="theme-switch" aria-label="테마"><button data-theme-choice="system" onclick="switchTheme('system')">자동</button><button data-theme-choice="light" onclick="switchTheme('light')">Light</button><button data-theme-choice="dark" onclick="switchTheme('dark')">Dark</button></div>
-          <button class="btn btn-soft refresh" onclick="loadTodayLogs(true)">새로고침</button>
+          <button class="btn btn-soft refresh" onclick="loadTodayLogs(true,false)">새로고침</button>
           <button class="btn btn-soft settings" onclick="openSettingsModal()">설정</button>
           <button class="btn btn-danger logout" onclick="logout()">로그아웃</button>
         </div>
@@ -83,7 +83,7 @@
       <div class="summary-card"><div class="summary-icon">…</div><div class="summary-label">미출석</div><div id="sumNotYet" class="summary-value">-</div></div>
     </section>
 
-    <section class="progress-card" role="link" tabindex="0" aria-label="오늘 출석률 상세 보기" onclick="location.href='../attendance-rate/'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='../attendance-rate/'}">
+    <section class="progress-card" role="link" tabindex="0" aria-label="오늘 출석률 상세 보기" onclick="openAttendanceRate()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAttendanceRate()}">
       <div class="progress-icon">%</div>
       <div class="progress-main"><div class="progress-title">오늘 출석률</div><div id="progressSub" class="progress-sub">대시보드와 함께 계산 중입니다.</div><div class="progress-track"><div id="attendanceProgressBar" class="progress-fill" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div></div>
       <div id="attendanceProgressText" class="progress-value">0%</div>
@@ -127,14 +127,32 @@
       if(!AttendanceApp.Session.require("../login/","/dashboard/"))return;
       document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";
       renderPasskeySetting();
-      AttendanceApp.UI.loading("대시보드 로딩 중입니다","출석 현황과 출석률, 장치 설정을 함께 불러옵니다.");
+
+      const warmStart=renderCachedDashboard(readSnapshot());
+      initialLoad=!warmStart;
+      if(!warmStart)AttendanceApp.UI.loading("대시보드 로딩 중입니다","출석 현황과 출석률, 장치 설정을 함께 불러옵니다.");
+
       const settingsTask=loadRemoteSettings().then(function(){connectMqtt();startEspWatchdog()});
-      const attendanceTask=loadTodayLogs(false,true);
+      const attendanceTask=loadTodayLogs(false,!warmStart);
       await Promise.allSettled([settingsTask,attendanceTask]);
-      initialLoad=false;
-      AttendanceApp.UI.stopLoading();
-      animateProgress(pendingRate);
+
+      if(!warmStart){
+        initialLoad=false;
+        AttendanceApp.UI.stopLoading();
+        animateProgress(pendingRate);
+      }
     });
+
+    window.addEventListener("pageshow",function(event){
+      AttendanceApp.UI.stopLoading();
+      if(event.persisted){
+        const snapshot=readSnapshot();
+        if(snapshot)renderCachedDashboard(snapshot);
+        loadTodayLogs(false,false);
+      }
+    });
+
+    function openAttendanceRate(){sessionStorage.setItem("attendanceReturnToDashboard","1");location.href="../attendance-rate/"}
 
     function switchTheme(mode){
       const apply=function(){AttendanceApp.Theme.apply(mode)};
@@ -155,6 +173,21 @@
     function renderPasskeySetting(){const btn=document.getElementById("passkeyActionBtn"),text=document.getElementById("passkeyActionText"),session=AttendanceApp.Session.current(),loginType=session&&session.loginType||"";if(loginType==="passkey"&&hasLocalPasskey()){btn.textContent="패스키 삭제";btn.className="btn btn-danger btn-block";btn.disabled=false;text.textContent="현재 패스키로 로그인했습니다. 이 기기의 패스키를 삭제할 수 있습니다.";return}if(!hasLocalPasskey()){btn.textContent="패스키 생성";btn.className="btn btn-soft btn-block";btn.disabled=false;text.textContent="이 기기에 등록된 패스키가 없습니다. 새 패스키를 생성할 수 있습니다.";return}btn.textContent="패스키가 등록되어 있습니다";btn.className="btn btn-soft btn-block";btn.disabled=true;text.textContent="패스키 삭제는 패스키로 로그인한 다음 이용할 수 있습니다."}
     function handlePasskeySetting(){const session=AttendanceApp.Session.current(),loginType=session&&session.loginType||"";if(loginType==="passkey"&&hasLocalPasskey())location.href="../delete-passkey/";else if(!hasLocalPasskey())location.href="../setup-login-method/"}
     function authParams(action){const p=new URLSearchParams({action:action});AttendanceApp.Session.addAuthParams(p);return p}
+
+    function readSnapshot(){try{const snapshot=JSON.parse(sessionStorage.getItem(SNAPSHOT_KEY)||"null");return snapshot&&Date.now()-Number(snapshot.savedAt||0)<300000?snapshot:null}catch(e){return null}}
+    function renderCachedDashboard(snapshot){
+      if(!snapshot)return false;
+      const logs=normalizeLogs(snapshot.logs||[]),summary=snapshot.summary||{},registered=registeredStudentCount(snapshot,summary);
+      if(registered===0&&logs.length===0){location.replace("../no-student-added/");return true}
+      renderLogs(logs);
+      renderSummary(logs,summary,snapshot,true);
+      const bar=document.getElementById("attendanceProgressBar");
+      bar.style.transition="none";
+      bar.style.width=pendingRate+"%";
+      bar.setAttribute("aria-valuenow",String(pendingRate));
+      document.getElementById("logSub").textContent="저장된 최신 현황 · 백그라운드에서 갱신 중";
+      return true;
+    }
 
     async function loadRemoteSettings(){
       try{
@@ -194,10 +227,7 @@
       return null;
     }
 
-    function saveSnapshot(response,registered){
-      try{sessionStorage.setItem(SNAPSHOT_KEY,JSON.stringify({savedAt:Date.now(),logs:response.logs||[],summary:response.summary||{},registeredStudentCount:registered}))}catch(e){}
-    }
-
+    function saveSnapshot(response,registered){try{sessionStorage.setItem(SNAPSHOT_KEY,JSON.stringify({savedAt:Date.now(),logs:response.logs||[],summary:response.summary||{},registeredStudentCount:registered}))}catch(e){}}
     function normalizeLogs(rows){return Array.isArray(rows)?rows.map(r=>({time:r.time||r.시간||r.timestamp||"-",status:r.status||r.상태||"-",name:r.name||r.이름||"-",fingerId:r.fingerId||r.지문ID||"-"})).reverse():[]}
     function renderLogs(logs){const el=document.getElementById("logList");if(!logs.length){el.innerHTML='<div class="log-row"><div>-</div><div><span class="status-chip notyet">없음</span></div><div>오늘 출석 로그가 없습니다.</div><div>-</div></div>';return}el.innerHTML=logs.map(x=>'<div class="log-row"><div>'+AttendanceApp.UI.escapeHtml(formatTime(x.time))+'</div><div><span class="status-chip '+statusClass(x.status)+'">'+AttendanceApp.UI.escapeHtml(x.status)+'</span></div><div>'+AttendanceApp.UI.escapeHtml(x.name)+'</div><div>'+AttendanceApp.UI.escapeHtml(x.fingerId)+'</div></div>').join("")}
     function rawCounts(logs,summary,response){const registered=registeredStudentCount(response,summary),c={total:registered===null?logs.length:registered,present:0,late:0,absent:0,notYet:0};logs.forEach(x=>{const v=String(x.status);if(v.includes("지각"))c.late++;else if(v.includes("출석")&&!v.includes("미출석"))c.present++;else if(v.includes("결석"))c.absent++;else if(v.includes("미출석"))c.notYet++});const aliases={present:["present","출석"],late:["late","지각"],absent:["absent","결석"],notYet:["notYet","notyet","미출석"]};Object.keys(aliases).forEach(k=>{for(const key of aliases[k]){if(summary&&summary[key]!=null){c[k]=Number(summary[key])||0;break}}});return c}
