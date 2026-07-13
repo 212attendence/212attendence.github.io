@@ -25,7 +25,7 @@ messaging.onBackgroundMessage(function (payload) {
   const data = payload.data || {};
   const title = data.title || "2-12 출석 알림";
   const body = data.body || "출석 상태가 업데이트되었습니다.";
-  const target = new URL(data.url || "./dashboard/", self.registration.scope).href;
+  const target = new URL(data.url || "./admin/dashboard/?resume=1", self.registration.scope).href;
 
   return self.registration.showNotification(title, {
     body: body,
@@ -41,7 +41,7 @@ self.addEventListener("notificationclick", function (event) {
   event.notification.close();
   const targetUrl = event.notification && event.notification.data && event.notification.data.url
     ? event.notification.data.url
-    : new URL("./dashboard/", self.registration.scope).href;
+    : new URL("./admin/dashboard/?resume=1", self.registration.scope).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clientList) {
