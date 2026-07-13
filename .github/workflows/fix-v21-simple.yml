@@ -1,0 +1,49 @@
+name: Simple v21 route and GPS repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-v21-simple.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Repair generated routes
+        run: |
+          find student admin -type f -name '*.html' -print0 | xargs -0 sed -i -E 's#<base href="[^"]+">#<base href="/">#g'
+          find student admin -type f -name '*.html' -print0 | xargs -0 sed -i 's/radiusM||10/radiusM||100/g; s/radiusM || 10/radiusM || 100/g'
+
+          sed -i "s/studentEnsureSetting_('schoolName', '해강중학교');/studentSetSetting_('schoolName', '해강중학교');/" apps-script/student-auth-addon.gs
+          sed -i "s/studentEnsureSetting_('schoolRadiusM', '100');/studentSetSetting_('schoolRadiusM', '100');/" apps-script/student-auth-addon.gs
+          sed -i "s/studentEnsureSetting_('schoolLat', '35.16408333333333');/studentSetSetting_('schoolLat', '35.16408333333333');/" apps-script/student-auth-addon.gs
+          sed -i "s/studentEnsureSetting_('schoolLng', '129.13574722222222');/studentSetSetting_('schoolLng', '129.13574722222222');/" apps-script/student-auth-addon.gs
+          sed -i 's/Number(p.radiusM || 1000)/Number(p.radiusM || 100)/g' apps-script/student-auth-addon.gs
+          sed -i "s/Number(studentGetSetting_('schoolRadiusM', '100')) || 10/Number(studentGetSetting_('schoolRadiusM', '100')) || 100/g" apps-script/student-auth-addon.gs
+
+      - name: Validate
+        run: |
+          node --check assets/app.js
+          node --check assets/student.js
+          cp apps-script/student-auth-addon.gs /tmp/student-auth-addon.js
+          node --check /tmp/student-auth-addon.js
+          grep -q '<base href="/">' student/login/index.html
+          grep -q '<base href="/">' admin/login/index.html
+          grep -q "studentSetSetting_('schoolRadiusM', '100')" apps-script/student-auth-addon.gs
+          grep -q 'Number(p.radiusM || 100)' apps-script/student-auth-addon.gs
+
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add student admin apps-script/student-auth-addon.gs
+          git commit -m "Repair v21 canonical assets and GPS defaults [skip ci]"
+          git push
