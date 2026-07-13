@@ -54,7 +54,7 @@
         <ol class="steps">
           <li><strong>Google Sheets를 열고 ‘사용자’ 시트로 이동합니다.</strong><br>학생 정보는 이 시트에서 관리합니다.</li>
           <li><strong>새 행에 학생 정보를 입력합니다.</strong><br><code>name</code>에는 학생 이름, <code>fingerId</code>에는 지문센서에서 사용할 숫자 ID를 입력합니다.</li>
-          <li><strong><code>active</code>를 TRUE로 설정합니다.</strong><br>FALSE이거나 비어 있으면 출석 대상에서 제외될 수 있습니다. <code>memo</code>는 선택 사항입니다.</li>
+          <li><strong><code>active</code>를 TRUE로 설정합니다.</strong><br>TRUE 사용을 권장합니다. 현재 빈칸도 활성으로 처리되며, FALSE는 출석 대상에서 제외됩니다. <code>memo</code>는 선택 사항입니다.</li>
           <li><strong>ESP32 지문 등록 모드에서 같은 fingerId로 지문을 등록합니다.</strong><br>시트의 fingerId와 센서의 등록 번호가 반드시 같아야 합니다.</li>
           <li><strong>대시보드로 돌아가 새로고침합니다.</strong><br>전체 학생 수가 표시되면 등록이 완료된 것입니다.</li>
         </ol>
