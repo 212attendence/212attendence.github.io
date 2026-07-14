@@ -1,0 +1,6 @@
+checked_at=2026-07-14T09:28:43Z
+base=https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec
+--- ping ---
+{"ok":true,"message":"pong","now":"2026-07-14T09:28:44.531Z","version":"2026.07.14-server-v4","diagnosticsAction":"serverStatusJsonp"}
+--- status ---
+{"ok":true,"message":"2-12 Apps Script 서버 연결 정상","version":"2026.07.14-server-v4","timestamp":"2026-07-14T09:28:45.882Z","spreadsheetId":"1l2pyOTzEKNn2xkAbro7T88T2kdR3hswcaE5YBVClK0U","requiredSheets":{"설정":true,"사용자":true,"관리자":true,"전체로그":true,"로그인기록":true,"푸시토큰":true,"패스키":true,"학생계정":true,"학생로그인요청":true,"학생세션":true,"학생출석로그":true},"spreadsheetName":"출석 인증 시스템"}
