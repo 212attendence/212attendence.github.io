@@ -227,11 +227,7 @@
       AttendanceApp.addClientParams(params);
       return AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, params), { timeoutMs: 25000 });
     } catch (error) {
-      const legacy = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: String(adminId || ""), adminPw: String(adminPassword || "") });
-      AttendanceApp.addClientParams(legacy);
-      const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, legacy), { timeoutMs: 25000 });
-      if (!result || !result.ok) throw error;
-      return result;
+      throw new Error(error && error.message || "보안 로그인 서버에 연결하지 못했습니다. Apps Script V5 배포를 확인하세요.");
     }
   }
 
