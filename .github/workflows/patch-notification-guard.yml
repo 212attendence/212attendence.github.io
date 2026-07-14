@@ -1,0 +1,24 @@
+name: Patch notification API guard
+on:
+  push:
+    paths:
+      - 'scripts/patch-notification-guard.py'
+      - '.github/workflows/patch-notification-guard.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/patch-notification-guard.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-notification-guard.yml scripts/patch-notification-guard.py
+          git add -A
+          git commit -m "Guard notification API on unsupported browsers" || exit 0
+          git push
