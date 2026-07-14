@@ -67,10 +67,10 @@
         <div class="legend">
           <div class="legend-item"><span class="dot present"></span><div><div class="legend-name">출석</div><div class="legend-desc">정상 출석</div></div><div id="presentValue" class="legend-value">0</div></div>
           <div class="legend-item"><span class="dot late"></span><div><div class="legend-name">지각</div><div class="legend-desc">출석률에 포함</div></div><div id="lateValue" class="legend-value">0</div></div>
-          <div class="legend-item"><span class="dot absent"></span><div><div class="legend-name">결석</div><div class="legend-desc">오후 4시 이후 표시</div></div><div id="absentValue" class="legend-value">0</div></div>
-          <div class="legend-item"><span class="dot notyet"></span><div><div class="legend-name">미출석</div><div class="legend-desc">오후 4시 전까지 표시</div></div><div id="notYetValue" class="legend-value">0</div></div>
+          <div class="legend-item"><span class="dot absent"></span><div><div class="legend-name">결석</div><div class="legend-desc">기준 시각 이후 표시</div></div><div id="absentValue" class="legend-value">0</div></div>
+          <div class="legend-item"><span class="dot notyet"></span><div><div class="legend-name">미출석</div><div class="legend-desc">기준 시각 전까지 표시</div></div><div id="notYetValue" class="legend-value">0</div></div>
         </div>
-        <div class="rule"><strong>표시 규칙</strong><br>오후 4시 전에는 확인되지 않은 인원을 미출석으로, 오후 4시 이후에는 결석으로 표시합니다.</div>
+        <div class="rule"><strong>표시 규칙</strong><br>월·화·수·금은 오후 3시, 목요일은 오후 3시 55분을 기준으로 미출석을 결석으로 전환합니다.</div>
         <button class="btn btn-primary refresh" onclick="loadData(true,true)">새로고침</button>
       </aside>
     </section>
@@ -160,8 +160,8 @@
       return c;
     }
 
-    function applyCutoff(c){const afterFour=new Date().getHours()>=16,known=c.present+c.late+c.absent+c.notYet;c.total=Math.max(c.total,known);const remainder=Math.max(0,c.total-known);if(afterFour){c.absent+=c.notYet+remainder;c.notYet=0}else{c.notYet+=c.absent+remainder;c.absent=0}return{...c,afterFour:afterFour}}
-    function render(c){const rate=c.total?Math.min(100,Math.round(((c.present+c.late)/c.total)*100)):0;document.getElementById("rateText").textContent=rate+"%";document.getElementById("totalText").textContent="전체 "+c.total+"명";document.getElementById("presentValue").textContent=c.present;document.getElementById("lateValue").textContent=c.late;document.getElementById("absentValue").textContent=c.absent;document.getElementById("notYetValue").textContent=c.notYet;document.getElementById("cutoffText").textContent=c.afterFour?"오후 4시 이후 · 미확인 인원은 결석으로 표시":"오후 4시 전 · 미확인 인원은 미출석으로 표시";drawRings(c)}
+    function applyCutoff(c){const now=new Date(),cutoff=now.getDay()===4?15*60+55:15*60,afterCutoff=now.getHours()*60+now.getMinutes()>=cutoff,known=c.present+c.late+c.absent+c.notYet;c.total=Math.max(c.total,known);const remainder=Math.max(0,c.total-known);if(afterCutoff){c.absent+=c.notYet+remainder;c.notYet=0}else{c.notYet+=c.absent+remainder;c.absent=0}return{...c,afterFour:afterCutoff,cutoffText:now.getDay()===4?"오후 3시 55분":"오후 3시"}}
+    function render(c){const rate=c.total?Math.min(100,Math.round(((c.present+c.late)/c.total)*100)):0;document.getElementById("rateText").textContent=rate+"%";document.getElementById("totalText").textContent="전체 "+c.total+"명";document.getElementById("presentValue").textContent=c.present;document.getElementById("lateValue").textContent=c.late;document.getElementById("absentValue").textContent=c.absent;document.getElementById("notYetValue").textContent=c.notYet;document.getElementById("cutoffText").textContent=c.afterFour?c.cutoffText+" 이후 · 미확인 인원은 결석으로 표시":c.cutoffText+" 전 · 미확인 인원은 미출석으로 표시";drawRings(c)}
     function drawRings(c){const parts=[["ringPresent",c.present],["ringLate",c.late],["ringAbsent",c.absent],["ringNotYet",c.notYet]];let offset=0;parts.forEach(([id,value])=>{const el=document.getElementById(id),length=c.total?RING*(value/c.total):0,start=offset;el.style.transition="none";el.style.strokeDasharray="0 "+RING;el.style.strokeDashoffset=-start;void el.getBoundingClientRect();el.style.transition="stroke-dasharray .9s cubic-bezier(.22,1,.36,1),stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)";requestAnimationFrame(()=>{el.style.strokeDasharray=length+" "+Math.max(0,RING-length);el.style.strokeDashoffset=-start});offset+=length})}
   </script>
 </body>

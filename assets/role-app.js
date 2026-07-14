@@ -213,16 +213,26 @@
 
   async function secureAdminLogin(adminId, adminPassword) {
     if (!window.crypto || !crypto.subtle) throw new Error("이 브라우저는 보안 로그인을 지원하지 않습니다.");
-    const idHash = await sha256Base64Url(String(adminId || "").trim());
-    const challenge = await jsonp("adminLoginChallengeJsonp", { adminIdHash: idHash }, 22000);
-    if (!challenge || !challenge.ok || !challenge.challengeId || !challenge.challenge || !challenge.salt) {
-      throw new Error(challenge && challenge.message || "보안 로그인 요청을 만들지 못했습니다.");
+    try {
+      const idHash = await sha256Base64Url(String(adminId || "").trim());
+      const challenge = await jsonp("adminLoginChallengeJsonp", { adminIdHash: idHash }, 22000);
+      if (!challenge || !challenge.ok || !challenge.challengeId || !challenge.challenge || !challenge.salt) {
+        throw new Error(challenge && challenge.message || "보안 로그인 요청을 만들지 못했습니다.");
+      }
+      const verifier = challenge.scheme === "legacy-sha256"
+        ? await sha256Base64Url(String(adminPassword || ""))
+        : await sha256Base64Url(String(adminId || "").trim() + "|" + String(adminPassword || "") + "|" + challenge.salt);
+      const proof = await sha256Base64Url(verifier + "|" + challenge.challenge);
+      const params = new URLSearchParams({ action: "dashboardLoginProofJsonp", challengeId: challenge.challengeId, proof: proof });
+      AttendanceApp.addClientParams(params);
+      return AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, params), { timeoutMs: 25000 });
+    } catch (error) {
+      const legacy = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: String(adminId || ""), adminPw: String(adminPassword || "") });
+      AttendanceApp.addClientParams(legacy);
+      const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, legacy), { timeoutMs: 25000 });
+      if (!result || !result.ok) throw error;
+      return result;
     }
-    const verifier = await sha256Base64Url(String(adminId || "").trim() + "|" + String(adminPassword || "") + "|" + challenge.salt);
-    const proof = await sha256Base64Url(verifier + "|" + challenge.challenge);
-    const params = new URLSearchParams({ action: "dashboardLoginProofJsonp", challengeId: challenge.challengeId, proof: proof });
-    AttendanceApp.addClientParams(params);
-    return AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, params), { timeoutMs: 25000 });
   }
 
   async function getCoarsePosition() {

@@ -155,6 +155,10 @@
             renderPermission("retry");
             showResult(false,"GPS 정확도가 부족합니다.","현재 위치 정확도 ±"+measured+"m · 허용 최대 ±"+maximum+"m입니다. Wi-Fi와 정확한 위치를 켜고 창가 또는 운동장에서 다시 시도하세요.");return
           }
+          if(response&&response.code==="SCHOOL_CLOSED"){
+            localStorage.setItem("studentAutoAttendanceDate",todayKey());
+            showResult(false,"오늘은 출석 인증일이 아닙니다.",response.message||"방학·주말·공휴일 또는 학교 휴업일입니다.");return
+          }
           if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");
           if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();location.replace("/student/login/");return}
           throw new Error(response&&response.message||"출석 인증에 실패했습니다.");
