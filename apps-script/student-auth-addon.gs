@@ -318,7 +318,7 @@ function adminSaveStudentAccountJsonp_(e) {
   var active = studentTruthy_(p.active);
   var resetPassword = String(p.resetPassword || '') === '1';
 
-  if (!studentId || studentId.length > 40 || studentId.indexOf(',') >= 0) {
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(studentId)) {
     return studentFail_('STUDENT_ID_INVALID', '학생 ID를 올바르게 입력하세요.');
   }
   if (!name || name.length > 80) return studentFail_('STUDENT_NAME_REQUIRED', '학생 이름을 입력하세요.');
