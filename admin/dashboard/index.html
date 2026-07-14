@@ -17,8 +17,8 @@
   <link rel="dns-prefetch" href="https://unpkg.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=21">
-  <script src="../assets/app.js?v=25" defer></script>
-  <script src="/assets/role-app.js?v=25" defer></script>
+  <script src="../assets/app.js?v=26" defer></script>
+  <script src="/assets/role-app.js?v=26" defer></script>
   <style>
     :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--blue:#3a647c;--glass:rgba(255,255,252,.78);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.12);--glow-c:rgba(173,102,31,.09)}
     html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--blue:#84b3cd;--glass:rgba(34,35,33,.78);--glow-a:rgba(119,196,149,.09);--glow-b:rgba(132,179,205,.08);--glow-c:rgba(221,161,100,.07)}
@@ -68,6 +68,7 @@
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
       if(!AttendanceApp.Session.require("/admin/login/","/admin/dashboard/"))return;
+      checkServerCompatibility();
       document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";
       renderPasskeySetting();
       document.addEventListener("keydown",function(event){if(event.key==="F1"){event.preventDefault();location.href="/admin/help/"}});
@@ -89,6 +90,20 @@
     });
 
     window.addEventListener("pageshow",function(event){AttendanceApp.UI.stopLoading();const snapshot=readSnapshot();if(snapshot)renderCachedDashboard(snapshot);if(event.persisted)loadTodayLogs(false,false)});
+
+    async function checkServerCompatibility(){
+      try{
+        const params=new URLSearchParams({action:"ping",_ts:String(Date.now())});
+        const result=await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,params),{timeoutMs:15000});
+        const version=String(result&&result.version||"");
+        if(!version.includes("server-v6")){
+          document.getElementById("logSub").textContent="현재 "+(version||"구버전 서버")+" · V6 배포 필요";
+          AttendanceApp.UI.toast("기존 시트 로그 연동을 위해 Apps Script V6를 배포하세요.",6500);
+        }
+      }catch(error){
+        document.getElementById("logSub").textContent="Apps Script 서버 버전을 확인하지 못했습니다.";
+      }
+    }
 
     function scheduleDeviceServices(){const start=function(){startDeviceServices()};if("requestIdleCallback" in window)requestIdleCallback(start,{timeout:1600});else setTimeout(start,250)}
     async function startDeviceServices(){setMqttBadge("online");startSecurePolling()}
