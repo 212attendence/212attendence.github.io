@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>학생 앱 설치 가이드 · 2-12 출석</title>
+  <link rel="manifest" href="/student/manifest.json?v=28">
+  <link rel="icon" href="/favicon.png?v=28">
+  <link rel="apple-touch-icon" href="/favicon.png?v=28">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="/assets/app.css?v=27">
+  <script src="/assets/app.js?v=27" defer></script>
+  <script src="/assets/role-app.js?v=27" defer></script>
+  <style>
+    :root{--student:#315f84;--student-soft:rgba(49,95,132,.12);--ok:#2f8254;--warn:#ad661f}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12);--ok:#77c495;--warn:#dda164}
+    body{background:var(--bg);overflow-x:hidden}body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(78px);pointer-events:none}body::before{width:34rem;height:34rem;left:-14rem;top:-14rem;background:var(--student-soft)}body::after{width:28rem;height:28rem;right:-12rem;bottom:-14rem;background:rgba(47,130,84,.08)}
+    .guide-card{width:min(720px,100%)}.guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guide-head h1{font-size:27px}.guide-head .btn{flex:0 0 auto}.intro{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.65;font-weight:650}
+    .install-card{margin-top:16px;padding:18px;border:1px solid color-mix(in srgb,var(--student) 28%,var(--line));border-radius:22px;background:linear-gradient(145deg,color-mix(in srgb,var(--student-soft) 70%,var(--surface)),var(--surface-soft))}.install-card strong{display:block;font-size:17px}.install-card p{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.6;font-weight:650}
+    .platforms{display:grid;gap:12px;margin-top:14px}.platform{padding:17px;border:1px solid var(--line);border-radius:20px;background:var(--surface-soft)}.platform h2{font-size:16px}.steps{display:grid;gap:8px;margin:12px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:11px 12px 11px 43px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-size:13px;line-height:1.5;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:11px;top:10px;display:grid;place-items:center;width:23px;height:23px;border-radius:8px;background:var(--student);color:#fff;font-size:11px;font-weight:900}.note{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:12px;line-height:1.6}.guide-actions{display:grid;gap:9px;margin-top:16px}.status{display:none;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--surface-soft);font-size:12px;line-height:1.55;font-weight:750}.status.show{display:block}.status.ok{border-color:color-mix(in srgb,var(--ok) 30%,var(--line));color:var(--ok)}.status.warn{border-color:color-mix(in srgb,var(--warn) 34%,var(--line));color:var(--warn)}
+    @media(max-width:560px){.guide-head{display:block}.guide-head .btn{width:100%;margin-top:12px}}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card guide-card">
+    <div class="brand-chip">학생 앱 설치 가이드</div>
+    <div class="guide-head"><div><h1>학생용 앱 설치</h1><p class="intro">학생 출석 앱을 홈 화면이나 시작 메뉴에 설치하면 로그인 화면을 거치지 않고 학생 출석 화면을 빠르게 열 수 있습니다.</p></div><a class="btn btn-soft" href="/student/identity/">학생 화면</a></div>
+
+    <section class="install-card">
+      <strong>자동 설치 버튼</strong>
+      <p>Chrome·Edge 등 설치를 지원하는 브라우저에서는 아래 버튼으로 학생용 앱 설치를 시작할 수 있습니다.</p>
+      <button id="installButton" class="btn btn-primary btn-block" type="button" onclick="installStudentApp()">학생용 앱 설치</button>
+      <div id="installStatus" class="status"></div>
+    </section>
+
+    <div class="platforms">
+      <section class="platform"><h2>iPhone·iPad Safari</h2><ol class="steps"><li>이 페이지를 Safari에서 엽니다.</li><li>화면 아래 또는 위의 <strong>공유</strong> 버튼을 누릅니다.</li><li><strong>홈 화면에 추가</strong>를 선택합니다.</li><li>이름이 <strong>2-12 학생 출석</strong>인지 확인하고 추가합니다.</li></ol></section>
+      <section class="platform"><h2>Android Chrome</h2><ol class="steps"><li>오른쪽 위 메뉴 <strong>⋮</strong>를 누릅니다.</li><li><strong>앱 설치</strong> 또는 <strong>홈 화면에 추가</strong>를 선택합니다.</li><li>설치를 누른 뒤 홈 화면의 학생 출석 아이콘을 실행합니다.</li></ol></section>
+      <section class="platform"><h2>Windows Chrome·Edge</h2><ol class="steps"><li>주소창 오른쪽의 설치 아이콘을 누릅니다.</li><li>아이콘이 없으면 브라우저 메뉴에서 <strong>앱 설치</strong>를 선택합니다.</li><li>설치 후 시작 메뉴 또는 바탕화면에서 실행합니다.</li></ol></section>
+    </div>
+
+    <div class="note">학생용 앱과 관리자용 앱은 별도 앱입니다. 이 페이지에서는 반드시 학생용 앱을 설치하세요. 기존 통합 앱이 남아 있다면 삭제한 뒤 다시 설치하는 것이 안전합니다.</div>
+
+    <div class="guide-actions">
+      <a class="btn btn-primary btn-block" href="/student/identity/">학생 출석 화면으로 이동</a>
+      <a class="btn btn-soft btn-block" href="/student/help/">학생 도움말</a>
+      <a class="btn btn-soft btn-block" href="/student/login/">학생 로그인</a>
+    </div>
+  </main>
+  <div id="toast" class="toast">알림</div>
+  <script>
+    document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init()});
+    async function installStudentApp(){
+      const box=document.getElementById("installStatus");
+      try{
+        if(window.AttendanceRoleApp&&AttendanceRoleApp.promptInstall){
+          const result=await AttendanceRoleApp.promptInstall();
+          if(result&&result.available){box.className="status show ok";box.textContent=result.outcome==="accepted"?"학생용 앱 설치를 시작했습니다.":"설치가 취소됐습니다. 다시 시도할 수 있습니다.";return}
+        }
+        box.className="status show warn";
+        box.textContent=/iPhone|iPad|iPod/.test(navigator.userAgent)?"Safari 공유 버튼 → 홈 화면에 추가를 선택하세요.":"브라우저 메뉴에서 앱 설치 또는 홈 화면에 추가를 선택하세요.";
+      }catch(error){box.className="status show warn";box.textContent=error.message||String(error)}
+    }
+  </script>
+</body>
+</html>
