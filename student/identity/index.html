@@ -48,6 +48,7 @@
   <div id="toast" class="toast">알림</div>
 
   <script>
+    const GPS_SAMPLE_WINDOW_MS=12000,GPS_EARLY_ACCURACY_M=50;
     let busy=false,session=null;
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
@@ -60,19 +61,45 @@
 
     function renderPermission(state){
       const badge=document.getElementById("permissionBadge"),desc=document.getElementById("locationDesc");
-      if(state==="granted"){badge.textContent="허용됨";badge.style.color="var(--ok)";desc.textContent="위치 권한이 허용되어 있습니다. 버튼을 누르면 학교와의 거리를 확인합니다."}
+      if(state==="granted"){badge.textContent="허용됨";badge.style.color="var(--ok)";desc.textContent="위치 권한이 허용되어 있습니다. 버튼을 누르면 여러 번 측정한 뒤 가장 정확한 위치를 사용합니다."}
       else if(state==="denied"){badge.textContent="차단됨";badge.style.color="var(--bad)";desc.textContent="위치 권한이 차단되어 있습니다. 권한 설정 도움말을 확인하세요."}
       else if(state==="unsupported"){badge.textContent="지원 안 됨";badge.style.color="var(--bad)";desc.textContent="이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다."}
       else{badge.textContent="허용 필요";desc.textContent="버튼을 누르면 위치 권한 요청이 표시됩니다. 정확한 위치를 허용하세요."}
     }
 
+    function updateAccuracyDisplay(accuracy){
+      const value=Math.max(0,Number(accuracy||0));
+      document.getElementById("accuracyMeter").style.width=Math.max(8,Math.min(100,100-(value/2)))+"%";
+      document.getElementById("permissionBadge").textContent="±"+Math.round(value)+"m";
+      document.getElementById("locationDesc").textContent="GPS를 재측정하고 있습니다. 현재 가장 좋은 정확도는 ±"+Math.round(value)+"m입니다.";
+    }
+
+    function getBestPosition(){
+      return new Promise(function(resolve,reject){
+        if(!navigator.geolocation){reject(Object.assign(new Error("이 기기는 위치 기능을 지원하지 않습니다."),{code:"UNSUPPORTED"}));return}
+        let best=null,lastError=null,finished=false,watchId=null;
+        const finish=function(){
+          if(finished)return;finished=true;
+          if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+          clearTimeout(timer);
+          if(best)resolve(best);else reject(lastError||new Error("위치 정보를 가져오지 못했습니다."));
+        };
+        const timer=setTimeout(finish,GPS_SAMPLE_WINDOW_MS);
+        watchId=navigator.geolocation.watchPosition(function(position){
+          const accuracy=Number(position&&position.coords&&position.coords.accuracy||Infinity);
+          if(!best||accuracy<Number(best.coords.accuracy||Infinity)){best=position;updateAccuracyDisplay(accuracy)}
+          if(accuracy<=GPS_EARLY_ACCURACY_M)finish();
+        },function(error){lastError=error;if(!best&&error&&error.code===1)finish()},{enableHighAccuracy:true,timeout:GPS_SAMPLE_WINDOW_MS,maximumAge:0});
+      });
+    }
+
     async function submitAttendance(){
       if(busy||!session)return;
-      busy=true;document.getElementById("attendanceBtn").disabled=true;AttendanceApp.UI.loading("위치 확인 중입니다","해강중학교 반경 100m 여부를 확인합니다.");
+      busy=true;document.getElementById("attendanceBtn").disabled=true;AttendanceApp.UI.loading("위치 확인 중입니다","최대 12초 동안 가장 정확한 GPS 위치를 찾습니다.");
       try{
-        const position=await StudentAttendance.getPosition(),coords=position.coords;
+        const position=await getBestPosition(),coords=position.coords;
         const accuracy=Math.round(Number(coords.accuracy||0));
-        document.getElementById("accuracyMeter").style.width=Math.max(8,Math.min(100,100-accuracy))+"%";
+        updateAccuracyDisplay(accuracy);
         const response=await StudentAttendance.api("studentAttendanceJsonp",{
           studentToken:session.token,
           latitude:String(coords.latitude),
@@ -83,11 +110,15 @@
           if(response&&response.code==="GPS_OUTSIDE"){
             showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||100))+"m");return
           }
+          if(response&&response.code==="GPS_ACCURACY_LOW"){
+            const measured=Math.round(Number(response.accuracyM||accuracy||0)),maximum=Math.round(Number(response.maxAccuracyM||200));
+            showResult(false,"GPS 정확도가 부족합니다.","현재 위치 정확도 ±"+measured+"m · 허용 최대 ±"+maximum+"m입니다. Wi-Fi와 정확한 위치를 켜고 창가 또는 운동장에서 다시 시도하세요.");return
+          }
           if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");
           if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();location.replace("/student/login/");return}
           throw new Error(response&&response.message||"출석 인증에 실패했습니다.");
         }
-        showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+accuracy+"m");
+        showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");
       }catch(error){
         if(error&&typeof error.code==="number"){StudentAttendance.goGpsError(error);return}
         showResult(false,"출석 인증 실패",error.message||String(error));
