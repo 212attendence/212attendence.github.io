@@ -1,18 +1,24 @@
 {
-  "id": "/admin/",
+  "id": "/admin-pwa-v1",
   "name": "2-12 관리자",
-  "short_name": "관리자",
-  "description": "관리자 출석 대시보드",
+  "short_name": "출석 관리자",
+  "description": "2학년 12반 관리자 출석 대시보드",
   "lang": "ko-KR",
-  "start_url": "/admin/login/?v=21&next=/admin/dashboard/",
-  "scope": "/admin/",
+  "start_url": "/admin/login/?source=admin-pwa&next=/admin/dashboard/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#f7f7f4",
-  "theme_color": "#f7f7f4",
+  "theme_color": "#3d443e",
   "orientation": "any",
-  "icons": [{"src":"/favicon.png?v=21","sizes":"300x300","type":"image/png","purpose":"any maskable"}],
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    {"src":"/favicon.png?v=24","sizes":"300x300","type":"image/png","purpose":"any"},
+    {"src":"/favicon.png?v=24","sizes":"300x300","type":"image/png","purpose":"maskable"}
+  ],
   "shortcuts": [
-    {"name":"관리자 대시보드","url":"/admin/dashboard/","icons":[{"src":"/favicon.png?v=21","sizes":"300x300","type":"image/png"}]},
-    {"name":"관리자 도움말","url":"/admin/help/","icons":[{"src":"/favicon.png?v=21","sizes":"300x300","type":"image/png"}]}
+    {"name":"관리자 대시보드","short_name":"대시보드","url":"/admin/dashboard/","icons":[{"src":"/favicon.png?v=24","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생계정 관리","short_name":"학생계정","url":"/accounts-s/","icons":[{"src":"/favicon.png?v=24","sizes":"300x300","type":"image/png"}]},
+    {"name":"관리자 도움말","short_name":"도움말","url":"/admin/help/","icons":[{"src":"/favicon.png?v=24","sizes":"300x300","type":"image/png"}]}
   ]
 }
