@@ -302,7 +302,7 @@
     await registerServiceWorker();
     showInstallAssistant();
     await maybeShowPermissionOnboarding();
-    if (Notification.permission === "granted") registerPushToken();
+    if ("Notification" in window && Notification.permission === "granted") registerPushToken();
     setTimeout(function () { dispatchResume("startup"); }, 900);
   });
 
