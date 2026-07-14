@@ -1,5 +1,6 @@
 name: One-time attendance v24 fixes
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/attendance-v24-fixes.yml'
@@ -17,13 +18,10 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          import re
 
           def save(path, text):
               Path(path).write_text(text, encoding='utf-8')
 
-          # Secure login supports migrated password schemes and temporarily falls back
-          # only when the new Apps Script server has not yet been deployed.
           p=Path('assets/role-app.js')
           text=p.read_text(encoding='utf-8')
           old='''  async function secureAdminLogin(adminId, adminPassword) {
@@ -56,7 +54,6 @@ jobs:
       AttendanceApp.addClientParams(params);
       return AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, params), { timeoutMs: 25000 });
     } catch (error) {
-      // V5 서버 배포 전의 임시 호환 경로입니다. V5 배포 후에는 사용되지 않습니다.
       const legacy = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: String(adminId || ""), adminPw: String(adminPassword || "") });
       AttendanceApp.addClientParams(legacy);
       const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(API_URL, legacy), { timeoutMs: 25000 });
@@ -69,14 +66,12 @@ jobs:
               text=text.replace(old,new,1)
           save(p,text)
 
-          # Dashboard: Thursday 15:55, other weekdays 15:00.
           p=Path('admin/dashboard/index.html')
           text=p.read_text(encoding='utf-8')
           text=text.replace('function applyCutoff(c){const afterFour=new Date().getHours()>=16,known=c.present+c.late+c.absent+c.notYet;c.total=Math.max(c.total,known);const remainder=Math.max(0,c.total-known);if(afterFour){c.absent+=c.notYet+remainder;c.notYet=0}else{c.notYet+=c.absent+remainder;c.absent=0}return{...c,afterFour:afterFour}}', 'function applyCutoff(c){const now=new Date(),cutoff=now.getDay()===4?15*60+55:15*60,afterCutoff=now.getHours()*60+now.getMinutes()>=cutoff,known=c.present+c.late+c.absent+c.notYet;c.total=Math.max(c.total,known);const remainder=Math.max(0,c.total-known);if(afterCutoff){c.absent+=c.notYet+remainder;c.notYet=0}else{c.notYet+=c.absent+remainder;c.absent=0}return{...c,afterFour:afterCutoff,cutoffText:now.getDay()===4?"오후 3시 55분":"오후 3시"}}',1)
           text=text.replace('document.getElementById("progressSub").textContent=c.afterFour?"오후 4시 이후 미출석 인원은 결석으로 표시":"오후 4시 전 미확인 인원은 미출석으로 표시";', 'document.getElementById("progressSub").textContent=c.afterFour?c.cutoffText+" 이후 미확인 인원은 결석으로 표시":c.cutoffText+" 전 미확인 인원은 미출석으로 표시";',1)
           save(p,text)
 
-          # Attendance rate page uses the same weekday rule and wording.
           p=Path('admin/attendance-rate/index.html')
           text=p.read_text(encoding='utf-8')
           text=text.replace('오후 4시 이후 표시','기준 시각 이후 표시').replace('오후 4시 전까지 표시','기준 시각 전까지 표시')
@@ -85,7 +80,6 @@ jobs:
           text=text.replace('document.getElementById("cutoffText").textContent=c.afterFour?"오후 4시 이후 · 미확인 인원은 결석으로 표시":"오후 4시 전 · 미확인 인원은 미출석으로 표시";', 'document.getElementById("cutoffText").textContent=c.afterFour?c.cutoffText+" 이후 · 미확인 인원은 결석으로 표시":c.cutoffText+" 전 · 미확인 인원은 미출석으로 표시";',1)
           save(p,text)
 
-          # Student screen handles holiday/vacation response clearly.
           p=Path('student/identity/index.html')
           text=p.read_text(encoding='utf-8')
           needle='''          if(response&&response.code==="GPS_ACCURACY_LOW"){
@@ -94,13 +88,12 @@ jobs:
             showResult(false,"GPS 정확도가 부족합니다.","현재 위치 정확도 ±"+measured+"m · 허용 최대 ±"+maximum+"m입니다. Wi-Fi와 정확한 위치를 켜고 창가 또는 운동장에서 다시 시도하세요.");return
           }
 '''
-          replacement=needle+'''          if(response&&response.code==="SCHOOL_CLOSED"){
+          if needle in text and 'response.code==="SCHOOL_CLOSED"' not in text:
+              text=text.replace(needle,needle+'''          if(response&&response.code==="SCHOOL_CLOSED"){
             localStorage.setItem("studentAutoAttendanceDate",todayKey());
             showResult(false,"오늘은 출석 인증일이 아닙니다.",response.message||"방학·주말·공휴일 또는 학교 휴업일입니다.");return
           }
-'''
-          if needle in text and 'response.code==="SCHOOL_CLOSED"' not in text:
-              text=text.replace(needle,replacement,1)
+''',1)
           save(p,text)
           PY
       - name: Commit fixes
