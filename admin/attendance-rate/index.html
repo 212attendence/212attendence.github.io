@@ -14,8 +14,8 @@
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=21">
-  <script src="../assets/app.js?v=21" defer></script>
-  <script src="/assets/role-app.js?v=24" defer></script>
+  <script src="../assets/app.js?v=25" defer></script>
+  <script src="/assets/role-app.js?v=25" defer></script>
   <style>
     :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--gray:#8a8d86;--glass:rgba(255,255,252,.82);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.11)}
     html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--gray:#aaa9a1;--glass:rgba(34,35,33,.82);--glow-a:rgba(119,196,149,.08);--glow-b:rgba(132,179,205,.07)}
@@ -128,15 +128,19 @@
       if(showLoading)AttendanceApp.UI.loading("출석률 계산 중입니다","오늘 출석 데이터를 불러옵니다.");
       const p=new URLSearchParams({action:"todayLogs"});AttendanceApp.Session.addAuthParams(p);
       try{
-        const r=await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,p));
+        p.set("_ts",String(Date.now()));
+        const dateParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),dateMap={};dateParts.forEach(x=>dateMap[x.type]=x.value);const dateKey=dateMap.year+"-"+dateMap.month+"-"+dateMap.day;
+        const rawParams=new URLSearchParams({action:"logsByDate",date:dateKey,_ts:String(Date.now())});AttendanceApp.Session.addAuthParams(rawParams);
+        const results=await Promise.all([AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,p)),AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL,rawParams)).catch(function(){return null})]),r=results[0],raw=results[1];
         if(!r||!r.ok){
           if(AttendanceApp.Session.isUnauthorizedResponse(r)){AttendanceApp.Session.clear();location.replace("/admin/login/?next=/admin/attendance-rate/");return}
           throw new Error(r&&r.message||"출석 데이터를 불러오지 못했습니다.");
         }
-        const logs=r.logs||[],summary=r.summary||{},registered=registeredStudentCount(r,summary);
-        if(registered===0&&!logs.length){location.replace("/admin/no-student-added/");return}
-        saveSnapshot(r,registered);
-        render(applyCutoff(rawCounts(logs,summary,r)));
+        const base=Array.isArray(r.logs)?r.logs.slice():[],byFinger={};base.forEach(function(row,i){const key=String(row.fingerId||row.지문ID||"");if(key)byFinger[key]=i});if(raw&&raw.ok&&Array.isArray(raw.logs))raw.logs.filter(function(row){const s=String(row.status||row.상태||"");return s.includes("지각")||(s.includes("출석")&&!s.includes("미출석"))}).forEach(function(row){const key=String(row.fingerId||row.지문ID||"");if(!key)return;const item={time:row.time||row.시간||"-",status:row.status||row.상태||"출석",fingerId:key,name:row.name||row.이름||"-"};if(byFinger[key]===undefined){byFinger[key]=base.length;base.push(item)}else{const cur=base[byFinger[key]],s=String(cur.status||"");if(!s.includes("출석")&&!s.includes("지각"))base[byFinger[key]]=Object.assign({},cur,item)}});
+        const unique={};base.forEach(function(row){const key=String(row.fingerId||"");if(key)unique[key]=true});const registered=Math.max(registeredStudentCount(r,r.summary||{})||0,Object.keys(unique).length),merged=Object.assign({},r,{logs:base,summary:{},registeredStudentCount:registered,studentCount:registered});
+        if(registered===0&&!base.length){location.replace("/admin/no-student-added/");return}
+        saveSnapshot(merged,registered);
+        render(applyCutoff(rawCounts(base,{},merged)));
         if(showToast)AttendanceApp.UI.toast("새로고침 완료");
       }catch(e){AttendanceApp.UI.toast(e.message||String(e))}
       finally{if(showLoading)AttendanceApp.UI.stopLoading()}
