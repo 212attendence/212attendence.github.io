@@ -623,17 +623,46 @@ function studentGetSetting_(key, fallback) {
   return fallback;
 }
 
+function studentNormalizeSheetName_(value) {
+  return String(value || '').replace(/\s+/g, '').trim().toLowerCase();
+}
+
+function studentFindSheet_(ss, name) {
+  var direct = ss.getSheetByName(name);
+  if (direct) return direct;
+  var target = studentNormalizeSheetName_(name);
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (studentNormalizeSheetName_(sheets[i].getName()) === target) return sheets[i];
+  }
+  return null;
+}
+
 function studentSetSetting_(key, value) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('설정') || ss.insertSheet('설정');
-  var values = sheet.getLastRow() ? sheet.getRange(1, 1, sheet.getLastRow(), Math.max(2, sheet.getLastColumn())).getValues() : [];
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][0] || '').trim() === key) {
-      sheet.getRange(i + 1, 2).setValue(value);
-      return;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = studentFindSheet_(ss, '설정');
+    if (!sheet) {
+      try {
+        sheet = ss.insertSheet('설정');
+      } catch (error) {
+        sheet = studentFindSheet_(ss, '설정');
+        if (!sheet) throw error;
+      }
     }
+    var values = sheet.getLastRow() ? sheet.getRange(1, 1, sheet.getLastRow(), Math.max(2, sheet.getLastColumn())).getValues() : [];
+    for (var i = 0; i < values.length; i++) {
+      if (String(values[i][0] || '').trim() === key) {
+        sheet.getRange(i + 1, 2).setValue(value);
+        return;
+      }
+    }
+    sheet.appendRow([key, value]);
+  } finally {
+    lock.releaseLock();
   }
-  sheet.appendRow([key, value]);
 }
 
 function studentEnsureSetting_(key, value) {
@@ -642,9 +671,23 @@ function studentEnsureSetting_(key, value) {
 }
 
 function studentEnsureSheet_(ss, name, headers) {
-  var sheet = ss.getSheetByName(name) || ss.insertSheet(name);
-  if (sheet.getLastRow() === 0) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  return sheet;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = studentFindSheet_(ss, name);
+    if (!sheet) {
+      try {
+        sheet = ss.insertSheet(name);
+      } catch (error) {
+        sheet = studentFindSheet_(ss, name);
+        if (!sheet) throw error;
+      }
+    }
+    if (sheet.getLastRow() === 0) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return sheet;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function studentSheet_(name) {
