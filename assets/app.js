@@ -312,6 +312,65 @@
 
   function apiUrl(base, params) { return base + "?" + params.toString(); }
 
+
+  const Navigation = {
+    key: "attendanceInternalNavigationV1",
+    ttlMs: 5 * 60 * 1000,
+    bound: false,
+
+    normalize(value) {
+      try {
+        const url = new URL(value || location.href, location.origin);
+        return (url.pathname.replace(/\/+$/, "") || "/");
+      } catch (error) {
+        return String(value || "/").replace(/[?#].*$/, "").replace(/\/+$/, "") || "/";
+      }
+    },
+
+    mark(target) {
+      try {
+        const url = new URL(target, location.href);
+        if (url.origin !== location.origin) return false;
+        safeStorage(sessionStorage, "set", this.key, JSON.stringify({
+          from: this.normalize(location.href),
+          to: this.normalize(url.href),
+          at: Date.now()
+        }));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
+
+    isFastEntry() {
+      try {
+        const entries = performance.getEntriesByType && performance.getEntriesByType("navigation");
+        if (entries && entries[0] && entries[0].type === "back_forward") return true;
+      } catch (error) {}
+      try {
+        const record = JSON.parse(safeStorage(sessionStorage, "get", this.key) || "null");
+        if (!record || Date.now() - Number(record.at || 0) > this.ttlMs) return false;
+        return this.normalize(record.to) === this.normalize(location.href);
+      } catch (error) {
+        return false;
+      }
+    },
+
+    bind() {
+      if (this.bound) return;
+      this.bound = true;
+      const self = this;
+      document.addEventListener("click", function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const link = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+        if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+        const href = link.getAttribute("href") || "";
+        if (!href || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+        self.mark(link.href);
+      }, true);
+    }
+  };
+
   const AdminStudentNotifications = {
     pollTimer: null,
     button: null,
@@ -437,7 +496,7 @@
   }
 
   window.AttendanceApp = {
-    version: "13.0.0",
+    version: "14.0.0",
     Session: Session,
     Passkey: Passkey,
     Theme: Theme,
@@ -447,10 +506,12 @@
     bytesToBase64Url: bytesToBase64Url,
     addClientParams: addClientParams,
     apiUrl: apiUrl,
+    Navigation: Navigation,
     AdminStudentNotifications: AdminStudentNotifications
   };
 
   document.addEventListener("DOMContentLoaded", function () {
+    Navigation.bind();
     AdminStudentNotifications.init();
   });
 })(window);

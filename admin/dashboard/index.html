@@ -17,8 +17,8 @@
   <link rel="dns-prefetch" href="https://unpkg.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=21">
-  <script src="../assets/app.js?v=26" defer></script>
-  <script src="/assets/role-app.js?v=26" defer></script>
+  <script src="../assets/app.js?v=30" defer></script>
+  <script src="/assets/role-app.js?v=30" defer></script>
   <style>
     :root{--green:#277a4d;--orange:#ad661f;--red:#b6423a;--blue:#3a647c;--glass:rgba(255,255,252,.78);--glow-a:rgba(39,122,77,.14);--glow-b:rgba(58,100,124,.12);--glow-c:rgba(173,102,31,.09)}
     html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--blue:#84b3cd;--glass:rgba(34,35,33,.78);--glow-a:rgba(119,196,149,.09);--glow-b:rgba(132,179,205,.08);--glow-c:rgba(221,161,100,.07)}
@@ -72,8 +72,23 @@
       renderPasskeySetting();
       document.addEventListener("keydown",function(event){if(event.key==="F1"){event.preventDefault();location.href="/admin/help/"}});
 
-      isInternalReturn();
-      renderCachedDashboard(readSnapshot());
+      const fastEntry=(AttendanceApp.Navigation&&AttendanceApp.Navigation.isFastEntry())||isInternalReturn();
+      const cached=readSnapshot();
+      if(cached)renderCachedDashboard(cached);
+
+      if(fastEntry){
+        initialLoad=false;
+        document.body.classList.remove("dashboard-booting");
+        AttendanceApp.UI.stopLoading();
+        if(cached)animateProgress(pendingRate);
+        Promise.allSettled([
+          loadTodayLogs(false,false),
+          checkServerCompatibility(),
+          startDeviceServices()
+        ]).then(function(){animateProgress(pendingRate)});
+        return;
+      }
+
       initialLoad=true;
       AttendanceApp.UI.loading("대시보드를 한 번에 불러오는 중입니다","출석 로그, 서버 상태와 실시간 연결을 동시에 확인합니다.");
       try{
@@ -112,7 +127,7 @@
     function ensureMqttLibrary(){if(window.mqtt)return Promise.resolve(window.mqtt);if(mqttLoadPromise)return mqttLoadPromise;mqttLoadPromise=new Promise(function(resolve,reject){const script=document.createElement("script");const timer=setTimeout(function(){script.remove();reject(new Error("MQTT 라이브러리 로딩 시간 초과"))},12000);script.src="https://unpkg.com/mqtt/dist/mqtt.min.js";script.async=true;script.onload=function(){clearTimeout(timer);window.mqtt?resolve(window.mqtt):reject(new Error("MQTT 라이브러리를 불러오지 못했습니다."))};script.onerror=function(){clearTimeout(timer);reject(new Error("MQTT 라이브러리를 불러오지 못했습니다."))};document.head.appendChild(script)});return mqttLoadPromise}
 
     function isInternalReturn(){const params=new URLSearchParams(location.search),flagged=sessionStorage.getItem("dashboardFastReturn")==="1"||params.get("resume")==="1";sessionStorage.removeItem("dashboardFastReturn");if(flagged)return true;try{const ref=new URL(document.referrer);return ref.origin===location.origin&&!ref.pathname.includes("/admin/login/")&&!ref.pathname.includes("/admin/dashboard/")}catch(e){return false}}
-    function openAttendanceRate(){sessionStorage.setItem("dashboardFastReturn","1");location.href="/admin/attendance-rate/"}
+    function openAttendanceRate(){sessionStorage.setItem("dashboardFastReturn","1");sessionStorage.setItem("attendanceReturnToDashboard","1");if(AttendanceApp.Navigation)AttendanceApp.Navigation.mark("/admin/attendance-rate/");location.href="/admin/attendance-rate/"}
     function switchTheme(mode){const apply=function(){AttendanceApp.Theme.apply(mode)};if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){apply();return}const root=document.documentElement;root.classList.add("theme-transition");if(document.startViewTransition){const transition=document.startViewTransition(apply);transition.finished.finally(function(){root.classList.remove("theme-transition")})}else{void root.offsetWidth;requestAnimationFrame(function(){apply();setTimeout(function(){root.classList.remove("theme-transition")},320)})}}
     function logout(){disconnectMqtt();AttendanceApp.Session.clear();location.replace("/admin/login/")}
     function hasLocalPasskey(){return AttendanceApp.Passkey.isRegistered()}
