@@ -352,14 +352,13 @@
 
       const overlay = document.createElement("div");
       overlay.className = "student-request-overlay";
-      overlay.innerHTML = '<section class="student-request-modal"><header class="student-request-head"><div><h2>학생 로그인 알림</h2><div style="margin-top:4px;color:var(--muted);font-size:12px;font-weight:650">승인된 기기는 만료 없이 로그인됩니다.</div></div><button class="btn btn-soft" type="button" data-close>닫기</button></header><div class="student-request-body"><div class="student-request-status">학생 로그인 요청을 확인하는 중입니다.</div><div class="student-request-list"></div><div class="student-school-config"><h3>해강중학교 위치 기준</h3><p>학교 안에서 현재 위치를 저장하면 학생 출석 허용 반경을 100m로 설정합니다.</p><button class="btn btn-soft btn-block" type="button" data-location>현재 위치를 학교 중심으로 저장</button></div></div></section>';
+      overlay.innerHTML = '<section class="student-request-modal"><header class="student-request-head"><div><h2>학생 로그인 알림</h2><div style="margin-top:4px;color:var(--muted);font-size:12px;font-weight:650">승인된 기기는 만료 없이 로그인됩니다.</div></div><button class="btn btn-soft" type="button" data-close>닫기</button></header><div class="student-request-body"><div class="student-request-status">학생 로그인 요청을 확인하는 중입니다.</div><div class="student-request-list"></div><div class="student-school-config"><h3>해강중학교 출석 범위</h3><p><strong>35°09&#39;50.70&quot;N 129°08&#39;08.69&quot;E</strong>를 중심으로 반경 <strong>100m</strong>가 서버에서 자동 적용됩니다. 별도 위치 설정은 필요하지 않습니다.</p></div></div></section>';
       document.body.appendChild(overlay);
       this.modal = overlay;
       this.status = overlay.querySelector(".student-request-status");
       this.list = overlay.querySelector(".student-request-list");
       overlay.querySelector("[data-close]").addEventListener("click", this.close.bind(this));
       overlay.addEventListener("click", function (event) { if (event.target === overlay) overlay.classList.remove("show"); });
-      overlay.querySelector("[data-location]").addEventListener("click", this.saveSchoolLocation.bind(this));
     },
 
     open() {
@@ -402,7 +401,7 @@
 
     render(requests, school) {
       this.status.textContent = requests.length ? requests.length + "개의 승인 요청이 있습니다." : "대기 중인 학생 로그인 요청이 없습니다.";
-      if (school && school.configured) this.status.textContent += " · 학교 반경 " + Number(school.radiusM || 10) + "m 설정 완료";
+      if (school && school.configured) this.status.textContent += " · 학교 반경 " + Number(school.radiusM || 100) + "m 설정 완료";
       this.list.innerHTML = requests.map(function (request) {
         return '<article class="student-request-card"><strong>' + UI.escapeHtml(request.name || request.studentId || "학생") + '</strong><div class="student-request-meta">학생 ID ' + UI.escapeHtml(request.studentId || "-") + ' · 지문ID ' + UI.escapeHtml(request.fingerId || "-") + '<br>' + UI.escapeHtml(request.deviceName || "기기 정보 없음") + ' · ' + UI.escapeHtml(formatRequestTime(request.createdAt)) + '</div><div class="student-request-actions"><button class="btn btn-primary" type="button" data-decision="APPROVED" data-id="' + UI.escapeHtml(request.requestId) + '">로그인 허용</button><button class="btn btn-danger" type="button" data-decision="DENIED" data-id="' + UI.escapeHtml(request.requestId) + '">거절</button></div></article>';
       }).join("") || '<div style="padding:22px;text-align:center;color:var(--muted);font-size:13px;font-weight:700">새 요청이 도착하면 이곳에 표시됩니다.</div>';
@@ -426,28 +425,6 @@
       }
     },
 
-    saveSchoolLocation() {
-      const self = this;
-      if (!navigator.geolocation) { UI.toast("이 기기는 위치 기능을 지원하지 않습니다."); return; }
-      UI.loading("학교 위치 확인 중입니다", "현재 위치를 해강중학교 중심으로 저장합니다.");
-      navigator.geolocation.getCurrentPosition(async function (position) {
-        try {
-          const result = await jsonp(apiUrl(STUDENT_API_BASE, self.adminParams("adminSaveSchoolLocationJsonp", {
-            latitude: String(position.coords.latitude),
-            longitude: String(position.coords.longitude),
-            radiusM: "100",
-            schoolName: "해강중학교"
-          })), { timeoutMs: 25000 });
-          if (!result || !result.ok) throw new Error(result && result.message || "학교 위치를 저장하지 못했습니다.");
-          UI.toast("해강중학교 위치와 반경 100m를 저장했습니다.", 4200);
-          self.refresh(false);
-        } catch (error) { UI.toast(error.message || String(error), 4200); }
-        finally { UI.stopLoading(); }
-      }, function () {
-        UI.stopLoading();
-        UI.toast("관리자 기기의 위치 권한과 정확한 위치를 허용하세요.", 4200);
-      }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
-    }
   };
 
   function formatRequestTime(value) {

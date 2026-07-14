@@ -16,6 +16,12 @@ var STUDENT_ATTENDANCE_SHEET = '학생출석로그';
 var STUDENT_REQUEST_TTL_MS = 10 * 60 * 1000;
 var STUDENT_APPROVAL_TOKEN_TTL_SEC = 10 * 60;
 
+// 고정 출석 기준: 35°09'50.70\"N 129°08'08.69\"E 중심 반경 100m
+var STUDENT_SCHOOL_NAME = '해강중학교';
+var STUDENT_SCHOOL_LAT = 35.16408333333333;
+var STUDENT_SCHOOL_LNG = 129.13574722222222;
+var STUDENT_SCHOOL_RADIUS_M = 100;
+
 var STUDENT_ACCOUNT_HEADERS = [
   'createdAt', 'studentId', 'initialPassword', 'passwordHash', 'name', 'fingerId', 'active', 'memo', 'updatedAt'
 ];
@@ -59,10 +65,11 @@ function setupStudentAuth_() {
   studentEnsureSheet_(ss, STUDENT_REQUEST_SHEET, STUDENT_REQUEST_HEADERS);
   studentEnsureSheet_(ss, STUDENT_SESSION_SHEET, STUDENT_SESSION_HEADERS);
   studentEnsureSheet_(ss, STUDENT_ATTENDANCE_SHEET, STUDENT_ATTENDANCE_HEADERS);
-  studentSetSetting_('schoolName', '해강중학교');
-  studentSetSetting_('schoolRadiusM', '100');
-  studentSetSetting_('schoolLat', '35.16408333333333');
-  studentSetSetting_('schoolLng', '129.13574722222222');
+  // 설정 시트에는 참고값만 기록하며 실제 판정은 아래 고정 상수를 사용합니다.
+  studentSetSetting_('schoolName', STUDENT_SCHOOL_NAME);
+  studentSetSetting_('schoolRadiusM', String(STUDENT_SCHOOL_RADIUS_M));
+  studentSetSetting_('schoolLat', String(STUDENT_SCHOOL_LAT));
+  studentSetSetting_('schoolLng', String(STUDENT_SCHOOL_LNG));
   studentGetSalt_();
   return true;
 }
@@ -276,15 +283,16 @@ function adminDecideStudentRequestJsonp_(e) {
 function adminSaveSchoolLocationJsonp_(e) {
   setupStudentAuth_();
   studentRequireAdmin_(e);
-  var p = e && e.parameter || {};
-  var lat = Number(p.latitude), lng = Number(p.longitude), radius = Number(p.radiusM || 100);
-  if (!isFinite(lat) || !isFinite(lng)) return studentFail_('GPS_INVALID', '학교 기준 위치가 올바르지 않습니다.');
-  radius = Math.max(1, Math.min(500, radius));
-  studentSetSetting_('schoolName', String(p.schoolName || '해강중학교'));
-  studentSetSetting_('schoolLat', String(lat));
-  studentSetSetting_('schoolLng', String(lng));
-  studentSetSetting_('schoolRadiusM', String(radius));
-  return { ok: true, schoolName: String(p.schoolName || '해강중학교'), radiusM: radius };
+  // 호환성을 위해 엔드포인트는 유지하지만 사용자 좌표는 받지 않습니다.
+  return {
+    ok: true,
+    fixed: true,
+    schoolName: STUDENT_SCHOOL_NAME,
+    latitude: STUDENT_SCHOOL_LAT,
+    longitude: STUDENT_SCHOOL_LNG,
+    radiusM: STUDENT_SCHOOL_RADIUS_M,
+    message: '학교 위치는 지정 좌표 중심 반경 100m로 자동 적용됩니다.'
+  };
 }
 
 function studentRequireAdmin_(e) {
@@ -364,15 +372,14 @@ function studentGetSalt_() {
 }
 
 function studentLocationConfig_() {
-  var lat = Number(studentGetSetting_('schoolLat', ''));
-  var lng = Number(studentGetSetting_('schoolLng', ''));
-  var radius = Number(studentGetSetting_('schoolRadiusM', '100')) || 100;
+  // 설정 시트 값과 무관하게 항상 지정 좌표와 반경을 사용합니다.
   return {
-    schoolName: studentGetSetting_('schoolName', '해강중학교'),
-    lat: lat,
-    lng: lng,
-    radiusM: Math.max(1, Math.min(500, radius)),
-    configured: isFinite(lat) && isFinite(lng) && Math.abs(lat) > 0.1 && Math.abs(lng) > 0.1
+    schoolName: STUDENT_SCHOOL_NAME,
+    lat: STUDENT_SCHOOL_LAT,
+    lng: STUDENT_SCHOOL_LNG,
+    radiusM: STUDENT_SCHOOL_RADIUS_M,
+    configured: true,
+    fixed: true
   };
 }
 
