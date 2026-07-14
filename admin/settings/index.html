@@ -17,12 +17,13 @@
   <link rel="preconnect" href="https://script.googleusercontent.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="/assets/app.css?v=25">
-  <script src="/assets/app.js?v=25" defer></script>
-  <script src="/assets/role-app.js?v=25" defer></script>
+  <script src="/assets/app.js?v=27" defer></script>
+  <script src="/assets/role-app.js?v=27" defer></script>
   <style>
     :root{--green:#277a4d;--blue:#315f84;--orange:#ad661f;--glass:rgba(255,255,252,.82)}
     html[data-theme="dark"]{--green:#77c495;--blue:#8ab6d8;--orange:#dda164;--glass:rgba(34,35,33,.82)}
     body{background:var(--bg);overflow-x:hidden}
+    body.settings-booting .app{visibility:hidden;opacity:0}body .app{transition:opacity .18s ease}
     body::before,body::after{content:"";position:fixed;z-index:-2;width:34rem;height:34rem;border-radius:50%;filter:blur(82px);pointer-events:none}
     body::before{left:-14rem;top:-15rem;background:color-mix(in srgb,var(--blue) 12%,transparent)}
     body::after{right:-15rem;bottom:-17rem;background:color-mix(in srgb,var(--green) 10%,transparent)}
@@ -43,7 +44,7 @@
     @media(max-width:620px){.app{padding:12px}.topbar-inner{align-items:flex-start;flex-direction:column}.topbar-inner .btn{width:100%}.action-row{align-items:stretch;flex-direction:column}.action-row .btn{width:100%}.footer-actions{grid-template-columns:1fr}}
   </style>
 </head>
-<body>
+<body class="settings-booting">
   <main class="app">
     <section class="topbar"><div class="topbar-inner"><div class="title"><h1>관리자 설정</h1><p>로그인, 알림, 앱 설치와 화면 설정을 관리합니다.</p></div><a class="btn btn-soft" href="/admin/dashboard/?resume=1">대시보드로 돌아가기</a></div></section>
 
@@ -93,11 +94,20 @@
   <script>
     const APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
 
-    document.addEventListener("DOMContentLoaded",function(){
+    document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
       if(!AttendanceApp.Session.require("/admin/login/","/admin/settings/"))return;
-      renderPasskey();
-      checkServer();
+      AttendanceApp.UI.loading("관리자 설정을 불러오는 중입니다","패스키, 권한과 서버 상태를 동시에 확인합니다.");
+      try{
+        await Promise.allSettled([
+          Promise.resolve().then(renderPasskey),
+          inspectPermissions(),
+          checkServer()
+        ]);
+      }finally{
+        document.body.classList.remove("settings-booting");
+        AttendanceApp.UI.stopLoading();
+      }
     });
 
     function setTheme(mode){AttendanceApp.Theme.apply(mode);AttendanceApp.UI.toast("화면 모드를 변경했습니다.")}
@@ -137,6 +147,19 @@
       else location.href="/admin/choose-login-method/";
     }
 
+    async function inspectPermissions(){
+      const box=document.getElementById("permissionStatus");
+      const notification=("Notification" in window)?Notification.permission:"지원 안 됨";
+      let locationState=navigator.geolocation?"확인 필요":"지원 안 됨";
+      if(navigator.permissions&&navigator.permissions.query&&navigator.geolocation){
+        try{const result=await navigator.permissions.query({name:"geolocation"});locationState=result.state||"확인 필요"}catch(error){}
+      }
+      const notificationOk=notification==="granted",locationOk=locationState==="granted";
+      box.className="status-box show "+(notificationOk&&locationOk?"ok":"warn");
+      box.textContent="알림 "+notification+" · 위치 "+locationState;
+      return{notification:notification,location:locationState};
+    }
+
     async function configurePermissions(){
       const box=document.getElementById("permissionStatus");
       try{
@@ -145,9 +168,7 @@
           await AttendanceRoleApp.requestCombinedPermissions();
           await AttendanceRoleApp.registerPushToken();
         }
-        const notification=("Notification" in window)?Notification.permission:"지원 안 됨";
-        box.className="status-box show "+(notification==="granted"?"ok":"warn");
-        box.textContent=notification==="granted"?"알림 권한이 허용됐고 관리자 기기 등록을 요청했습니다.":"알림 권한 상태: "+notification+". 브라우저 사이트 설정도 확인하세요.";
+        await inspectPermissions();
       }catch(error){box.className="status-box show warn";box.textContent=error.message||String(error)}finally{AttendanceApp.UI.stopLoading()}
     }
 

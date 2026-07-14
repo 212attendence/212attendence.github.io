@@ -24,7 +24,7 @@
     html[data-theme="dark"]{--green:#77c495;--orange:#dda164;--red:#e47e76;--blue:#84b3cd;--glass:rgba(34,35,33,.78);--glow-a:rgba(119,196,149,.09);--glow-b:rgba(132,179,205,.08);--glow-c:rgba(221,161,100,.07)}
     ::view-transition-old(root),::view-transition-new(root){animation-duration:.3s;animation-timing-function:ease}::view-transition-old(root){animation-name:theme-out}::view-transition-new(root){animation-name:theme-in}@keyframes theme-out{to{opacity:.72}}@keyframes theme-in{from{opacity:.72}}
     html.theme-transition,html.theme-transition body,html.theme-transition body::before,html.theme-transition body::after,html.theme-transition .ambient-bottom,html.theme-transition .topbar-inner,html.theme-transition .summary-card,html.theme-transition .panel,html.theme-transition .device-card,html.theme-transition .progress-card,html.theme-transition .btn,html.theme-transition .theme-switch,html.theme-transition .modal,html.theme-transition input{transition:background-color .3s ease,color .3s ease,border-color .3s ease,box-shadow .3s ease,opacity .3s ease,filter .3s ease}
-    body{position:relative;overflow-x:hidden;background:var(--bg)}body::before,body::after{content:"";position:fixed;z-index:-2;pointer-events:none;filter:blur(72px);border-radius:50%}body::before{width:34rem;height:34rem;left:-12rem;top:-13rem;background:var(--glow-a)}body::after{width:33rem;height:33rem;right:-13rem;top:-9rem;background:var(--glow-b)}
+    body{position:relative;overflow-x:hidden;background:var(--bg)}body.dashboard-booting .app{visibility:hidden;opacity:0}body .app{transition:opacity .18s ease}body::before,body::after{content:"";position:fixed;z-index:-2;pointer-events:none;filter:blur(72px);border-radius:50%}body::before{width:34rem;height:34rem;left:-12rem;top:-13rem;background:var(--glow-a)}body::after{width:33rem;height:33rem;right:-13rem;top:-9rem;background:var(--glow-b)}
     .ambient-bottom{position:fixed;z-index:-2;pointer-events:none;width:38rem;height:22rem;left:35%;bottom:-16rem;border-radius:50%;background:var(--glow-c);filter:blur(80px)}.app{width:min(1160px,100%);margin:auto;padding:22px}
     .topbar{position:sticky;top:0;z-index:20;padding:14px 0;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 46%,transparent),transparent);backdrop-filter:blur(18px) saturate(120%);-webkit-backdrop-filter:blur(18px) saturate(120%)}.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--glass) 96%,transparent),color-mix(in srgb,var(--glass) 76%,transparent));box-shadow:0 14px 40px color-mix(in srgb,var(--text) 7%,transparent),inset 0 1px 0 color-mix(in srgb,#fff 58%,transparent);backdrop-filter:blur(24px) saturate(128%);-webkit-backdrop-filter:blur(24px) saturate(128%)}
     .title-wrap{min-width:0}.title-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.title-line h1{font-size:24px}.live-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:color-mix(in srgb,var(--green) 13%,transparent);color:var(--green);font-size:10px;letter-spacing:.06em;font-weight:900}.live-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 11%,transparent);animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.82)}}.sub{margin-top:5px;color:var(--muted);font-size:13px;font-weight:650}
@@ -42,7 +42,7 @@
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
 </head>
-<body>
+<body class="dashboard-booting">
   <div class="ambient-bottom"></div>
   <main class="app">
     <section class="topbar"><div class="topbar-inner"><div class="title-wrap"><div class="title-line"><h1>출석 대시보드</h1><span class="live-pill">LIVE</span></div><div id="todayText" class="sub">2학년 12반 · 오늘 출석 현황</div></div><div class="actions"><div class="theme-switch" aria-label="테마"><button data-theme-choice="system" onclick="switchTheme('system')">자동</button><button data-theme-choice="light" onclick="switchTheme('light')">Light</button><button data-theme-choice="dark" onclick="switchTheme('dark')">Dark</button></div><a class="btn btn-soft accounts" href="/accounts-s/">학생계정 관리</a><a class="btn btn-soft help" href="/admin/help/" title="도움말 · F1">도움말</a><button class="btn btn-soft refresh" onclick="loadTodayLogs(true,false)">새로고침</button><a class="btn btn-soft settings" href="/admin/settings/">설정</a><button class="btn btn-danger logout" onclick="logout()">로그아웃</button></div></div></section>
@@ -68,22 +68,23 @@
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
       if(!AttendanceApp.Session.require("/admin/login/","/admin/dashboard/"))return;
-      checkServerCompatibility();
       document.getElementById("todayText").textContent="2학년 12반 · "+new Date().toLocaleDateString("ko-KR")+" 출석 현황";
       renderPasskeySetting();
       document.addEventListener("keydown",function(event){if(event.key==="F1"){event.preventDefault();location.href="/admin/help/"}});
 
-      const fastReturn=isInternalReturn();
-      const warmStart=renderCachedDashboard(readSnapshot());
-      const showOverlay=!fastReturn&&!warmStart;
-      initialLoad=showOverlay;
-      if(showOverlay)AttendanceApp.UI.loading("대시보드 로딩 중입니다","오늘 출석 현황을 불러옵니다.");else AttendanceApp.UI.stopLoading();
-
-      const attendanceTask=loadTodayLogs(false,showOverlay);
-      scheduleDeviceServices();
-      if(showOverlay){
-        await attendanceTask;
+      isInternalReturn();
+      renderCachedDashboard(readSnapshot());
+      initialLoad=true;
+      AttendanceApp.UI.loading("대시보드를 한 번에 불러오는 중입니다","출석 로그, 서버 상태와 실시간 연결을 동시에 확인합니다.");
+      try{
+        await Promise.allSettled([
+          loadTodayLogs(false,true),
+          checkServerCompatibility(),
+          startDeviceServices()
+        ]);
+      }finally{
         initialLoad=false;
+        document.body.classList.remove("dashboard-booting");
         AttendanceApp.UI.stopLoading();
         animateProgress(pendingRate);
       }
