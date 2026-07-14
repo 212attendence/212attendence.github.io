@@ -88,40 +88,85 @@
     return "prompt";
   }
 
-  function getPosition() {
+  function getPosition(options) {
+    const config = Object.assign({
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
+    }, options || {});
+
     return new Promise(function (resolve, reject) {
       if (!navigator.geolocation) {
         reject(Object.assign(new Error("이 기기는 위치 기능을 지원하지 않습니다."), { code: "UNSUPPORTED" }));
         return;
       }
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 0
-      });
+      navigator.geolocation.getCurrentPosition(resolve, reject, config);
     });
+  }
+
+  async function getPositionWithRetry() {
+    try {
+      return await getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    } catch (error) {
+      if (isPermissionDenied(error) || isUnsupported(error)) throw error;
+      return getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    }
+  }
+
+  function isPermissionDenied(error) {
+    return Boolean(error && Number(error.code) === 1);
+  }
+
+  function isUnsupported(error) {
+    return Boolean(error && error.code === "UNSUPPORTED");
+  }
+
+  function isTransientGpsError(error) {
+    const code = Number(error && error.code);
+    return code === 2 || code === 3;
   }
 
   function gpsErrorReason(error) {
     if (!error) return "unknown";
-    if (error.code === 1) return "denied";
-    if (error.code === 2) return "unavailable";
-    if (error.code === 3) return "timeout";
-    if (error.code === "UNSUPPORTED") return "unsupported";
+    if (isPermissionDenied(error)) return "denied";
+    if (Number(error.code) === 2) return "unavailable";
+    if (Number(error.code) === 3) return "timeout";
+    if (isUnsupported(error)) return "unsupported";
     return "unknown";
   }
 
+  function gpsErrorMessage(error) {
+    if (isPermissionDenied(error)) return "위치 권한이 차단되어 있습니다. 브라우저 또는 기기 설정에서 위치를 허용하세요.";
+    if (Number(error && error.code) === 2) return "위치를 일시적으로 확인하지 못했습니다. 위치 서비스와 Wi-Fi를 확인한 뒤 다시 시도하세요.";
+    if (Number(error && error.code) === 3) return "위치 확인 시간이 초과되었습니다. 잠시 기다린 뒤 다시 시도하세요.";
+    if (isUnsupported(error)) return "이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다.";
+    return error && error.message ? error.message : "위치 정보를 확인하지 못했습니다. 다시 시도하세요.";
+  }
+
+  function shouldOpenGpsError(error) {
+    return isPermissionDenied(error) || isUnsupported(error);
+  }
+
   function goGpsError(error) {
+    if (!shouldOpenGpsError(error)) return false;
     location.replace("/student/error/gps/?reason=" + encodeURIComponent(gpsErrorReason(error)));
+    return true;
   }
 
   window.StudentAttendance = {
-    version: "1.0.0",
+    version: "1.1.0",
     api: api,
     Session: Session,
     Pending: Pending,
     permissionState: permissionState,
     getPosition: getPosition,
+    getPositionWithRetry: getPositionWithRetry,
+    isPermissionDenied: isPermissionDenied,
+    isUnsupported: isUnsupported,
+    isTransientGpsError: isTransientGpsError,
+    gpsErrorReason: gpsErrorReason,
+    gpsErrorMessage: gpsErrorMessage,
+    shouldOpenGpsError: shouldOpenGpsError,
     goGpsError: goGpsError
   };
 })(window);
