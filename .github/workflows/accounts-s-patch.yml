@@ -1,0 +1,39 @@
+name: Apply student account management patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/accounts-s-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply requested changes
+        run: node .github/scripts/apply-accounts-s-patch.js
+
+      - name: Remove one-time patch files
+        run: |
+          rm -f .github/scripts/apply-accounts-s-patch.js
+          rm -f .github/workflows/accounts-s-patch.yml
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Add student account administration and simplify GPS error screen"
+          git push
