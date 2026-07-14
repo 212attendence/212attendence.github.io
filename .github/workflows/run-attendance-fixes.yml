@@ -1,0 +1,24 @@
+name: Run attendance fixes
+on:
+  push:
+    paths:
+      - 'scripts/apply-v24-fixes.py'
+      - '.github/workflows/run-attendance-fixes.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/apply-v24-fixes.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/run-attendance-fixes.yml .github/workflows/attendance-v24-fixes.yml scripts/apply-v24-fixes.py
+          git add -A
+          git commit -m "Apply final attendance schedule and secure login fixes" || exit 0
+          git push
