@@ -1,0 +1,24 @@
+name: Fix dashboard log synchronization
+on:
+  push:
+    paths:
+      - 'scripts/fix-dashboard-log-sync.py'
+      - '.github/workflows/fix-dashboard-log-sync.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/fix-dashboard-log-sync.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-dashboard-log-sync.yml scripts/fix-dashboard-log-sync.py
+          git add -A
+          git commit -m "Merge raw spreadsheet logs into dashboard views" || exit 0
+          git push
