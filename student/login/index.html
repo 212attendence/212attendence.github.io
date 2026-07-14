@@ -5,17 +5,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>학생 로그인 · 2-12 출석</title>
-  <link rel="manifest" href="../manifest.json?v=21">
-  <link rel="icon" href="../favicon.png?v=21">
-  <link rel="apple-touch-icon" href="../favicon.png?v=21">
+  <link rel="manifest" href="../manifest.json?v=22">
+  <link rel="icon" href="../favicon.png?v=22">
+  <link rel="apple-touch-icon" href="../favicon.png?v=22">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
   <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <link rel="preconnect" href="https://script.google.com">
   <link rel="preconnect" href="https://script.googleusercontent.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=21">
-  <script src="../assets/app.js?v=21" defer></script>
-  <script src="../assets/student.js?v=21" defer></script>
+  <link rel="stylesheet" href="../assets/app.css?v=22">
+  <script src="../assets/app.js?v=22" defer></script>
+  <script src="../assets/student.js?v=22" defer></script>
   <style>
     :root{--student:#315f84;--student-soft:rgba(49,95,132,.12)}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12)}
     body::before{content:"";position:fixed;z-index:-1;width:32rem;height:32rem;left:-13rem;top:-14rem;border-radius:50%;background:var(--student-soft);filter:blur(72px)}
@@ -96,8 +96,8 @@
           const status=String(response.status||"PENDING").toUpperCase();
           if(status==="APPROVED"&&response.studentToken){
             StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();
-            document.getElementById("pendingText").textContent="승인되었습니다. 위치 권한을 확인합니다.";
-            await requestInitialLocation();return;
+            document.getElementById("pendingText").textContent="승인되었습니다. 출석 인증 화면으로 이동합니다.";
+            setTimeout(function(){location.replace("/student/identity/?approved=1")},250);return;
           }
           if(status==="DENIED"||status==="EXPIRED"){
             StudentAttendance.Pending.clear();showLogin();AttendanceApp.UI.toast(status==="DENIED"?"관리자가 로그인 요청을 거절했습니다.":"로그인 요청이 만료되었습니다.",4200);return;
@@ -106,12 +106,6 @@
         }
       }catch(error){document.getElementById("pendingText").textContent="연결을 다시 확인하는 중입니다."}
       pollTimer=setTimeout(function(){checkStatus(pending)},4000);
-    }
-
-    async function requestInitialLocation(){
-      AttendanceApp.UI.loading("위치 권한 확인 중입니다","해강중학교 출석 인증에 위치 권한이 필요합니다.");
-      try{await StudentAttendance.getPosition();AttendanceApp.UI.stopLoading();location.replace("/student/identity/")}
-      catch(error){AttendanceApp.UI.stopLoading();StudentAttendance.goGpsError(error)}
     }
 
     function cancelPending(){clearTimeout(pollTimer);StudentAttendance.Pending.clear();showLogin();AttendanceApp.UI.toast("로그인 요청을 취소했습니다.")}
