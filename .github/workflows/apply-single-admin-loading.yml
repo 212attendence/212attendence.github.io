@@ -1,0 +1,24 @@
+name: Apply unified administrator loading
+on:
+  push:
+    paths:
+      - 'scripts/apply-single-admin-loading.py'
+      - '.github/workflows/apply-single-admin-loading.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/apply-single-admin-loading.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-single-admin-loading.yml scripts/apply-single-admin-loading.py
+          git add -A
+          git commit -m "Load administrator pages in one pass" || exit 0
+          git push
