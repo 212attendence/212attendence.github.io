@@ -1,0 +1,59 @@
+name: Fix student account management refresh
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-accounts-s-refresh.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch page and Apps Script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          page = Path('accounts-s/index.html')
+          text = page.read_text(encoding='utf-8')
+          replacements = {
+            'if(result.credential)showCredentials([result.credential]);await loadAccounts(false);AttendanceApp.UI.toast("학생계정을 저장했습니다.")': 'if(result.credential)showCredentials([result.credential]);busy=false;await loadAccounts(false);busy=true;AttendanceApp.UI.toast("학생계정을 저장했습니다.")',
+            'await callApi("adminToggleStudentAccountJsonp",{studentId:studentId,active:active?"1":"0"});await loadAccounts(false);AttendanceApp.UI.toast': 'await callApi("adminToggleStudentAccountJsonp",{studentId:studentId,active:active?"1":"0"});busy=false;await loadAccounts(false);busy=true;AttendanceApp.UI.toast',
+            'showCredentials(result.credentials||[]);await loadAccounts(false)': 'showCredentials(result.credentials||[]);busy=false;await loadAccounts(false);busy=true'
+          }
+          for old, new in replacements.items():
+            if old not in text:
+              raise SystemExit('Page patch target not found: ' + old[:70])
+            text = text.replace(old, new, 1)
+          page.write_text(text, encoding='utf-8')
+
+          addon = Path('apps-script/student-auth-addon.gs')
+          code = addon.read_text(encoding='utf-8')
+          old = "if (!studentId || studentId.length > 40 || studentId.indexOf(',') >= 0) {"
+          new = "if (!/^[A-Za-z0-9_-]{1,40}$/.test(studentId)) {"
+          if old not in code:
+            raise SystemExit('Apps Script validation patch target not found')
+          addon.write_text(code.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Validate Apps Script syntax
+        run: |
+          cp apps-script/student-auth-addon.gs /tmp/student-auth-addon.js
+          node --check /tmp/student-auth-addon.js
+
+      - name: Remove one-time workflow and commit
+        run: |
+          rm -f .github/workflows/fix-accounts-s-refresh.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix account management refresh and validate student IDs"
+          git push
