@@ -15,12 +15,11 @@
   <script src="../assets/app.js?v=21" defer></script>
   <style>
     :root{--gps:#b46a25;--gps-soft:rgba(180,106,37,.12)}html[data-theme="dark"]{--gps:#e1a365;--gps-soft:rgba(225,163,101,.12)}
-    body::before{content:"";position:fixed;z-index:-1;width:34rem;height:34rem;right:-15rem;top:-15rem;border-radius:50%;background:var(--gps-soft);filter:blur(76px)}.gps-icon{display:grid;place-items:center;width:68px;height:68px;margin-bottom:20px;border-radius:23px;background:var(--gps-soft);color:var(--gps);font-size:28px;font-weight:900}.steps{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:13px 13px 13px 48px;border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);font-size:13px;line-height:1.55;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:13px;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--gps);color:#fff;font-size:11px;font-weight:900}.note{margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px;line-height:1.55}
+    body::before{content:"";position:fixed;z-index:-1;width:34rem;height:34rem;right:-15rem;top:-15rem;border-radius:50%;background:var(--gps-soft);filter:blur(76px)}.steps{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:13px 13px 13px 48px;border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);font-size:13px;line-height:1.55;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:13px;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--gps);color:#fff;font-size:11px;font-weight:900}.note{margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px;line-height:1.55}
   </style>
 </head>
 <body class="auth-page">
   <main class="auth-card">
-    <div class="gps-icon">◎</div>
     <h1>위치 권한이 설정되지 않았습니다.</h1>
     <p id="reasonText" class="subtext">학생 출석 인증을 위해 위치 권한과 정확한 위치가 필요합니다.</p>
     <ol class="steps">

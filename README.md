@@ -11,6 +11,7 @@ GitHub Pages 기반 학생 위치 출석·관리자 대시보드와 Google Apps 
 - `/student/error/gps/` — 위치 권한 오류 안내
 - `/admin/login/` — Google 계정, 관리자 계정, 패스키를 사용하는 관리자 로그인
 - `/admin/dashboard/` — 오늘 출석 현황, ESP32/MQTT 상태, 학생 로그인 승인 알림
+- `/accounts-s/` — 관리자 전용 학생계정, 상태 및 임시비밀번호 관리
 - `/admin/help/` — 인증된 관리자 전용 도움말
 - `/admin/attendance-rate/` — 오늘 출석률 상세
 - `/admin/choose-login-method/` — 관리자 최초 로그인 후 패스키 설정 선택
