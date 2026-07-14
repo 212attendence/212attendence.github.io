@@ -1,0 +1,24 @@
+name: Patch dashboard V6 check
+on:
+  push:
+    paths:
+      - 'scripts/patch-dashboard-v6-check.py'
+      - '.github/workflows/patch-dashboard-v6-check.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/patch-dashboard-v6-check.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-dashboard-v6-check.yml scripts/patch-dashboard-v6-check.py
+          git add -A
+          git commit -m "Show Apps Script V6 requirement on dashboard" || exit 0
+          git push
