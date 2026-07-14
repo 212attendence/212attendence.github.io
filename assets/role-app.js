@@ -286,8 +286,11 @@
   window.addEventListener("focus", function () { dispatchResume("focus"); });
   window.addEventListener("pageshow", function () { dispatchResume("pageshow"); });
 
+  function showInstallAssistant(){if(new URLSearchParams(location.search).get("install")!=="1"||isStandalone())return;const box=document.createElement("div");box.id="roleInstallAssistant";box.innerHTML='<section class="combined-permission-card" style="position:fixed;z-index:1150;left:50%;bottom:18px;transform:translateX(-50%);width:min(430px,calc(100vw - 28px))"><div class="combined-permission-chip">'+(role()==="student"?"학생용 앱":"관리자용 앱")+'</div><h2 style="margin:10px 0 6px">이 화면을 별도 앱으로 설치</h2><p id="roleInstallText">브라우저 설치 메뉴를 이용하거나 아래 설치 버튼을 누르세요.</p><button id="roleInstallButton" class="btn btn-primary btn-block" type="button">앱 설치</button><button id="roleInstallClose" class="btn btn-soft btn-block" type="button">닫기</button></section>';document.body.appendChild(box);document.getElementById("roleInstallButton").onclick=async function(){const result=await promptInstall();if(!result.available)document.getElementById("roleInstallText").textContent=/iPhone|iPad|iPod/.test(navigator.userAgent)?"Safari 공유 버튼 → 홈 화면에 추가를 선택하세요.":"브라우저 메뉴 → 앱 설치 또는 홈 화면에 추가를 선택하세요."};document.getElementById("roleInstallClose").onclick=function(){box.remove()}}
+
   document.addEventListener("DOMContentLoaded", async function () {
     await registerServiceWorker();
+    showInstallAssistant();
     await maybeShowPermissionOnboarding();
     if (Notification.permission === "granted") registerPushToken();
     setTimeout(function () { dispatchResume("startup"); }, 900);

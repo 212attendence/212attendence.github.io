@@ -4,8 +4,10 @@
   <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
   <title>학생 출석 인증</title>
-  <link rel="manifest" href="../manifest.json?v=22">
+  <link rel="manifest" href="/student/manifest.json?v=24">
   <link rel="icon" href="../favicon.png?v=22">
   <link rel="apple-touch-icon" href="../favicon.png?v=22">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
@@ -15,6 +17,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=22">
   <script src="../assets/app.js?v=22" defer></script>
+  <script src="/assets/role-app.js?v=24" defer></script>
   <script src="../assets/student.js?v=22" defer></script>
   <style>
     :root{--student:#315f84;--student-soft:rgba(49,95,132,.12);--ok:#2f8254;--bad:#b6423a;--warn:#ad661f}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12);--ok:#77c495;--bad:#e47e76;--warn:#dda164}
@@ -49,7 +52,7 @@
 
   <script>
     const GPS_SAMPLE_WINDOW_MS=20000,GPS_EARLY_ACCURACY_M=50;
-    let busy=false,session=null;
+    let busy=false,session=null,autoCheckTimer=null;
 
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
@@ -57,7 +60,7 @@
       if(!session){location.replace("/student/login/");return}
       document.getElementById("studentName").textContent=session.name||"학생";
       document.getElementById("studentMeta").textContent=(session.studentId||"학생 계정")+(session.fingerId?" · 지문ID "+session.fingerId:"");
-      const state=await StudentAttendance.permissionState();renderPermission(state);
+      const state=await StudentAttendance.permissionState();renderPermission(state);if(state==="granted")setTimeout(function(){maybeAutoAttendance("startup")},1000);
       if(new URLSearchParams(location.search).get("approved")==="1")AttendanceApp.UI.toast("로그인이 승인되었습니다. 아래 버튼을 눌러 위치 출석을 인증하세요.",4200);
     });
 
@@ -124,7 +127,7 @@
       });
     }
 
-    async function submitAttendance(){
+    async function submitAttendance(autoStarted){
       if(busy||!session)return;
       busy=true;
       const button=document.getElementById("attendanceBtn");
@@ -158,7 +161,9 @@
         }
 
         renderPermission("granted");
+        localStorage.setItem("studentAutoAttendanceDate",todayKey());
         showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");
+        if(localStorage.getItem("attendancePushRegisteredV1")!=="student")AttendanceRoleApp.showLocalNotification(response.alreadyRecorded?"이미 출석 인증됨":"출석 인증 완료",(session.name||"학생")+" · "+(response.status||"출석"),"/student/identity/");
       }catch(error){
         if(StudentAttendance.shouldOpenGpsError(error)){StudentAttendance.goGpsError(error);return}
         renderPermission("retry");
@@ -169,6 +174,12 @@
         button.disabled=false;
       }
     }
+
+    function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+    async function maybeAutoAttendance(reason){if(!session||busy||document.hidden)return;if(localStorage.getItem("studentAutoAttendanceDate")===todayKey())return;const state=await StudentAttendance.permissionState();if(state!=="granted")return;submitAttendance(true)}
+    window.addEventListener("attendance-role-resume",function(){clearTimeout(autoCheckTimer);autoCheckTimer=setTimeout(function(){maybeAutoAttendance("resume")},700)});
+    window.addEventListener("attendance-permissions-ready",function(){setTimeout(function(){maybeAutoAttendance("permission")},500)});
+    setInterval(function(){maybeAutoAttendance("interval")},5*60*1000);
 
     function showResult(ok,title,text){const box=document.getElementById("resultBox");box.className="result show "+(ok?"ok":"bad");document.getElementById("resultTitle").textContent=title;document.getElementById("resultText").textContent=text}
     function forgetDevice(){StudentAttendance.Session.clear();StudentAttendance.Pending.clear();location.replace("/student/login/")}

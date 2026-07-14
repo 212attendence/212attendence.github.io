@@ -4,8 +4,10 @@
   <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
   <title>학생 로그인 · 2-12 출석</title>
-  <link rel="manifest" href="../manifest.json?v=22">
+  <link rel="manifest" href="/student/manifest.json?v=24">
   <link rel="icon" href="../favicon.png?v=22">
   <link rel="apple-touch-icon" href="../favicon.png?v=22">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
@@ -15,6 +17,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=22">
   <script src="../assets/app.js?v=22" defer></script>
+  <script src="/assets/role-app.js?v=24" defer></script>
   <script src="../assets/student.js?v=22" defer></script>
   <style>
     :root{--student:#315f84;--student-soft:rgba(49,95,132,.12)}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12)}
@@ -95,7 +98,7 @@
         if(response&&response.ok){
           const status=String(response.status||"PENDING").toUpperCase();
           if(status==="APPROVED"&&response.studentToken){
-            StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();
+            StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();AttendanceRoleApp.registerPushToken();
             document.getElementById("pendingText").textContent="승인되었습니다. 출석 인증 화면으로 이동합니다.";
             setTimeout(function(){location.replace("/student/identity/?approved=1")},250);return;
           }

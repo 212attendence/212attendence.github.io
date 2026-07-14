@@ -4,8 +4,10 @@
   <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 출석 관리자">
   <title>홈 화면 앱 설치</title>
-  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="manifest" href="/admin/manifest.json?v=24">
   <link rel="icon" href="../favicon.png?v=21">
   <link rel="apple-touch-icon" href="../favicon.png?v=21">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
@@ -13,6 +15,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=21">
   <script src="../assets/app.js?v=21" defer></script>
+  <script src="/assets/role-app.js?v=24" defer></script>
   <style>
     .guide-wrap{width:min(680px,100%)}.device-label{margin-bottom:16px}.steps{margin:18px 0 0;padding:0;list-style:none;counter-reset:step;display:grid;gap:11px}.steps li{counter-increment:step;position:relative;padding:15px 15px 15px 52px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft);font-size:14px;line-height:1.55;font-weight:700}.steps li::before{content:counter(step);position:absolute;left:14px;top:13px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--accent-text);font-size:12px;font-weight:900}.install-state{margin-top:15px}
   </style>
@@ -22,6 +25,7 @@
     <span id="deviceLabel" class="brand-chip device-label">기기 확인 중</span>
     <h1>홈 화면 앱 설치</h1>
     <p id="guideSub" class="subtext">출석 시스템을 브라우저 탭이 아닌 독립 앱처럼 실행할 수 있습니다.</p>
+    <div class="setting-card" style="margin-top:16px"><h2 style="font-size:17px">설치할 앱 선택</h2><p class="small-note">학생용과 관리자용은 서로 다른 앱 이름과 시작 화면으로 설치됩니다.</p><div class="actions-stack"><a class="btn btn-primary btn-block" href="/student/login/?install=1">학생용 앱 설치 화면</a><a class="btn btn-soft btn-block" href="/admin/login/?install=1">관리자용 앱 설치 화면</a></div></div>
     <ol id="steps" class="steps"></ol>
     <div id="note" class="status-box install-state"></div>
     <div class="actions-stack">
@@ -46,7 +50,7 @@
       deferredPrompt = null;
       document.getElementById("installBtn").classList.add("hidden");
       document.getElementById("note").className = "status-box success install-state";
-      document.getElementById("note").textContent = "설치가 완료되었습니다. 홈 화면이나 시작 메뉴에서 2-12 출석을 실행하세요.";
+      document.getElementById("note").textContent = "설치가 완료되었습니다. 홈 화면이나 시작 메뉴에서 선택한 학생용 또는 관리자용 앱을 실행하세요.";
     });
 
     document.addEventListener("DOMContentLoaded", function () {

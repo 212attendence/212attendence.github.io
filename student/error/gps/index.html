@@ -4,8 +4,10 @@
   <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
   <title>위치 권한 필요</title>
-  <link rel="manifest" href="../manifest.json?v=21">
+  <link rel="manifest" href="/student/manifest.json?v=24">
   <link rel="icon" href="../favicon.png?v=21">
   <link rel="apple-touch-icon" href="../favicon.png?v=21">
   <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
@@ -13,6 +15,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
   <link rel="stylesheet" href="../assets/app.css?v=21">
   <script src="../assets/app.js?v=21" defer></script>
+  <script src="/assets/role-app.js?v=24" defer></script>
   <style>
     :root{--gps:#b46a25;--gps-soft:rgba(180,106,37,.12)}html[data-theme="dark"]{--gps:#e1a365;--gps-soft:rgba(225,163,101,.12)}
     body::before{content:"";position:fixed;z-index:-1;width:34rem;height:34rem;right:-15rem;top:-15rem;border-radius:50%;background:var(--gps-soft);filter:blur(76px)}.steps{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:step}.steps li{position:relative;padding:13px 13px 13px 48px;border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);font-size:13px;line-height:1.55;font-weight:650}.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:13px;top:13px;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--gps);color:#fff;font-size:11px;font-weight:900}.note{margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px;line-height:1.55}

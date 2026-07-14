@@ -316,6 +316,7 @@
     pollTimer: null,
     button: null,
     badge: null,
+    dot: null,
     modal: null,
     status: null,
     list: null,
@@ -335,7 +336,7 @@
       if (document.getElementById("studentAdminStyles")) return;
       const style = document.createElement("style");
       style.id = "studentAdminStyles";
-      style.textContent = ".student-alert-btn{position:relative}.student-alert-count{display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#b6423a;color:#fff;font-size:10px;line-height:19px;text-align:center;font-weight:900}.student-alert-count.show{display:inline-block}.student-request-overlay{position:fixed;inset:0;z-index:650;display:none;place-items:center;padding:18px;background:rgba(18,19,18,.48);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.student-request-overlay.show{display:grid}.student-request-modal{width:min(620px,100%);max-height:min(760px,calc(100vh - 36px));overflow:auto;border:1px solid var(--line);border-radius:28px;background:var(--surface-strong);box-shadow:0 28px 90px rgba(0,0,0,.28)}.student-request-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface-strong) 93%,transparent);backdrop-filter:blur(18px)}.student-request-head h2{font-size:20px}.student-request-body{padding:18px}.student-request-status{margin-bottom:13px;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--surface-soft);color:var(--muted);font-size:12px;line-height:1.55;font-weight:700}.student-request-list{display:grid;gap:10px}.student-request-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.student-request-card strong{display:block;font-size:15px}.student-request-meta{margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5}.student-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.student-school-config{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}.student-school-config h3{font-size:15px}.student-school-config p{margin:5px 0 11px;color:var(--muted);font-size:12px;line-height:1.55}@media(max-width:560px){.student-request-overlay{padding:0;align-items:end}.student-request-modal{width:100%;max-height:88vh;border-radius:26px 26px 0 0}.student-request-actions{grid-template-columns:1fr}}";
+      style.textContent = ".student-alert-btn{position:relative}.student-alert-dot{position:absolute;right:-3px;top:-4px;display:none;width:9px;height:9px;border:2px solid var(--surface-strong);border-radius:50%;background:#d83232;box-shadow:0 0 0 3px rgba(216,50,50,.12)}.student-alert-dot.show{display:block}.student-alert-count{display:none;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#b6423a;color:#fff;font-size:10px;line-height:19px;text-align:center;font-weight:900}.student-alert-count.show{display:inline-block}.student-request-overlay{position:fixed;inset:0;z-index:650;display:none;place-items:center;padding:18px;background:rgba(18,19,18,.48);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.student-request-overlay.show{display:grid}.student-request-modal{width:min(620px,100%);max-height:min(760px,calc(100vh - 36px));overflow:auto;border:1px solid var(--line);border-radius:28px;background:var(--surface-strong);box-shadow:0 28px 90px rgba(0,0,0,.28)}.student-request-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface-strong) 93%,transparent);backdrop-filter:blur(18px)}.student-request-head h2{font-size:20px}.student-request-body{padding:18px}.student-request-status{margin-bottom:13px;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--surface-soft);color:var(--muted);font-size:12px;line-height:1.55;font-weight:700}.student-request-list{display:grid;gap:10px}.student-request-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.student-request-card strong{display:block;font-size:15px}.student-request-meta{margin-top:5px;color:var(--muted);font-size:11px;line-height:1.5}.student-request-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.student-school-config{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}.student-school-config h3{font-size:15px}.student-school-config p{margin:5px 0 11px;color:var(--muted);font-size:12px;line-height:1.55}@media(max-width:560px){.student-request-overlay{padding:0;align-items:end}.student-request-modal{width:100%;max-height:88vh;border-radius:26px 26px 0 0}.student-request-actions{grid-template-columns:1fr}}";
       document.head.appendChild(style);
     },
 
@@ -344,8 +345,9 @@
       this.button = document.createElement("button");
       this.button.type = "button";
       this.button.className = "btn btn-soft student-alert-btn";
-      this.button.innerHTML = "알림 <span class=\"student-alert-count\">0</span>";
-      this.badge = this.button.querySelector("span");
+      this.button.innerHTML = "알림 <span class=\"student-alert-dot\" aria-hidden=\"true\"></span><span class=\"student-alert-count\">0</span>";
+      this.dot = this.button.querySelector(".student-alert-dot");
+      this.badge = this.button.querySelector(".student-alert-count");
       this.button.addEventListener("click", this.open.bind(this));
       if (actions) actions.insertBefore(this.button, actions.firstChild);
       else { this.button.style.cssText = "position:fixed;right:18px;top:18px;z-index:80"; document.body.appendChild(this.button); }
@@ -397,6 +399,8 @@
       if (!this.badge) return;
       this.badge.textContent = count > 99 ? "99+" : String(count);
       this.badge.classList.toggle("show", count > 0);
+      if (this.dot) this.dot.classList.toggle("show", count > 0);
+      this.button.setAttribute("aria-label", count > 0 ? "학생 로그인 알림 " + count + "건" : "학생 로그인 알림 없음");
     },
 
     render(requests, school) {
