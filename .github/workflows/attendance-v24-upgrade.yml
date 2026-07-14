@@ -1,0 +1,152 @@
+name: One-time attendance v24 upgrade
+on:
+  push:
+    paths:
+      - '.github/workflows/attendance-v24-upgrade.yml'
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch role apps, notifications and help
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def patch_html(path, role):
+              p = Path(path)
+              if not p.exists():
+                  return
+              text = p.read_text(encoding='utf-8')
+              manifest = '/student/manifest.json?v=24' if role == 'student' else '/admin/manifest.json?v=24'
+              text = re.sub(r'<link rel="manifest" href="[^"]+">', f'<link rel="manifest" href="{manifest}">', text, count=1)
+              title = '2-12 학생 출석' if role == 'student' else '2-12 출석 관리자'
+              if 'apple-mobile-web-app-title' in text:
+                  text = re.sub(r'<meta name="apple-mobile-web-app-title" content="[^"]*">', f'<meta name="apple-mobile-web-app-title" content="{title}">', text, count=1)
+              else:
+                  text = text.replace('<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">', '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-title" content="'+title+'">', 1)
+              if '/assets/role-app.js' not in text:
+                  m = re.search(r'(<script src="(?:\.\./|\./)?assets/app\.js\?v=\d+" defer></script>)', text)
+                  if m:
+                      text = text[:m.end()] + '\n  <script src="/assets/role-app.js?v=24" defer></script>' + text[m.end():]
+                  else:
+                      text = text.replace('</head>', '  <script src="/assets/role-app.js?v=24" defer></script>\n</head>', 1)
+              write(p, text)
+
+          for p in Path('student').rglob('*.html'):
+              patch_html(p, 'student')
+          for p in Path('admin').rglob('*.html'):
+              patch_html(p, 'admin')
+          patch_html('accounts-s/index.html', 'admin')
+
+          # Red unread dot above student login notification button.
+          p = Path('assets/app.js')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('badge: null,\n    modal: null,', 'badge: null,\n    dot: null,\n    modal: null,', 1)
+          text = text.replace('.student-alert-btn{position:relative}', '.student-alert-btn{position:relative}.student-alert-dot{position:absolute;right:-3px;top:-4px;display:none;width:9px;height:9px;border:2px solid var(--surface-strong);border-radius:50%;background:#d83232;box-shadow:0 0 0 3px rgba(216,50,50,.12)}.student-alert-dot.show{display:block}', 1)
+          text = text.replace('this.button.innerHTML = "알림 <span class=\\"student-alert-count\\">0</span>";', 'this.button.innerHTML = "알림 <span class=\\"student-alert-dot\\" aria-hidden=\\"true\\"></span><span class=\\"student-alert-count\\">0</span>";', 1)
+          text = text.replace('this.badge = this.button.querySelector("span");', 'this.dot = this.button.querySelector(".student-alert-dot");\n      this.badge = this.button.querySelector(".student-alert-count");', 1)
+          text = text.replace('this.badge.classList.toggle("show", count > 0);', 'this.badge.classList.toggle("show", count > 0);\n      if (this.dot) this.dot.classList.toggle("show", count > 0);\n      this.button.setAttribute("aria-label", count > 0 ? "학생 로그인 알림 " + count + "건" : "학생 로그인 알림 없음");', 1)
+          write(p, text)
+
+          # Secure challenge-response admin login and login alerts.
+          p = Path('admin/login/index.html')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('AttendanceApp.Session.save("passkey", verifyResponse);\n        location.replace("/admin/dashboard/");', 'AttendanceApp.Session.save("passkey", verifyResponse);\n        AttendanceRoleApp.notifyAdminLogin("passkey");\n        location.replace("/admin/dashboard/");', 1)
+          text = text.replace('AttendanceApp.Session.save("google", result);\n        routeAfterLogin();', 'AttendanceApp.Session.save("google", result);\n        AttendanceRoleApp.notifyAdminLogin("google");\n        routeAfterLogin();', 1)
+          old = 'const params = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: adminId, adminPw: adminPw });\n        AttendanceApp.addClientParams(params);\n        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));'
+          text = text.replace(old, 'const result = await AttendanceRoleApp.secureAdminLogin(adminId, adminPw);', 1)
+          text = text.replace('AttendanceApp.Session.save("admin", result);\n        routeAfterLogin();', 'AttendanceApp.Session.save("admin", result);\n        AttendanceRoleApp.notifyAdminLogin("admin");\n        routeAfterLogin();', 1)
+          write(p, text)
+
+          # Reauthentication also uses one-time proof; it does not issue a login alert.
+          p = Path('admin/verify/index.html')
+          if p.exists():
+              text = p.read_text(encoding='utf-8')
+              old = 'const params = new URLSearchParams({ action: "dashboardLoginJsonp", adminId: adminId, adminPw: adminPw });\n        AttendanceApp.addClientParams(params);\n        const result = await AttendanceApp.jsonp(AttendanceApp.apiUrl(APPS_SCRIPT_URL, params));'
+              text = text.replace(old, 'const result = await AttendanceRoleApp.secureAdminLogin(adminId, adminPw);', 1)
+              write(p, text)
+
+          # Student token registration after approval.
+          p = Path('student/login/index.html')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();', 'StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();AttendanceRoleApp.registerPushToken();', 1)
+          write(p, text)
+
+          # Foreground automatic attendance on app start/resume, with completion notification.
+          p = Path('student/identity/index.html')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('let busy=false,session=null;', 'let busy=false,session=null,autoCheckTimer=null;', 1)
+          text = text.replace('const state=await StudentAttendance.permissionState();renderPermission(state);', 'const state=await StudentAttendance.permissionState();renderPermission(state);if(state==="granted")setTimeout(function(){maybeAutoAttendance("startup")},1000);', 1)
+          text = text.replace('async function submitAttendance(){', 'async function submitAttendance(autoStarted){', 1)
+          success_line = 'showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");'
+          replacement = 'localStorage.setItem("studentAutoAttendanceDate",todayKey());\n        showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");\n        if(localStorage.getItem("attendancePushRegisteredV1")!=="student")AttendanceRoleApp.showLocalNotification(response.alreadyRecorded?"이미 출석 인증됨":"출석 인증 완료",(session.name||"학생")+" · "+(response.status||"출석"),"/student/identity/");'
+          text = text.replace(success_line, replacement, 1)
+          marker = 'function showResult(ok,title,text)'
+          auto_code = '''function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}\n    async function maybeAutoAttendance(reason){if(!session||busy||document.hidden)return;if(localStorage.getItem("studentAutoAttendanceDate")===todayKey())return;const state=await StudentAttendance.permissionState();if(state!=="granted")return;submitAttendance(true)}\n    window.addEventListener("attendance-role-resume",function(){clearTimeout(autoCheckTimer);autoCheckTimer=setTimeout(function(){maybeAutoAttendance("resume")},700)});\n    window.addEventListener("attendance-permissions-ready",function(){setTimeout(function(){maybeAutoAttendance("permission")},500)});\n    setInterval(function(){maybeAutoAttendance("interval")},5*60*1000);\n\n    '''
+          if marker in text and 'function maybeAutoAttendance' not in text:
+              text = text.replace(marker, auto_code + marker, 1)
+          write(p, text)
+
+          # Do not send HiveMQ username/password to the browser. Use authenticated API polling.
+          p = Path('admin/dashboard/index.html')
+          text = p.read_text(encoding='utf-8')
+          text = re.sub(r'async function startDeviceServices\(\)\{.*?\}\n    function ensureMqttLibrary', 'async function startDeviceServices(){setMqttBadge("online");startSecurePolling()}\n    function startSecurePolling(){clearInterval(espWatchTimer);espWatchTimer=setInterval(function(){if(!document.hidden)loadTodayLogs(false,false)},10000)}\n    function ensureMqttLibrary', text, count=1, flags=re.S)
+          text = re.sub(r'async function loadRemoteSettings\(\)\{.*?\}\n    async function loadTodayLogs', 'async function loadRemoteSettings(){return true}\n    async function loadTodayLogs', text, count=1, flags=re.S)
+          text = re.sub(r'<details style="margin-top:18px"><summary>고급 MQTT 설정</summary>.*?</details>', '<div class="passkey-card" style="margin-top:18px"><p><strong>실시간 연결 보안 모드</strong><br>HiveMQ 주소·사용자명·비밀번호는 브라우저로 전송하지 않습니다. 대시보드는 인증된 Apps Script API를 주기적으로 확인합니다.</p></div>', text, count=1, flags=re.S)
+          text = re.sub(r'async function saveSettings\(\)\{.*?\}\n  </script>', 'async function saveSettings(){AttendanceApp.UI.toast("보안 모드에서는 MQTT 자격증명을 웹에서 변경하지 않습니다.")}\n  </script>', text, count=1, flags=re.S)
+          text = text.replace('e.textContent="MQTT "+(s==="online"?"ONLINE":s==="connecting"?"CONNECTING":"OFFLINE")', 'e.textContent=s==="online"?"실시간 API":"실시간 확인 중"', 1)
+          write(p, text)
+
+          # Role-specific install chooser.
+          p = Path('admin/home-icon-setting/index.html')
+          if p.exists():
+              text = p.read_text(encoding='utf-8')
+              chooser = '<div class="setting-card" style="margin-top:16px"><h2 style="font-size:17px">설치할 앱 선택</h2><p class="small-note">학생용과 관리자용은 서로 다른 앱 이름과 시작 화면으로 설치됩니다.</p><div class="actions-stack"><a class="btn btn-primary btn-block" href="/student/login/?install=1">학생용 앱 설치 화면</a><a class="btn btn-soft btn-block" href="/admin/login/?install=1">관리자용 앱 설치 화면</a></div></div>'
+              text = text.replace('<ol id="steps" class="steps"></ol>', chooser + '\n    <ol id="steps" class="steps"></ol>', 1)
+              text = text.replace('홈 화면이나 시작 메뉴에서 2-12 출석을 실행하세요.', '홈 화면이나 시작 메뉴에서 선택한 학생용 또는 관리자용 앱을 실행하세요.', 1)
+              write(p, text)
+
+          # Install assistant on role entry pages.
+          p = Path('assets/role-app.js')
+          text = p.read_text(encoding='utf-8')
+          insert_marker = 'document.addEventListener("DOMContentLoaded", async function () {'
+          install_code = '''function showInstallAssistant(){if(new URLSearchParams(location.search).get("install")!=="1"||isStandalone())return;const box=document.createElement("div");box.id="roleInstallAssistant";box.innerHTML='<section class="combined-permission-card" style="position:fixed;z-index:1150;left:50%;bottom:18px;transform:translateX(-50%);width:min(430px,calc(100vw - 28px))"><div class="combined-permission-chip">'+(role()==="student"?"학생용 앱":"관리자용 앱")+'</div><h2 style="margin:10px 0 6px">이 화면을 별도 앱으로 설치</h2><p id="roleInstallText">브라우저 설치 메뉴를 이용하거나 아래 설치 버튼을 누르세요.</p><button id="roleInstallButton" class="btn btn-primary btn-block" type="button">앱 설치</button><button id="roleInstallClose" class="btn btn-soft btn-block" type="button">닫기</button></section>';document.body.appendChild(box);document.getElementById("roleInstallButton").onclick=async function(){const result=await promptInstall();if(!result.available)document.getElementById("roleInstallText").textContent=/iPhone|iPad|iPod/.test(navigator.userAgent)?"Safari 공유 버튼 → 홈 화면에 추가를 선택하세요.":"브라우저 메뉴 → 앱 설치 또는 홈 화면에 추가를 선택하세요."};document.getElementById("roleInstallClose").onclick=function(){box.remove()}}\n\n  '''
+          if 'function showInstallAssistant' not in text:
+              text = text.replace(insert_marker, install_code + insert_marker, 1)
+              text = text.replace('await maybeShowPermissionOnboarding();', 'showInstallAssistant();\n    await maybeShowPermissionOnboarding();', 1)
+          write(p, text)
+
+          # Help updates.
+          p = Path('student/help/index.html')
+          text = p.read_text(encoding='utf-8')
+          extra = '''<section class="section"><h2>5. 앱 설치·자동 확인·알림</h2><p>학생용 앱은 관리자용 앱과 별도로 설치됩니다. 앱을 처음 실행하면 한 화면에서 위치와 알림 권한 설정을 안내합니다.</p><ol class="steps"><li>최초 안내에서 <strong>권한 허용하고 시작</strong>을 한 번 누릅니다.</li><li>앱을 열거나 다시 활성화하면 오늘 출석 여부를 자동 확인합니다.</li><li>출석 인증이 완료되면 화면 메시지와 알림으로 결과를 알려줍니다.</li></ol><div class="warning">웹앱은 완전히 종료된 상태에서 GPS를 계속 실행할 수 없습니다. 자동 인증은 앱이 열리거나 화면이 다시 활성화된 때 작동합니다.</div></section><section class="section"><h2>6. 시간·휴업일 기준</h2><p>오전 8시 25분을 넘으면 지각입니다. 미확인 학생은 월·화·수·금 오후 3시, 목요일 오후 3시 55분 이후 결석으로 표시됩니다. 방학, 주말, 대한민국 공휴일과 10월 8일 재량휴업일에는 자동 출석을 기록하지 않습니다.</p></section>'''
+          text = text.replace('<section class="section"><h2>5. 자동 로그인</h2>', extra + '\n    <section class="section"><h2>7. 자동 로그인</h2>', 1)
+          text = text.replace('학교 도착 후 학생 출석 화면에서 인증합니다.', '학교 도착 후 앱을 열면 권한이 허용된 경우 자동으로 위치를 확인하며, 필요하면 버튼으로 다시 인증할 수 있습니다.', 1)
+          write(p, text)
+
+          p = Path('admin/help/index.html')
+          text = p.read_text(encoding='utf-8')
+          extra = '''<details id="security-notifications" class="help-section" open><summary>알림·앱 설치·보안</summary><div class="details-body"><ol class="steps"><li>학생용과 관리자용 앱은 각각의 설치 화면에서 별도로 설치합니다.</li><li>학생 로그인 승인 요청이 있으면 알림 버튼 위에 빨간 점과 대기 건수가 표시됩니다.</li><li>관리자 로그인 성공 시 기기와 약 1km 단위의 대략적 위치를 관리자 알림으로 전송합니다.</li><li>관리자 ID·비밀번호는 URL로 보내지 않고 일회용 challenge-response 증명값으로 로그인합니다.</li><li>HiveMQ 사용자명과 비밀번호는 브라우저에 전달하지 않습니다. 실시간 화면은 인증된 서버 API 폴링을 사용합니다.</li></ol></div></details><details id="attendance-rules" class="help-section"><summary>지각·결석·휴업일 기준</summary><div class="details-body"><ol class="steps"><li>지각 기준은 오전 <strong>8시 25분</strong>입니다.</li><li>월·화·수·금 결석 전환은 오후 <strong>3시</strong>입니다.</li><li>목요일 결석 전환은 오후 <strong>3시 55분</strong>입니다.</li><li>여름방학 7월 22일~8월 17일, 겨울방학 12월 31일~1월 27일, 봄방학 2월 3일~2월 말, 대한민국 공휴일, 10월 8일 재량휴업일은 휴업일로 처리합니다.</li></ol></div></details>'''
+          text = text.replace('<div class="actions-stack"><a class="btn btn-soft btn-block"', extra + '\n    <div class="actions-stack"><a class="btn btn-soft btn-block"', 1)
+          write(p, text)
+          PY
+      - name: Commit patched site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/attendance-v24-upgrade.yml
+          git add -A
+          git commit -m "Add separate PWAs, permission onboarding, alerts and secure polling" || exit 0
+          git push
