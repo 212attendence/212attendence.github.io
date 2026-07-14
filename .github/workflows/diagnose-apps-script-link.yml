@@ -1,0 +1,36 @@
+name: Diagnose Apps Script linkage
+on:
+  push:
+    paths:
+      - '.github/workflows/diagnose-apps-script-link.yml'
+permissions:
+  contents: write
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check deployed Apps Script
+        shell: bash
+        run: |
+          set +e
+          BASE='https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec'
+          mkdir -p diagnostics
+          {
+            echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "base=$BASE"
+            echo '--- ping ---'
+            curl -L --max-time 30 -sS "$BASE?action=ping&_ts=$(date +%s)"
+            echo
+            echo '--- status ---'
+            curl -L --max-time 30 -sS "$BASE?action=serverStatusJsonp&_ts=$(date +%s)"
+            echo
+          } > diagnostics/apps-script-link.txt 2>&1
+      - name: Commit diagnostic result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/diagnose-apps-script-link.yml
+          git add diagnostics/apps-script-link.txt
+          git commit -m "Record Apps Script linkage diagnostic" || exit 0
+          git push
