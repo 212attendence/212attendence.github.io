@@ -52,12 +52,24 @@
   <div id="toast" class="toast">알림</div>
 
   <script>
+    const PLATFORM_CHOICE_KEY="attendanceStudentPlatformChoiceV1";
     let busy=false,pollTimer=null,serverReady=false;
+
+    function hasPlatformChoice(){
+      try{return Boolean(localStorage.getItem(PLATFORM_CHOICE_KEY))}
+      catch(error){return false}
+    }
+
+    function nextStudentPage(approved){
+      const query=approved?"?approved=1":"";
+      return hasPlatformChoice()?"/student/identity/"+query:"/ios-orandroid/"+query;
+    }
+
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
       document.getElementById("studentPw").addEventListener("keydown",function(event){if(event.key==="Enter")requestLogin()});
       const session=await StudentAttendance.Session.validate();
-      if(session){location.replace("/student/identity/");return}
+      if(session){location.replace(nextStudentPage(false));return}
       const pending=StudentAttendance.Pending.current();
       if(pending&&pending.requestId&&pending.requestSecret){showPending();startPolling(pending);return}
       await checkServer();
@@ -99,8 +111,8 @@
           const status=String(response.status||"PENDING").toUpperCase();
           if(status==="APPROVED"&&response.studentToken){
             StudentAttendance.Session.save(response);StudentAttendance.Pending.clear();AttendanceRoleApp.registerPushToken();
-            document.getElementById("pendingText").textContent="승인되었습니다. 출석 인증 화면으로 이동합니다.";
-            setTimeout(function(){location.replace("/student/identity/?approved=1")},250);return;
+            document.getElementById("pendingText").textContent="승인되었습니다. 사용 기기 선택 화면으로 이동합니다.";
+            setTimeout(function(){location.replace(nextStudentPage(true))},250);return;
           }
           if(status==="DENIED"||status==="EXPIRED"){
             StudentAttendance.Pending.clear();showLogin();AttendanceApp.UI.toast(status==="DENIED"?"관리자가 로그인 요청을 거절했습니다.":"로그인 요청이 만료되었습니다.",4200);return;
