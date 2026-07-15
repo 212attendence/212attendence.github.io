@@ -6,17 +6,22 @@
   const LOOP_KEY="attendanceFailoverLoopV1";
   const MAX_QUEUE=25;
 
-  function readJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||"")||fallback}catch(error){return fallback}}
+  function readJson(key,fallback,storage){try{return JSON.parse((storage||localStorage).getItem(key)||"")||fallback}catch(error){return fallback}}
   function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(error){return false}}
   function clean(value,max){return String(value==null?"":value).replace(/[\r\n\t]+/g," ").slice(0,max||300)}
+  function strictBool(value){if(value===true||value===1)return true;const text=String(value==null?"":value).trim().toLowerCase();return text==="1"||text==="true"||text==="yes"||text==="y"||text==="동의"}
   function studentContext(){
     try{
-      const session=JSON.parse(localStorage.getItem("attendanceStudentSessionV1")||"null")||{};
+      const temporary=readJson("attendanceStudentSessionV1",null,sessionStorage),persistent=readJson("attendanceStudentSessionV1",null,localStorage),session=temporary||persistent||{};
       return {studentId:clean(session.studentId,40),studentName:clean(session.name,80),studentToken:clean(session.token,160)};
     }catch(error){return {studentId:"",studentName:"",studentToken:""}}
   }
+  function diagnosticsAllowed(studentId){
+    if(!studentId)return false;
+    try{const store=readJson("attendanceStudentConsentV2",{},localStorage),consent=store[String(studentId)]||{};return strictBool(consent.diagnosticsOptional)&&String(consent.status||"ACTIVE").toUpperCase()!=="WITHDRAWN"}catch(error){return false}
+  }
   function eventPayload(values){
-    const context=studentContext();
+    const context=studentContext(),detailed=diagnosticsAllowed(context.studentId);
     return Object.assign({
       eventId:"FB-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),
       createdAt:new Date().toISOString(),
@@ -25,9 +30,10 @@
       sourcePage:location.pathname+location.search,
       fallbackUrl:"/student/recovery/",
       online:navigator.onLine?"1":"0",
-      userAgent:clean(navigator.userAgent,180),
-      deviceName:clean(navigator.userAgentData&&navigator.userAgentData.platform||navigator.platform||"",100),
-      clientTimezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"",
+      userAgent:detailed?clean(navigator.userAgent,180):"",
+      deviceName:detailed?clean(navigator.userAgentData&&navigator.userAgentData.platform||navigator.platform||"",100):"",
+      clientTimezone:detailed?(Intl.DateTimeFormat().resolvedOptions().timeZone||""):"",
+      diagnosticsConsent:detailed?"1":"0",
       studentId:context.studentId,
       studentName:context.studentName,
       studentToken:context.studentToken
@@ -83,6 +89,6 @@
     setTimeout(flush,1200);
   }
 
-  window.AttendanceFailover={version:"1.0.0",report:report,flush:flush,redirect:redirect,externalFallback:externalFallback,safeTarget:safeTarget};
+  window.AttendanceFailover={version:"1.1.0",report:report,flush:flush,redirect:redirect,externalFallback:externalFallback,safeTarget:safeTarget};
   install();
 })(window);
