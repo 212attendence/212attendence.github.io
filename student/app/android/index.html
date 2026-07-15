@@ -2,128 +2,33 @@
 <html lang="ko" data-theme="light">
 <head>
   <base href="/">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
-  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)"><meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
   <title>Android 앱 다운로드 · 2-12 출석</title>
-  <link rel="manifest" href="/student/manifest.json?v=30">
-  <link rel="icon" type="image/png" sizes="300x300" href="/favicon.png?v=30">
-  <link rel="shortcut icon" href="/favicon.png?v=30">
-  <link rel="apple-touch-icon" sizes="300x300" href="/favicon.png?v=30">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="/student/assets/app.css?v=22">
-  <script src="/student/assets/app.js?v=30" defer></script>
-  <script src="/student/assets/student.js?v=28" defer></script>
+  <link rel="manifest" href="/student/manifest.json?v=30"><link rel="icon" type="image/png" sizes="300x300" href="/favicon.png?v=30"><link rel="shortcut icon" href="/favicon.png?v=30"><link rel="apple-touch-icon" sizes="300x300" href="/favicon.png?v=30">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin><link rel="stylesheet" href="/student/assets/app.css?v=22">
+  <script src="/student/assets/app.js?v=30" defer></script><script src="/student/assets/student.js?v=31" defer></script><script src="/assets/resilience.js?v=1" defer></script>
   <style>
-    :root{--android:#277a4d;--android-soft:rgba(39,122,77,.12)}
-    html[data-theme="dark"]{--android:#77c495;--android-soft:rgba(119,196,149,.12)}
-    body::before{content:"";position:fixed;z-index:-1;width:34rem;height:34rem;left:-14rem;top:-13rem;border-radius:50%;background:var(--android-soft);filter:blur(76px)}
-    .download-card{width:min(560px,100%)}
-    .android-mark{display:grid;place-items:center;width:68px;height:68px;margin-bottom:18px;border-radius:22px;background:var(--android-soft);color:var(--android);font-size:31px;font-weight:900}
-    .download-button{background:var(--android)!important;color:#fff!important;border-color:transparent!important}
-    .download-button[disabled]{opacity:.58;cursor:wait}
-    .guide{display:grid;gap:10px;margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:19px;background:var(--surface-soft)}
-    .guide-title{font-size:14px;font-weight:900;color:var(--text)}
-    .guide-list{margin:0;padding-left:20px;color:var(--muted);font-size:12px;line-height:1.75;font-weight:650}
-    .notice{margin-top:14px;color:var(--muted);font-size:11px;line-height:1.65;font-weight:650}
-    .hidden{display:none!important}
+    :root{--android:#277a4d;--android-soft:rgba(39,122,77,.12);--warn:#ad661f}html[data-theme="dark"]{--android:#77c495;--android-soft:rgba(119,196,149,.12);--warn:#dda164}
+    body::before{content:"";position:fixed;z-index:-1;width:34rem;height:34rem;left:-14rem;top:-13rem;border-radius:50%;background:var(--android-soft);filter:blur(76px)}.download-card{width:min(620px,100%)}.android-mark{display:grid;place-items:center;width:68px;height:68px;margin-bottom:18px;border-radius:22px;background:var(--android-soft);color:var(--android);font-size:31px;font-weight:900}.download-button{background:var(--android)!important;color:#fff!important;border-color:transparent!important}.download-button[disabled]{opacity:.58;cursor:wait}.release-box,.guide{display:grid;gap:10px;margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:19px;background:var(--surface-soft)}.release-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.release-item{padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--surface)}.release-label{color:var(--muted);font-size:10px;font-weight:900}.release-value{margin-top:5px;font-size:14px;font-weight:900;word-break:break-all}.changes{margin:0;padding-left:20px;color:var(--muted);font-size:12px;line-height:1.7}.guide-title{font-size:14px;font-weight:900}.guide-list{margin:0;padding-left:20px;color:var(--muted);font-size:12px;line-height:1.75;font-weight:650}.notice{margin-top:14px;color:var(--muted);font-size:11px;line-height:1.65;font-weight:650}.backup-note{display:none;margin-top:12px;padding:12px;border:1px solid color-mix(in srgb,var(--warn) 30%,var(--line));border-radius:15px;color:var(--muted);font-size:11px;line-height:1.6}.backup-note.show{display:block}.hidden{display:none!important}@media(max-width:520px){.release-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="auth-page">
   <main id="mainCard" class="auth-card download-card hidden">
-    <div class="android-mark">A</div>
-    <div class="brand-chip">Android 자동 출석</div>
-    <h1>2-12 출석 앱 다운로드</h1>
-    <p class="subtext">아래 버튼을 누르면 Android 설치 파일 다운로드가 시작됩니다.</p>
-
-    <div class="actions-stack" style="margin-top:20px">
-      <button id="downloadBtn" class="btn btn-block download-button" type="button" onclick="downloadAndroidApp()">다운로드하기</button>
-      <a class="btn btn-soft btn-block" href="/student/identity/">학생 대시보드로 돌아가기</a>
-    </div>
-
-    <section class="guide">
-      <div class="guide-title">설치 전 확인</div>
-      <ol class="guide-list">
-        <li>다운로드가 끝나면 APK 파일을 엽니다.</li>
-        <li>알 수 없는 앱 설치 허용 안내가 나오면 허용합니다.</li>
-        <li>앱 설치 후 위치 권한을 항상 허용으로 설정합니다.</li>
-        <li>배터리 설정은 제한 없음으로 변경합니다.</li>
-      </ol>
-    </section>
-
-    <div class="notice">공식 2-12 출석 앱 설치 파일입니다. 기존 앱이 설치되어 있다면 삭제하지 말고 새 APK를 그대로 설치해 업데이트하세요.</div>
+    <div class="android-mark">A</div><div class="brand-chip">Android 자동 출석</div><h1>2-12 출석 앱 다운로드</h1><p class="subtext">현재 배포 버전을 확인한 뒤 Android 설치 파일을 다운로드합니다.</p>
+    <section class="release-box"><div class="release-grid"><div class="release-item"><div class="release-label">현재 버전</div><div id="releaseVersion" class="release-value">확인 중</div></div><div class="release-item"><div class="release-label">배포일</div><div id="releaseDate" class="release-value">확인 중</div></div><div class="release-item"><div class="release-label">업데이트 유형</div><div id="releaseRequired" class="release-value">확인 중</div></div><div class="release-item"><div class="release-label">빌드 ID</div><div id="releaseBuild" class="release-value">확인 중</div></div></div><div><strong id="releaseNotice">배포 정보를 불러오는 중입니다.</strong><ul id="releaseChanges" class="changes"></ul></div></section>
+    <div class="actions-stack" style="margin-top:20px"><button id="downloadBtn" class="btn btn-block download-button" type="button" onclick="downloadAndroidApp()" disabled>배포 정보 확인 중...</button><a id="backupBtn" class="btn btn-soft btn-block" href="#" target="_blank" rel="noopener">Expo 백업 페이지</a><a class="btn btn-soft btn-block" href="/student/check/">설치 전 기기 점검</a><a class="btn btn-soft btn-block" href="/student/identity/">학생 대시보드로 돌아가기</a></div>
+    <div id="backupNote" class="backup-note">기본 다운로드에 실패하면 Expo 백업 페이지로 자동 이동합니다. 백업 작동 기록은 관리자에게 전달됩니다.</div>
+    <section class="guide"><div class="guide-title">설치 전 확인</div><ol class="guide-list"><li>다운로드가 끝나면 APK 파일을 엽니다.</li><li>알 수 없는 앱 설치 허용 안내가 나오면 허용합니다.</li><li>앱 설치 후 위치 권한을 항상 허용으로 설정합니다.</li><li>배터리 설정은 제한 없음으로 변경합니다.</li><li>기존 앱은 삭제하지 않고 새 APK를 설치해 업데이트합니다.</li></ol></section>
+    <div class="notice">공식 2-12 출석 앱 설치 파일입니다. 다운로드와 설치에 문제가 있으면 기기 점검 또는 복구 센터를 이용하세요.</div>
   </main>
-
-  <div id="loadingOverlay" class="loading-overlay show" aria-hidden="false"><div class="loading-card"><div class="spinner"></div><div class="loading-title">학생 계정 확인 중입니다</div><div class="loading-sub">잠시만 기다려주세요.</div></div></div>
-  <div id="toast" class="toast">알림</div>
-
-  <script>
-    const ANDROID_BUILD_ID="ca000b67-6031-4167-8b22-3c4a8284616e";
-    const EXPO_GRAPHQL_URL="https://api.expo.dev/graphql";
-
-    function isAndroidDevice(){
-      return /Android/i.test(navigator.userAgent||"");
-    }
-
-    document.addEventListener("DOMContentLoaded",async function(){
-      AttendanceApp.Theme.init();
-      if(!isAndroidDevice()){
-        const mobile=/iPhone|iPad|iPod/i.test(navigator.userAgent||"")||(/Macintosh/i.test(navigator.userAgent||"")&&Number(navigator.maxTouchPoints||0)>1);
-        location.replace(mobile?"/student/help/?platform=ios":"/student/err/pc/");
-        return;
-      }
-
-      const session=await StudentAttendance.Session.validate();
-      if(!session){location.replace("/student/login/");return}
-
-      document.getElementById("loadingOverlay").setAttribute("aria-hidden","true");
-      document.getElementById("loadingOverlay").classList.remove("show");
-      document.getElementById("mainCard").classList.remove("hidden");
-    });
-
-    async function getAndroidArtifactUrl(){
-      const response=await fetch(EXPO_GRAPHQL_URL,{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({
-          query:"query BuildsByIdQuery($buildId: ID!) { builds { byId(buildId: $buildId) { id artifacts { applicationArchiveUrl buildUrl } } } }",
-          variables:{buildId:ANDROID_BUILD_ID}
-        })
-      });
-
-      if(!response.ok)throw new Error("다운로드 서버에 연결하지 못했습니다.");
-
-      const result=await response.json();
-      if(result.errors&&result.errors.length)throw new Error(result.errors[0].message||"다운로드 주소를 확인하지 못했습니다.");
-
-      const artifacts=result&&result.data&&result.data.builds&&result.data.builds.byId&&result.data.builds.byId.artifacts;
-      const url=artifacts&&(artifacts.applicationArchiveUrl||artifacts.buildUrl);
-      if(!url)throw new Error("APK 다운로드 주소가 없습니다.");
-      return url;
-    }
-
-    async function downloadAndroidApp(){
-      const button=document.getElementById("downloadBtn");
-      if(button.disabled)return;
-
-      button.disabled=true;
-      button.textContent="다운로드 준비 중...";
-
-      try{
-        const artifactUrl=await getAndroidArtifactUrl();
-        button.textContent="다운로드 시작 중...";
-        location.href=artifactUrl;
-        setTimeout(function(){
-          button.disabled=false;
-          button.textContent="다시 다운로드하기";
-        },2500);
-      }catch(error){
-        button.disabled=false;
-        button.textContent="다운로드하기";
-        AttendanceApp.UI.toast(error.message||"APK 다운로드를 시작하지 못했습니다.",4200);
-      }
-    }
-  </script>
-</body>
-</html>
+  <div id="loadingOverlay" class="loading-overlay show" aria-hidden="false"><div class="loading-card"><div class="spinner"></div><div class="loading-title">다운로드 준비 중입니다</div><div class="loading-sub">학생 계정과 배포 정보를 확인합니다.</div></div></div><div id="toast" class="toast">알림</div>
+<script>
+  const EXPO_GRAPHQL_URL="https://api.expo.dev/graphql";let release=null,session=null,busy=false;
+  function isAndroidDevice(){return /Android/i.test(navigator.userAgent||"")}
+  document.addEventListener("DOMContentLoaded",async function(){AttendanceApp.Theme.init();if(!isAndroidDevice()){const mobile=/iPhone|iPad|iPod/i.test(navigator.userAgent||"")||(/Macintosh/i.test(navigator.userAgent||"")&&Number(navigator.maxTouchPoints||0)>1);location.replace(mobile?"/student/help/?platform=ios":"/student/err/pc/");return}try{session=await StudentAttendance.Session.validate();if(!session){AttendanceFailover.redirect("DOWNLOAD_SESSION_REQUIRED","/student/err/session/?from=android-download","Android 다운로드 페이지에서 학생 세션을 확인하지 못했습니다.");return}const consent=await StudentAttendance.Consent.ensure(session);if(!consent||!consent.requiredAccepted){location.replace("/student/onboarding/?platform=android&next="+encodeURIComponent("/student/app/android/"));return}await loadRelease();document.getElementById("mainCard").classList.remove("hidden");document.getElementById("loadingOverlay").classList.remove("show");document.getElementById("loadingOverlay").setAttribute("aria-hidden","true")}catch(error){AttendanceFailover.redirect("DOWNLOAD_PAGE_INIT_FAILED","/student/err/download/?from=init",error.message||String(error),1000)}});
+  async function loadRelease(){const response=await fetch("/student/app/android/release.json?_="+Date.now(),{cache:"no-store"});if(!response.ok)throw new Error("앱 배포 정보를 불러오지 못했습니다.");release=await response.json();if(!release.buildId||!release.fallbackUrl)throw new Error("앱 배포 설정이 올바르지 않습니다.");document.getElementById("releaseVersion").textContent="v"+(release.version||"-")+" ("+(release.versionCode||"-")+")";document.getElementById("releaseDate").textContent=new Date(release.releasedAt).toLocaleString("ko-KR");document.getElementById("releaseRequired").textContent=release.required?"필수 업데이트":"선택 업데이트";document.getElementById("releaseBuild").textContent=release.buildId;document.getElementById("releaseNotice").textContent=release.notice||"배포 공지 없음";document.getElementById("releaseChanges").innerHTML=(release.changes||[]).map(function(x){return "<li>"+AttendanceApp.UI.escapeHtml(x)+"</li>"}).join("");document.getElementById("backupBtn").href=release.fallbackUrl;document.getElementById("downloadBtn").disabled=false;document.getElementById("downloadBtn").textContent="다운로드하기";document.getElementById("backupNote").classList.add("show")}
+  async function getAndroidArtifactUrl(){const response=await fetch(EXPO_GRAPHQL_URL,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({query:"query BuildsByIdQuery($buildId: ID!) { builds { byId(buildId: $buildId) { id artifacts { applicationArchiveUrl buildUrl } } } }",variables:{buildId:release.buildId}})});if(!response.ok)throw new Error("다운로드 서버에 연결하지 못했습니다.");const result=await response.json();if(result.errors&&result.errors.length)throw new Error(result.errors[0].message||"다운로드 주소를 확인하지 못했습니다.");const artifacts=result&&result.data&&result.data.builds&&result.data.builds.byId&&result.data.builds.byId.artifacts,url=artifacts&&(artifacts.applicationArchiveUrl||artifacts.buildUrl);if(!url)throw new Error("APK 다운로드 주소가 없습니다.");return url}
+  async function downloadAndroidApp(){if(busy||!release)return;busy=true;const button=document.getElementById("downloadBtn");button.disabled=true;button.textContent="다운로드 준비 중...";try{const artifactUrl=await getAndroidArtifactUrl();button.textContent="다운로드 시작 중...";location.href=artifactUrl;setTimeout(function(){busy=false;button.disabled=false;button.textContent="다시 다운로드하기"},2500)}catch(error){button.textContent="백업 페이지로 이동 중...";AttendanceFailover.externalFallback("ANDROID_DOWNLOAD_PRIMARY_FAILED",release.fallbackUrl,error.message||String(error),1300,{buildId:release.buildId,version:release.version});setTimeout(function(){busy=false;button.disabled=false;button.textContent="다운로드 다시 시도"},3000)}}
+</script>
+</body></html>
