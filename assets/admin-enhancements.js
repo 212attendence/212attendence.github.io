@@ -5,9 +5,8 @@
     if(window.AttendanceFailover||document.querySelector('script[src*="/assets/resilience.js"]'))return;
     var script=document.createElement("script");script.src="/assets/resilience.js?v=1";script.defer=true;document.head.appendChild(script);
   }
-  function loadScript(src){
-    if(document.querySelector('script[src="'+src+'"]'))return;
-    var script=document.createElement("script");script.src=src;script.defer=true;document.head.appendChild(script);
+  function loadSync(src){
+    try{var request=new XMLHttpRequest();request.open("GET",src,false);request.send(null);if((request.status>=200&&request.status<300)||request.status===0)window.eval(request.responseText)}catch(error){console.error("Admin extension load failed",error)}
   }
   function addLink(container,label,href,className){
     if(!container||container.querySelector('[href="'+href+'"]'))return;
@@ -27,7 +26,7 @@
     if(location.pathname!=="/accounts-s/"&&location.pathname!=="/accounts-s/index.html")return;
     var actions=document.querySelector(".top-actions");
     addLink(actions,"앱 배포","/admin/app-release/","btn btn-soft");
-    loadScript("/assets/accounts-password-post.js?v=1");
+    loadSync("/assets/accounts-password-post.js?v=1");
   }
   document.addEventListener("DOMContentLoaded",function(){setFavicon();ensureResilience();enhanceDashboard();enhanceAccounts()});
 })(window);
