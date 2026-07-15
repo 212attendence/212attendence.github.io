@@ -1,5 +1,5 @@
 {
-  "id": "/admin-pwa-v1",
+  "id": "/admin-pwa-v2",
   "name": "2-12 관리자",
   "short_name": "출석 관리자",
   "description": "2학년 12반 관리자 출석 대시보드",
@@ -13,12 +13,15 @@
   "orientation": "any",
   "categories": ["education", "productivity", "utilities"],
   "icons": [
-    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"any"},
-    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"maskable"}
+    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"any"},
+    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"maskable"}
   ],
   "shortcuts": [
-    {"name":"관리자 대시보드","short_name":"대시보드","url":"/admin/dashboard/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생계정 관리","short_name":"학생계정","url":"/accounts-s/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
-    {"name":"관리자 도움말","short_name":"도움말","url":"/admin/help/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]}
+    {"name":"관리자 대시보드","short_name":"대시보드","url":"/admin/dashboard/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생계정 관리","short_name":"학생계정","url":"/accounts-s/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생 개인정보 권한","short_name":"개인정보","url":"/admin/privacy-permissions/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"Android 앱 배포","short_name":"앱 배포","url":"/admin/app-release/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"시스템 상태","short_name":"시스템","url":"/admin/system-health/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"관리자 도움말","short_name":"도움말","url":"/admin/help/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]}
   ]
 }
