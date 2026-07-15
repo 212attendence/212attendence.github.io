@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "appName": "2-12 출석",
+  "platform": "android",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "buildId": "ca000b67-6031-4167-8b22-3c4a8284616e",
+  "releasedAt": "2026-07-15T00:00:00+09:00",
+  "required": false,
+  "minimumVersionCode": 1,
+  "notice": "Android 자동 출석 앱 최초 배포 버전입니다.",
+  "changes": [
+    "학생 계정 로그인 및 관리자 승인",
+    "학교 접근 시 백그라운드 자동 출석 지원",
+    "수동 위치 출석 및 알림 지원"
+  ],
+  "downloadPage": "https://212attendence.github.io/student/app/android/",
+  "fallbackUrl": "https://expo.dev/accounts/jiukeum/projects/Attendance212/builds/ca000b67-6031-4167-8b22-3c4a8284616e",
+  "diagnosticPage": "https://212attendence.github.io/student/check/",
+  "supportPage": "https://212attendence.github.io/student/help/",
+  "fileName": "2-12-attendance-v1.0.0.apk",
+  "sha256": ""
+}
