@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>기기 점검 · 2-12 출석</title>
+  <link rel="manifest" href="/student/manifest.json?v=30">
+  <link rel="icon" type="image/png" sizes="300x300" href="/favicon.png?v=30">
+  <link rel="apple-touch-icon" sizes="300x300" href="/favicon.png?v=30">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="/student/assets/app.css?v=22">
+  <script src="/student/assets/app.js?v=30" defer></script>
+  <script src="/student/assets/student.js?v=31" defer></script>
+  <script src="/assets/resilience.js?v=1" defer></script>
+  <style>
+    :root{--ok:#277a4d;--warn:#ad661f;--bad:#b6423a;--blue:#315f84}html[data-theme="dark"]{--ok:#77c495;--warn:#dda164;--bad:#e47e76;--blue:#8ab6d8}
+    .check-card{width:min(720px,100%)}.summary{margin:16px 0;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);font-size:13px;font-weight:850}.check-list{display:grid;gap:10px}.check-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft)}.check-title{font-size:13px;font-weight:900}.check-detail{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.5}.badge{padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}.badge.wait{background:var(--surface);color:var(--muted)}.badge.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.badge.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}.badge.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}.diagnostic-box{width:100%;min-height:180px;margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--surface-soft);color:var(--text);font:700 11px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card check-card">
+    <div class="brand-chip">학생 지원</div><h1>기기 및 연결 점검</h1><p class="subtext">로그인, 서버, 위치, 알림과 앱 다운로드 환경을 한 번에 확인합니다.</p>
+    <div id="summary" class="summary">점검을 시작하지 않았습니다.</div>
+    <div id="checkList" class="check-list"></div>
+    <div class="actions-stack"><button id="runBtn" class="btn btn-primary btn-block" type="button" onclick="runChecks()">전체 점검 시작</button><button class="btn btn-soft btn-block" type="button" onclick="testGps()">GPS 정확도 다시 측정</button><button class="btn btn-soft btn-block" type="button" onclick="copyReport()">진단 결과 복사</button><a class="btn btn-soft btn-block" href="/student/help/">학생 도움말</a><a class="btn btn-soft btn-block" href="/student/identity/">학생 대시보드</a></div>
+    <textarea id="reportBox" class="diagnostic-box" readonly></textarea>
+  </main>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">기기 점검 중입니다</div><div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div></div></div><div id="toast" class="toast">알림</div>
+<script>
+  const CHECKS=[
+    ["device","기기 유형"],["online","인터넷 연결"],["session","학생 로그인"],["server","Apps Script 서버"],["locationSupport","위치 기능 지원"],["locationPermission","위치 권한"],["gps","GPS 정확도"],["notification","알림 권한"],["standalone","홈 화면 앱 실행"],["download","Android 앱 다운로드"],["privacy","개인정보 동의"]
+  ];
+  const results={};
+  document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init();render();setTimeout(runChecks,500)});
+  function render(){const list=document.getElementById("checkList");list.innerHTML=CHECKS.map(function(item){const r=results[item[0]]||{state:"wait",text:"확인 전"};return '<div class="check-item"><div><div class="check-title">'+AttendanceApp.UI.escapeHtml(item[1])+'</div><div class="check-detail">'+AttendanceApp.UI.escapeHtml(r.detail||"")+'</div></div><span class="badge '+r.state+'">'+AttendanceApp.UI.escapeHtml(r.text)+'</span></div>'}).join("");buildReport()}
+  function setResult(key,state,text,detail){results[key]={state:state,text:text,detail:detail||""};render()}
+  function deviceType(){const ua=navigator.userAgent||"",ipad=/iPad/i.test(ua)||(/Macintosh/i.test(ua)&&Number(navigator.maxTouchPoints||0)>1);return /Android/i.test(ua)?"Android":/iPhone|iPod/i.test(ua)||ipad?"iPhone/iPad":"PC"}
+  async function runChecks(){const btn=document.getElementById("runBtn");btn.disabled=true;AttendanceApp.UI.loading("기기 점검 중입니다","서버와 권한 상태를 확인합니다.");try{
+    const device=deviceType();setResult("device",device==="PC"?"warn":"ok",device,device==="PC"?"PC에서는 Android 앱 다운로드를 지원하지 않습니다.":"지원되는 모바일 기기입니다.");
+    setResult("online",navigator.onLine?"ok":"bad",navigator.onLine?"연결됨":"오프라인",navigator.onLine?"인터넷 연결을 사용할 수 있습니다.":"Wi-Fi 또는 모바일 데이터를 켜세요.");
+    let session=null;try{session=await StudentAttendance.Session.validate();setResult("session",session?"ok":"warn",session?"로그인됨":"로그인 필요",session?(session.name||session.studentId):"학생 로그인이 필요합니다.")}catch(error){setResult("session","bad","확인 실패",error.message||String(error))}
+    try{const ping=await StudentAttendance.api("studentFeaturePingJsonp",{},18000);setResult("server",ping&&ping.ok?"ok":"bad",ping&&ping.ok?"정상":"오류",ping&&ping.ok?(ping.schoolName||"학교")+" 반경 "+Number(ping.radiusM||100)+"m":"서버 응답이 올바르지 않습니다.")}catch(error){setResult("server","bad","연결 실패",error.message||String(error));AttendanceFailover.report({errorType:"DIAGNOSTIC_SERVER_FAILED",message:error.message||String(error),fallbackUrl:"/student/err/server/"})}
+    setResult("locationSupport",navigator.geolocation?"ok":"bad",navigator.geolocation?"지원됨":"지원 안 됨",navigator.geolocation?"브라우저 위치 기능을 사용할 수 있습니다.":"이 기기에서 위치 기능을 사용할 수 없습니다.");
+    const p=await StudentAttendance.permissionState();setResult("locationPermission",p==="granted"?"ok":p==="denied"?"bad":"warn",p==="granted"?"허용됨":p==="denied"?"차단됨":"확인 필요",p==="granted"?"정확한 위치 권한이 허용되어 있습니다.":"출석 인증 전에 위치 권한을 허용하세요.");
+    const notif=("Notification" in window)?Notification.permission:"unsupported";setResult("notification",notif==="granted"?"ok":notif==="denied"?"warn":"wait",notif==="granted"?"허용됨":notif==="denied"?"차단됨":notif==="unsupported"?"지원 안 됨":"미결정","알림은 선택 권한입니다.");
+    const standalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;setResult("standalone",standalone?"ok":"warn",standalone?"앱 실행":"브라우저 실행",standalone?"홈 화면 앱 형태로 실행 중입니다.":"브라우저에서 실행 중입니다.");
+    const android=device==="Android";setResult("download",android?"ok":device==="PC"?"bad":"warn",android?"가능":device==="PC"?"미지원":"불필요",android?"Android APK 다운로드 페이지를 사용할 수 있습니다.":device==="PC"?"모바일 Android 기기에서 접속하세요.":"iPhone은 학생 웹앱을 사용합니다.");
+    const consent=session?StudentAttendance.Consent.current(session.studentId):null;setResult("privacy",consent&&consent.requiredAccepted?"ok":"warn",consent&&consent.requiredAccepted?"완료":"필요",consent&&consent.requiredAccepted?"필수 개인정보 동의가 저장되어 있습니다.":"최초 설정에서 필수 동의를 완료하세요.");
+    if(p==="granted")await testGps(false);else setResult("gps","warn","권한 필요","위치 권한을 허용하면 정확도를 측정할 수 있습니다.");
+  }finally{AttendanceApp.UI.stopLoading();btn.disabled=false;updateSummary()}}
+  async function testGps(showLoading){if(showLoading!==false)AttendanceApp.UI.loading("GPS 측정 중입니다","정확한 위치를 확인합니다.");try{const pos=await StudentAttendance.getPositionWithRetry(),accuracy=Math.round(Number(pos.coords.accuracy||0));setResult("gps",accuracy<=100?"ok":"warn","±"+accuracy+"m",accuracy<=100?"출석 판정 가능한 정확도입니다.":"야외 또는 창가에서 다시 시도하세요.")}catch(error){setResult("gps","bad","측정 실패",StudentAttendance.gpsErrorMessage(error))}finally{if(showLoading!==false)AttendanceApp.UI.stopLoading();updateSummary()}}
+  function updateSummary(){const values=Object.values(results),bad=values.filter(x=>x.state==="bad").length,warn=values.filter(x=>x.state==="warn").length;document.getElementById("summary").textContent=bad?"조치가 필요한 오류 "+bad+"개 · 경고 "+warn+"개":warn?"기본 사용 가능 · 확인 권장 "+warn+"개":"모든 주요 항목이 정상입니다."}
+  function buildReport(){const lines=["2-12 출석 기기 진단",new Date().toLocaleString("ko-KR"),"페이지: "+location.href,"User-Agent: "+navigator.userAgent,""];CHECKS.forEach(function(item){const r=results[item[0]]||{text:"확인 전",detail:""};lines.push(item[1]+": "+r.text+(r.detail?" · "+r.detail:""))});document.getElementById("reportBox").value=lines.join("\n")}
+  async function copyReport(){const box=document.getElementById("reportBox");try{await navigator.clipboard.writeText(box.value);AttendanceApp.UI.toast("진단 결과를 복사했습니다.")}catch(error){box.select();document.execCommand("copy");AttendanceApp.UI.toast("진단 결과를 복사했습니다.")}}
+</script>
+</body>
+</html>
