@@ -2,191 +2,42 @@
 <html lang="ko" data-theme="light">
 <head>
   <base href="/">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
   <title>학생 출석 인증</title>
-  <link rel="manifest" href="/student/manifest.json?v=24">
-  <link rel="icon" href="../favicon.png?v=22">
-  <link rel="apple-touch-icon" href="../favicon.png?v=22">
-  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
-  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
-  <link rel="preconnect" href="https://script.google.com">
-  <link rel="preconnect" href="https://script.googleusercontent.com">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="../assets/app.css?v=22">
-  <script src="../assets/app.js?v=28" defer></script>
-  <script src="/assets/role-app.js?v=28" defer></script>
-  <script src="../assets/student.js?v=28" defer></script>
+  <link rel="manifest" href="/student/manifest.json?v=30"><link rel="icon" type="image/png" sizes="300x300" href="/favicon.png?v=30"><link rel="shortcut icon" href="/favicon.png?v=30"><link rel="apple-touch-icon" sizes="300x300" href="/favicon.png?v=30">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)"><meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin><link rel="stylesheet" href="/student/assets/app.css?v=22">
+  <script src="/student/assets/app.js?v=30" defer></script><script src="/assets/role-app.js?v=30" defer></script><script src="/student/assets/student.js?v=31" defer></script><script src="/assets/resilience.js?v=1" defer></script>
   <style>
     :root{--student:#315f84;--student-soft:rgba(49,95,132,.12);--ok:#2f8254;--bad:#b6423a;--warn:#ad661f}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12);--ok:#77c495;--bad:#e47e76;--warn:#dda164}
     body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(76px)}body::before{width:34rem;height:34rem;left:-14rem;top:-13rem;background:var(--student-soft)}body::after{width:28rem;height:28rem;right:-12rem;bottom:-13rem;background:rgba(47,130,84,.08)}
     .student-card{width:min(520px,100%)}.profile{display:flex;align-items:center;gap:13px;margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:19px;background:var(--surface-soft)}.avatar{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:var(--student-soft);color:var(--student);font-size:20px;font-weight:900}.profile strong{display:block;font-size:16px}.profile small{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:650}
     .location-card{padding:17px;border:1px solid var(--line);border-radius:21px;background:linear-gradient(145deg,var(--surface),var(--surface-soft))}.location-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.location-title{font-size:15px;font-weight:900}.location-badge{padding:5px 9px;border-radius:999px;background:var(--student-soft);color:var(--student);font-size:11px;font-weight:900}.location-desc{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6;font-weight:650}.meter{height:9px;margin-top:14px;border-radius:999px;background:var(--surface-strong);overflow:hidden}.meter-fill{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--ok),var(--student));transition:width .6s ease}
-    .result{display:none;margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.result.show{display:block}.result.ok{border-color:color-mix(in srgb,var(--ok) 34%,var(--line))}.result.bad{border-color:color-mix(in srgb,var(--bad) 34%,var(--line))}.result-title{font-size:16px;font-weight:900}.result-text{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}.footer-links{display:grid;gap:8px;margin-top:16px}.footer-links a,.footer-links button{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft);color:var(--text);font-size:12px;font-weight:850;text-decoration:none;text-align:center;cursor:pointer}.footer-links a:first-child{background:var(--student-soft);color:var(--student);border-color:color-mix(in srgb,var(--student) 24%,var(--line))}
+    .result{display:none;margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.result.show{display:block}.result.ok{border-color:color-mix(in srgb,var(--ok) 34%,var(--line))}.result.bad{border-color:color-mix(in srgb,var(--bad) 34%,var(--line))}.result-title{font-size:16px;font-weight:900}.result-text{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.55;font-weight:650}
+    .footer-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.footer-links a,.footer-links button{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft);color:var(--text);font-size:12px;font-weight:850;text-decoration:none;text-align:center;cursor:pointer}.footer-links a:first-child{background:var(--student-soft);color:var(--student);border-color:color-mix(in srgb,var(--student) 24%,var(--line))}@media(max-width:440px){.footer-links{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="auth-page">
-  <main class="auth-card student-card">
-    <div class="brand-chip">해강중학교 · 학생 출석</div>
-    <h1>위치 출석 인증</h1>
-    <p class="subtext">학교 반경 100m 안에서 위치를 확인한 뒤 출석을 인증합니다.</p>
-
+  <main class="auth-card student-card"><div class="brand-chip">해강중학교 · 학생 출석</div><h1>위치 출석 인증</h1><p class="subtext">학교 반경 100m 안에서 위치를 확인한 뒤 출석을 인증합니다.</p>
     <div class="profile"><div class="avatar">S</div><div><strong id="studentName">학생</strong><small id="studentMeta">계정 확인 중</small></div></div>
-
-    <div class="location-card">
-      <div class="location-head"><div class="location-title">위치 권한 상태</div><span id="permissionBadge" class="location-badge">확인 중</span></div>
-      <div id="locationDesc" class="location-desc">정확한 위치 사용을 켜고 아래 버튼을 누르세요. 실제 좌표는 저장하지 않고 학교와의 거리 및 정확도만 기록합니다.</div>
-      <div class="meter"><div id="accuracyMeter" class="meter-fill"></div></div>
-    </div>
-
+    <div class="location-card"><div class="location-head"><div class="location-title">위치 권한 상태</div><span id="permissionBadge" class="location-badge">확인 중</span></div><div id="locationDesc" class="location-desc">정확한 위치 사용을 켜고 아래 버튼을 누르세요. 실제 좌표는 저장하지 않고 학교와의 거리 및 정확도만 기록합니다.</div><div class="meter"><div id="accuracyMeter" class="meter-fill"></div></div></div>
     <div id="resultBox" class="result"><div id="resultTitle" class="result-title">결과</div><div id="resultText" class="result-text"></div></div>
-
     <div class="actions-stack"><button id="attendanceBtn" class="btn btn-primary btn-block" type="button" onclick="submitAttendance()">위치 확인 및 출석 인증</button></div>
-    <div class="footer-links"><a href="/student/app-guide/">앱 설치 가이드</a><a href="/student/help/">도움말</a><button type="button" onclick="forgetDevice()">이 기기 로그인 해제</button></div>
+    <div class="footer-links"><a href="/student/app-guide/">앱 설치 가이드</a><a href="/student/check/">기기 점검</a><a href="/student/privacy/">개인정보 동의 관리</a><button type="button" onclick="resetPlatformChoice()">사용 기기 다시 선택</button><a href="/student/help/">도움말</a><button type="button" onclick="forgetDevice()">이 기기 로그인 해제</button></div>
   </main>
-
-  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">위치 확인 중입니다</div><div id="loadingSub" class="loading-sub">정확한 GPS 위치를 불러옵니다.</div></div></div>
-  <div id="toast" class="toast">알림</div>
-
-  <script>
-    const GPS_SAMPLE_WINDOW_MS=20000,GPS_EARLY_ACCURACY_M=50;
-    let busy=false,session=null,autoCheckTimer=null;
-
-    document.addEventListener("DOMContentLoaded",async function(){
-      AttendanceApp.Theme.init();
-      session=await StudentAttendance.Session.validate();
-      if(!session){location.replace("/student/login/");return}
-      document.getElementById("studentName").textContent=session.name||"학생";
-      document.getElementById("studentMeta").textContent=(session.studentId||"학생 계정")+(session.fingerId?" · 지문ID "+session.fingerId:"");
-      const state=await StudentAttendance.permissionState();renderPermission(state);if(state==="granted")setTimeout(function(){maybeAutoAttendance("startup")},1000);
-      if(new URLSearchParams(location.search).get("approved")==="1")AttendanceApp.UI.toast("로그인이 승인되었습니다. 아래 버튼을 눌러 위치 출석을 인증하세요.",4200);
-    });
-
-    function renderPermission(state){
-      const badge=document.getElementById("permissionBadge"),desc=document.getElementById("locationDesc");
-      badge.style.color="";
-      if(state==="granted"){badge.textContent="허용됨";badge.style.color="var(--ok)";desc.textContent="위치 권한이 허용되어 있습니다. 버튼을 누르면 여러 번 측정한 뒤 가장 정확한 위치를 사용합니다."}
-      else if(state==="denied"){badge.textContent="차단됨";badge.style.color="var(--bad)";desc.textContent="위치 권한이 차단되어 있습니다. 권한 설정 도움말을 확인하세요."}
-      else if(state==="unsupported"){badge.textContent="지원 안 됨";badge.style.color="var(--bad)";desc.textContent="이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다."}
-      else if(state==="retry"){badge.textContent="재시도 필요";badge.style.color="var(--warn)";desc.textContent="권한은 유지되어 있지만 GPS 위치를 일시적으로 받지 못했습니다. 잠시 후 버튼을 다시 누르세요."}
-      else{badge.textContent="허용 필요";desc.textContent="버튼을 누르면 위치 권한 요청이 표시됩니다. 정확한 위치를 허용하세요."}
-    }
-
-    function updateAccuracyDisplay(accuracy){
-      const value=Math.max(0,Number(accuracy||0));
-      document.getElementById("accuracyMeter").style.width=Math.max(8,Math.min(100,100-(value/2)))+"%";
-      document.getElementById("permissionBadge").textContent="±"+Math.round(value)+"m";
-      document.getElementById("permissionBadge").style.color=value<=100?"var(--ok)":"var(--warn)";
-      document.getElementById("locationDesc").textContent="GPS를 재측정하고 있습니다. 현재 가장 좋은 정확도는 ±"+Math.round(value)+"m입니다.";
-    }
-
-    function getBestPosition(){
-      return new Promise(function(resolve,reject){
-        if(!navigator.geolocation){reject(Object.assign(new Error("이 기기는 위치 기능을 지원하지 않습니다."),{code:"UNSUPPORTED"}));return}
-
-        let best=null,lastError=null,finished=false,watchId=null;
-
-        const acceptPosition=function(position){
-          if(!position||!position.coords)return;
-          const latitude=Number(position.coords.latitude),longitude=Number(position.coords.longitude),accuracy=Number(position.coords.accuracy||Infinity);
-          if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||!Number.isFinite(accuracy))return;
-          if(!best||accuracy<Number(best.coords.accuracy||Infinity)){best=position;updateAccuracyDisplay(accuracy)}
-          if(accuracy<=GPS_EARLY_ACCURACY_M)finish();
-        };
-
-        const handleError=function(error){
-          lastError=error;
-          if(StudentAttendance.isPermissionDenied(error))finish(error);
-        };
-
-        const finish=function(forcedError){
-          if(finished)return;finished=true;
-          if(watchId!==null)navigator.geolocation.clearWatch(watchId);
-          clearTimeout(timer);
-          if(forcedError){reject(forcedError);return}
-          if(best){resolve(best);return}
-          if(lastError){reject(lastError);return}
-          reject(Object.assign(new Error("위치 확인 시간이 초과되었습니다."),{code:3}));
-        };
-
-        const timer=setTimeout(function(){finish()},GPS_SAMPLE_WINDOW_MS);
-
-        navigator.geolocation.getCurrentPosition(
-          acceptPosition,
-          handleError,
-          {enableHighAccuracy:false,timeout:7000,maximumAge:30000}
-        );
-
-        watchId=navigator.geolocation.watchPosition(
-          acceptPosition,
-          handleError,
-          {enableHighAccuracy:true,timeout:GPS_SAMPLE_WINDOW_MS,maximumAge:5000}
-        );
-      });
-    }
-
-    async function submitAttendance(autoStarted){
-      if(busy||!session)return;
-      busy=true;
-      const button=document.getElementById("attendanceBtn");
-      button.disabled=true;
-      document.getElementById("resultBox").className="result";
-      AttendanceApp.UI.loading("위치 확인 중입니다","최대 20초 동안 가장 정확한 GPS 위치를 찾습니다.");
-
-      try{
-        const position=await getBestPosition(),coords=position.coords;
-        const accuracy=Math.round(Number(coords.accuracy||0));
-        updateAccuracyDisplay(accuracy);
-        const response=await StudentAttendance.api("studentAttendanceJsonp",{
-          studentToken:session.token,
-          latitude:String(coords.latitude),
-          longitude:String(coords.longitude),
-          accuracy:String(coords.accuracy||0)
-        },30000);
-
-        if(!response||!response.ok){
-          if(response&&response.code==="GPS_OUTSIDE"){
-            showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||100))+"m");return
-          }
-          if(response&&response.code==="GPS_ACCURACY_LOW"){
-            const measured=Math.round(Number(response.accuracyM||accuracy||0)),maximum=Math.round(Number(response.maxAccuracyM||200));
-            renderPermission("retry");
-            showResult(false,"GPS 정확도가 부족합니다.","현재 위치 정확도 ±"+measured+"m · 허용 최대 ±"+maximum+"m입니다. Wi-Fi와 정확한 위치를 켜고 창가 또는 운동장에서 다시 시도하세요.");return
-          }
-          if(response&&response.code==="SCHOOL_CLOSED"){
-            localStorage.setItem("studentAutoAttendanceDate",todayKey());
-            showResult(false,"오늘은 출석 인증일이 아닙니다.",response.message||"방학·주말·공휴일 또는 학교 휴업일입니다.");return
-          }
-          if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");
-          if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();location.replace("/student/login/");return}
-          throw new Error(response&&response.message||"출석 인증에 실패했습니다.");
-        }
-
-        renderPermission("granted");
-        localStorage.setItem("studentAutoAttendanceDate",todayKey());
-        showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");
-        if(localStorage.getItem("attendancePushRegisteredV1")!=="student")AttendanceRoleApp.showLocalNotification(response.alreadyRecorded?"이미 출석 인증됨":"출석 인증 완료",(session.name||"학생")+" · "+(response.status||"출석"),"/student/identity/");
-      }catch(error){
-        if(StudentAttendance.shouldOpenGpsError(error)){StudentAttendance.goGpsError(error);return}
-        renderPermission("retry");
-        showResult(false,"위치를 일시적으로 확인하지 못했습니다.",StudentAttendance.gpsErrorMessage(error));
-      }finally{
-        AttendanceApp.UI.stopLoading();
-        busy=false;
-        button.disabled=false;
-      }
-    }
-
-    function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-    async function maybeAutoAttendance(reason){if(!session||busy||document.hidden)return;if(localStorage.getItem("studentAutoAttendanceDate")===todayKey())return;const state=await StudentAttendance.permissionState();if(state!=="granted")return;submitAttendance(true)}
-    window.addEventListener("attendance-role-resume",function(){clearTimeout(autoCheckTimer);autoCheckTimer=setTimeout(function(){maybeAutoAttendance("resume")},700)});
-    window.addEventListener("attendance-permissions-ready",function(){setTimeout(function(){maybeAutoAttendance("permission")},500)});
-    setInterval(function(){maybeAutoAttendance("interval")},5*60*1000);
-
-    function showResult(ok,title,text){const box=document.getElementById("resultBox");box.className="result show "+(ok?"ok":"bad");document.getElementById("resultTitle").textContent=title;document.getElementById("resultText").textContent=text}
-    function forgetDevice(){StudentAttendance.Session.clear();StudentAttendance.Pending.clear();location.replace("/student/login/")}
-  </script>
-</body>
-</html>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">위치 확인 중입니다</div><div id="loadingSub" class="loading-sub">정확한 GPS 위치를 불러옵니다.</div></div></div><div id="toast" class="toast">알림</div>
+<script>
+  const GPS_SAMPLE_WINDOW_MS=20000,GPS_EARLY_ACCURACY_M=50,PLATFORM_CHOICE_KEY="attendanceStudentPlatformChoiceV1";let busy=false,session=null,autoCheckTimer=null,serverErrorCount=0;
+  document.addEventListener("DOMContentLoaded",async function(){AttendanceApp.Theme.init();try{session=await StudentAttendance.Session.validate();if(!session){AttendanceFailover.redirect("STUDENT_SESSION_REQUIRED","/student/err/session/?from=identity","학생 대시보드에서 로그인 세션을 확인하지 못했습니다.");return}const consent=await StudentAttendance.Consent.ensure(session);if(!consent||!consent.requiredAccepted){location.replace("/student/onboarding/?next="+encodeURIComponent("/student/identity/"));return}document.getElementById("studentName").textContent=session.name||"학생";document.getElementById("studentMeta").textContent=(session.studentId||"학생 계정")+(session.fingerId?" · 지문ID "+session.fingerId:"");const state=await StudentAttendance.permissionState();renderPermission(state);if(state==="granted")setTimeout(function(){maybeAutoAttendance("startup")},1000);if(new URLSearchParams(location.search).get("approved")==="1")AttendanceApp.UI.toast("로그인이 승인되었습니다. 위치 출석을 인증하세요.",4200)}catch(error){AttendanceFailover.redirect("IDENTITY_INIT_FAILED","/student/err/server/?from=identity",error.message||String(error),1000)}});
+  function renderPermission(state){const badge=document.getElementById("permissionBadge"),desc=document.getElementById("locationDesc");badge.style.color="";if(state==="granted"){badge.textContent="허용됨";badge.style.color="var(--ok)";desc.textContent="위치 권한이 허용되어 있습니다. 버튼을 누르면 여러 번 측정한 뒤 가장 정확한 위치를 사용합니다."}else if(state==="denied"){badge.textContent="차단됨";badge.style.color="var(--bad)";desc.textContent="위치 권한이 차단되어 있습니다. 권한 설정 도움말을 확인하세요."}else if(state==="unsupported"){badge.textContent="지원 안 됨";badge.style.color="var(--bad)";desc.textContent="이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다."}else if(state==="retry"){badge.textContent="재시도 필요";badge.style.color="var(--warn)";desc.textContent="권한은 유지되어 있지만 GPS 위치를 일시적으로 받지 못했습니다. 잠시 후 버튼을 다시 누르세요."}else{badge.textContent="허용 필요";desc.textContent="버튼을 누르면 위치 권한 요청이 표시됩니다. 정확한 위치를 허용하세요."}}
+  function updateAccuracyDisplay(accuracy){const value=Math.max(0,Number(accuracy||0));document.getElementById("accuracyMeter").style.width=Math.max(8,Math.min(100,100-(value/2)))+"%";document.getElementById("permissionBadge").textContent="±"+Math.round(value)+"m";document.getElementById("permissionBadge").style.color=value<=100?"var(--ok)":"var(--warn)";document.getElementById("locationDesc").textContent="GPS를 재측정하고 있습니다. 현재 가장 좋은 정확도는 ±"+Math.round(value)+"m입니다."}
+  function getBestPosition(){return new Promise(function(resolve,reject){if(!navigator.geolocation){reject(Object.assign(new Error("이 기기는 위치 기능을 지원하지 않습니다."),{code:"UNSUPPORTED"}));return}let best=null,lastError=null,finished=false,watchId=null;const acceptPosition=function(position){if(!position||!position.coords)return;const latitude=Number(position.coords.latitude),longitude=Number(position.coords.longitude),accuracy=Number(position.coords.accuracy||Infinity);if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||!Number.isFinite(accuracy))return;if(!best||accuracy<Number(best.coords.accuracy||Infinity)){best=position;updateAccuracyDisplay(accuracy)}if(accuracy<=GPS_EARLY_ACCURACY_M)finish()};const handleError=function(error){lastError=error;if(StudentAttendance.isPermissionDenied(error))finish(error)};const finish=function(forcedError){if(finished)return;finished=true;if(watchId!==null)navigator.geolocation.clearWatch(watchId);clearTimeout(timer);if(forcedError){reject(forcedError);return}if(best){resolve(best);return}if(lastError){reject(lastError);return}reject(Object.assign(new Error("위치 확인 시간이 초과되었습니다."),{code:3}))};const timer=setTimeout(function(){finish()},GPS_SAMPLE_WINDOW_MS);navigator.geolocation.getCurrentPosition(acceptPosition,handleError,{enableHighAccuracy:false,timeout:7000,maximumAge:30000});watchId=navigator.geolocation.watchPosition(acceptPosition,handleError,{enableHighAccuracy:true,timeout:GPS_SAMPLE_WINDOW_MS,maximumAge:5000})})}
+  async function submitAttendance(autoStarted){if(busy||!session)return;busy=true;const button=document.getElementById("attendanceBtn");button.disabled=true;document.getElementById("resultBox").className="result";AttendanceApp.UI.loading("위치 확인 중입니다","최대 20초 동안 가장 정확한 GPS 위치를 찾습니다.");try{const position=await getBestPosition(),coords=position.coords,accuracy=Math.round(Number(coords.accuracy||0));updateAccuracyDisplay(accuracy);const response=await StudentAttendance.api("studentAttendanceJsonp",{studentToken:session.token,latitude:String(coords.latitude),longitude:String(coords.longitude),accuracy:String(coords.accuracy||0)},30000);if(!response||!response.ok){if(response&&response.code==="GPS_OUTSIDE"){showResult(false,"학교 범위 밖입니다.","현재 측정 거리 "+Math.round(Number(response.distanceM||0))+"m · 허용 반경 "+Math.round(Number(response.radiusM||100))+"m");return}if(response&&response.code==="GPS_ACCURACY_LOW"){const measured=Math.round(Number(response.accuracyM||accuracy||0)),maximum=Math.round(Number(response.maxAccuracyM||200));renderPermission("retry");showResult(false,"GPS 정확도가 부족합니다.","현재 위치 정확도 ±"+measured+"m · 허용 최대 ±"+maximum+"m입니다. Wi-Fi와 정확한 위치를 켜고 창가 또는 운동장에서 다시 시도하세요.");return}if(response&&response.code==="SCHOOL_CLOSED"){localStorage.setItem("studentAutoAttendanceDate",todayKey());showResult(false,"오늘은 출석 인증일이 아닙니다.",response.message||"방학·주말·공휴일 또는 학교 휴업일입니다.");return}if(response&&response.code==="GPS_CONFIG_REQUIRED")throw new Error("관리자가 학교 위치 기준점을 먼저 설정해야 합니다.");if(response&&response.code==="STUDENT_AUTH_REQUIRED"){StudentAttendance.Session.clear();AttendanceFailover.redirect("ATTENDANCE_SESSION_EXPIRED","/student/err/session/?from=attendance","출석 요청 중 학생 인증이 만료되었습니다.");return}throw new Error(response&&response.message||"출석 인증에 실패했습니다.")}serverErrorCount=0;renderPermission("granted");localStorage.setItem("studentAutoAttendanceDate",todayKey());showResult(true,response.alreadyRecorded?"이미 출석 인증되었습니다.":"출석 인증이 완료되었습니다.","학교와의 거리 "+Math.round(Number(response.distanceM||0))+"m · 위치 정확도 ±"+Math.round(Number(response.accuracyM||accuracy))+"m");if(localStorage.getItem("attendancePushRegisteredV1")!=="student")AttendanceRoleApp.showLocalNotification(response.alreadyRecorded?"이미 출석 인증됨":"출석 인증 완료",(session.name||"학생")+" · "+(response.status||"출석"),"/student/identity/")}catch(error){if(StudentAttendance.shouldOpenGpsError(error)){StudentAttendance.goGpsError(error);return}renderPermission("retry");showResult(false,"위치를 일시적으로 확인하지 못했습니다.",StudentAttendance.gpsErrorMessage(error));if(!StudentAttendance.isTransientGpsError(error)){serverErrorCount+=1;AttendanceFailover.report({errorType:"ATTENDANCE_REQUEST_FAILED",message:error.message||String(error),fallbackUrl:"/student/err/server/?from=attendance"});if(serverErrorCount>=2)setTimeout(function(){AttendanceFailover.redirect("ATTENDANCE_SERVER_UNAVAILABLE","/student/err/server/?from=attendance",error.message||String(error))},900)}}finally{AttendanceApp.UI.stopLoading();busy=false;button.disabled=false}}
+  function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  async function maybeAutoAttendance(reason){if(!session||busy||document.hidden)return;if(localStorage.getItem("studentAutoAttendanceDate")===todayKey())return;const state=await StudentAttendance.permissionState();if(state!=="granted")return;submitAttendance(true)}
+  window.addEventListener("attendance-role-resume",function(){clearTimeout(autoCheckTimer);autoCheckTimer=setTimeout(function(){maybeAutoAttendance("resume")},700)});window.addEventListener("attendance-permissions-ready",function(){setTimeout(function(){maybeAutoAttendance("permission")},500)});setInterval(function(){maybeAutoAttendance("interval")},5*60*1000);
+  function showResult(ok,title,text){const box=document.getElementById("resultBox");box.className="result show "+(ok?"ok":"bad");document.getElementById("resultTitle").textContent=title;document.getElementById("resultText").textContent=text}
+  function resetPlatformChoice(){try{localStorage.removeItem(PLATFORM_CHOICE_KEY)}catch(error){}location.href="/ios-or-android/"}
+  function forgetDevice(){StudentAttendance.Session.clear();StudentAttendance.Pending.clear();location.replace("/student/login/")}
+</script>
+</body></html>
