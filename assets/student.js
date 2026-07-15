@@ -4,6 +4,7 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE5SDb4aYv5MtyUCP1r0sAp24wBEfWbySKRQXxpuiLrv6irwSbG4L8ABSNWZY8pEvX/exec";
   const SESSION_KEY = "attendanceStudentSessionV1";
   const PENDING_KEY = "attendanceStudentPendingRequestV1";
+  const CONSENT_KEY = "attendanceStudentConsentV2";
 
   function readJson(key) {
     try { return JSON.parse(localStorage.getItem(key) || "null"); }
@@ -60,6 +61,46 @@
     current() { return readJson(PENDING_KEY); },
     save(value) { return writeJson(PENDING_KEY, value || null); },
     clear() { try { localStorage.removeItem(PENDING_KEY); } catch (error) {} }
+  };
+
+  const Consent = {
+    current(studentId) {
+      const store = readJson(CONSENT_KEY) || {};
+      const key = String(studentId || "");
+      const value = key ? store[key] : null;
+      return value && value.status !== "WITHDRAWN" ? value : null;
+    },
+    save(value) {
+      if (!value || !value.studentId) return false;
+      const store = readJson(CONSENT_KEY) || {};
+      store[String(value.studentId)] = Object.assign({}, value, { savedAt: Date.now() });
+      return writeJson(CONSENT_KEY, store);
+    },
+    clear(studentId) {
+      const store = readJson(CONSENT_KEY) || {};
+      if (studentId) delete store[String(studentId)];
+      else Object.keys(store).forEach(function (key) { delete store[key]; });
+      return writeJson(CONSENT_KEY, store);
+    },
+    async fetch(session) {
+      if (!session || !session.token) return null;
+      const result = await api("studentPrivacyStatusJsonp", { studentToken: session.token }, 22000);
+      if (!result || !result.ok || !result.consent) return null;
+      const consent = Object.assign({}, result.consent, {
+        studentId: String(result.consent.studentId || session.studentId || ""),
+        name: String(result.consent.name || session.name || ""),
+        fingerId: String(result.consent.fingerId || session.fingerId || ""),
+        requiredAccepted: Boolean(result.consent.requiredAccepted)
+      });
+      this.save(consent);
+      return consent;
+    },
+    async ensure(session) {
+      const local = this.current(session && session.studentId);
+      if (local && local.requiredAccepted) return local;
+      try { return await this.fetch(session); }
+      catch (error) { return local; }
+    }
   };
 
   function clientParams(params) {
@@ -154,10 +195,11 @@
   }
 
   window.StudentAttendance = {
-    version: "1.1.0",
+    version: "1.2.0",
     api: api,
     Session: Session,
     Pending: Pending,
+    Consent: Consent,
     permissionState: permissionState,
     getPosition: getPosition,
     getPositionWithRetry: getPositionWithRetry,
