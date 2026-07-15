@@ -1,5 +1,5 @@
 {
-  "id": "/student-pwa-v1",
+  "id": "/student-pwa-v2",
   "name": "2-12 학생 출석",
   "short_name": "학생 출석",
   "description": "해강중학교 학생 위치 출석 인증 앱",
@@ -13,13 +13,15 @@
   "orientation": "any",
   "categories": ["education", "productivity", "utilities"],
   "icons": [
-    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"any"},
-    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"maskable"}
+    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"any"},
+    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"maskable"}
   ],
   "shortcuts": [
-    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
-    {"name":"앱 설치 가이드","short_name":"설치 가이드","url":"/student/app-guide/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]}
+    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"기기 점검","short_name":"기기 점검","url":"/student/check/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"개인정보 동의 관리","short_name":"개인정보","url":"/student/privacy/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"Android 앱 다운로드","short_name":"앱 다운로드","url":"/student/app/android/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]}
   ]
 }
