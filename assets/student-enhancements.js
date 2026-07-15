@@ -10,6 +10,11 @@
     });
   }
 
+  function ensureLatestStudentClient(){
+    if(window.StudentAttendance&&String(window.StudentAttendance.version||"")>="1.3.0")return;
+    try{var request=new XMLHttpRequest();request.open("GET","/assets/student.js?v=32",false);request.send(null);if((request.status>=200&&request.status<300)||request.status===0)window.eval(request.responseText)}catch(error){console.error("Student client refresh failed",error)}
+  }
+
   function ensureResilience(){
     if(window.AttendanceFailover||document.querySelector('script[src*="/assets/resilience.js"]'))return;
     var script=document.createElement("script");script.src="/assets/resilience.js?v=1";script.defer=true;document.head.appendChild(script);
@@ -41,5 +46,5 @@
     section.appendChild(grid);main.appendChild(section);
   }
 
-  document.addEventListener("DOMContentLoaded",function(){setFavicon();ensureResilience();addNetworkBanner();addSupportPanel()});
+  document.addEventListener("DOMContentLoaded",function(){ensureLatestStudentClient();setFavicon();ensureResilience();addNetworkBanner();addSupportPanel()});
 })(window);
