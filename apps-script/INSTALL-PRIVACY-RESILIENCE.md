@@ -25,19 +25,19 @@ if (studentResponse) return studentResponse;
 
 ## 3. doPost(e) 연결
 
-관리자가 직접 지정한 비밀번호는 URL에 넣지 않고 POST 본문으로 전송합니다. 기존 `doPost(e)` 함수 시작 부분에 아래 코드를 추가합니다.
+관리자가 직접 지정한 비밀번호와 학생 개인정보 동의 내용은 URL에 넣지 않고 POST 본문으로 전송합니다. 기존 `doPost(e)` 함수 시작 부분에 아래 코드를 추가합니다.
 
 ```javascript
-var passwordPostResponse = handleStudentPasswordPost_(e);
-if (passwordPostResponse) return passwordPostResponse;
+var securePostResponse = handleStudentSecurePost_(e);
+if (securePostResponse) return securePostResponse;
 ```
 
 기존 `doPost(e)`가 없다면 다음처럼 만듭니다.
 
 ```javascript
 function doPost(e) {
-  var passwordPostResponse = handleStudentPasswordPost_(e);
-  if (passwordPostResponse) return passwordPostResponse;
+  var securePostResponse = handleStudentSecurePost_(e);
+  if (securePostResponse) return securePostResponse;
   return ContentService.createTextOutput('unsupported');
 }
 ```
@@ -76,14 +76,12 @@ Apps Script 편집기에서 `setup()`을 직접 한 번 실행합니다. 다음 
 5. 스프레드시트 `학생개인정보권한` 행 생성 확인
 6. 관리자 `/admin/privacy-permissions/`에서 계정별 권한 확인
 7. `/accounts-s/`에서 관리자 지정 비밀번호 설정
-8. 브라우저 개발자 도구에서 비밀번호가 URL 쿼리에 포함되지 않는지 확인
+8. 브라우저 주소에 관리자 지정 비밀번호·법정대리인 성명이 포함되지 않는지 확인
 9. `/student/recovery/` 진입 후 `시스템오류알림`과 관리자 이메일 확인
 
 ## 신규 GET action
 
-- `studentSavePrivacyConsentJsonp`
 - `studentPrivacyStatusJsonp`
-- `studentWithdrawPrivacyConsentJsonp`
 - `adminPrivacyPermissionsJsonp`
 - `adminSetStudentPasswordJsonp` — 호환용이며 웹 화면은 사용하지 않음
 - `adminMarkGuardianConsentJsonp`
@@ -93,3 +91,7 @@ Apps Script 편집기에서 `setup()`을 직접 한 번 실행합니다. 다음 
 ## 신규 POST action
 
 - `adminSetStudentPasswordPost`
+- `studentSavePrivacyConsentPost`
+- `studentWithdrawPrivacyConsentPost`
+
+기존 JSONP 동의 action은 호환을 위해 백엔드에 남아 있지만 새 웹 화면은 POST action을 사용합니다.
