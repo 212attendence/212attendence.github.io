@@ -11,8 +11,8 @@ var studentResponse = handleStudentAuthAction_(action, e);
 if (studentResponse) return studentResponse;
 
 /* doPost(e) 함수 시작 부분 */
-var passwordPostResponse = handleStudentPasswordPost_(e);
-if (passwordPostResponse) return passwordPostResponse;
+var securePostResponse = handleStudentSecurePost_(e);
+if (securePostResponse) return securePostResponse;
 
 /* 기존 setup() 함수 마지막 */
 setupStudentAuth_();
