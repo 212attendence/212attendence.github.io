@@ -13,13 +13,13 @@
   "orientation": "any",
   "categories": ["education", "productivity", "utilities"],
   "icons": [
-    {"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png","purpose":"any"},
-    {"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png","purpose":"maskable"}
+    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"any"},
+    {"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png","purpose":"maskable"}
   ],
   "shortcuts": [
-    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png"}]},
-    {"name":"앱 설치 가이드","short_name":"설치 가이드","url":"/student/app-guide/","icons":[{"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/favicon.png?v=28","sizes":"300x300","type":"image/png"}]}
+    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
+    {"name":"앱 설치 가이드","short_name":"설치 가이드","url":"/student/app-guide/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]},
+    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/favicon.png?v=30","sizes":"300x300","type":"image/png"}]}
   ]
 }
