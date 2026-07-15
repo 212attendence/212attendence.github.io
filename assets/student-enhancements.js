@@ -16,14 +16,18 @@
   function blockInsecurePrivacyQuery(){
     if(!window.StudentAttendance||StudentAttendance.__securePrivacyPostWrapped||StudentAttendance.__privacyQueryBlocked)return;
     var original=StudentAttendance.api.bind(StudentAttendance);
-    StudentAttendance.api=function(action,values,timeoutMs){
-      if(action==="studentSavePrivacyConsentJsonp"||action==="studentWithdrawPrivacyConsentJsonp")return Promise.reject(new Error("보안 개인정보 전송 모듈을 불러오지 못해 저장을 중단했습니다. 페이지를 새로고침한 뒤 다시 시도하세요."));
-      return original(action,values,timeoutMs);
-    };
+    StudentAttendance.api=function(action,values,timeoutMs){if(action==="studentSavePrivacyConsentJsonp"||action==="studentWithdrawPrivacyConsentJsonp")return Promise.reject(new Error("보안 개인정보 전송 모듈을 불러오지 못해 저장을 중단했습니다. 페이지를 새로고침한 뒤 다시 시도하세요."));return original(action,values,timeoutMs)};
     StudentAttendance.__privacyQueryBlocked=true;
   }
   function currentConsent(){try{var session=window.StudentAttendance&&StudentAttendance.Session.current();return session&&StudentAttendance.Consent.current(session.studentId)}catch(error){return null}}
   function pushAllowed(){var consent=currentConsent();return Boolean(consent&&consent.requiredAccepted&&consent.pushOptional)}
+  async function enableOptionalPush(){
+    if(!pushAllowed()||!("Notification" in window)||!window.AttendanceRoleApp)return false;
+    var permission=Notification.permission;
+    if(permission==="default"){try{permission=await Notification.requestPermission()}catch(error){permission="denied"}}
+    if(permission!=="granted")return false;
+    return AttendanceRoleApp.registerPushToken();
+  }
 
   function enforceOptionalNotificationConsent(){
     if(!STUDENT_PATH)return;
@@ -42,7 +46,7 @@
     }
     if(window.StudentAttendance&&StudentAttendance.Consent&&!StudentAttendance.Consent.__notificationWrapped){
       var originalSave=StudentAttendance.Consent.save.bind(StudentAttendance.Consent);
-      StudentAttendance.Consent.save=function(value){var saved=originalSave(value),consent=currentConsent();if(consent&&consent.pushOptional){setTimeout(function(){if(window.AttendanceRoleApp)AttendanceRoleApp.registerPushToken()},50)}else{try{localStorage.removeItem(PUSH_REGISTERED_KEY)}catch(error){}}return saved};
+      StudentAttendance.Consent.save=function(value){var saved=originalSave(value),consent=currentConsent();if(consent&&consent.pushOptional){setTimeout(enableOptionalPush,80)}else{try{localStorage.removeItem(PUSH_REGISTERED_KEY)}catch(error){}}return saved};
       StudentAttendance.Consent.__notificationWrapped=true;
     }
   }
