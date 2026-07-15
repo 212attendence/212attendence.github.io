@@ -1,1 +1,1 @@
-(function(){var request=new XMLHttpRequest();request.open('GET','/assets/student.js?v=21',false);request.send(null);if((request.status>=200&&request.status<300)||request.status===0){window.eval(request.responseText)}else{throw new Error('학생 스크립트를 불러오지 못했습니다.')}})();
+(function(){var request=new XMLHttpRequest();request.open('GET','/assets/student.js?v=31',false);request.send(null);if((request.status>=200&&request.status<300)||request.status===0){window.eval(request.responseText)}else{throw new Error('학생 스크립트를 불러오지 못했습니다.')}})();
