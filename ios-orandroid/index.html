@@ -1,109 +1,14 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
-  <base href="/">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
-  <title>사용 기기 선택 · 2-12 출석</title>
-  <link rel="manifest" href="/student/manifest.json?v=24">
-  <link rel="icon" href="/student/favicon.png?v=22">
-  <link rel="apple-touch-icon" href="/student/favicon.png?v=22">
-  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
-  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="/student/assets/app.css?v=22">
-  <script src="/student/assets/app.js?v=28" defer></script>
-  <script src="/student/assets/student.js?v=28" defer></script>
-  <style>
-    :root{--choice:#315f84;--choice-soft:rgba(49,95,132,.12);--android:#277a4d;--android-soft:rgba(39,122,77,.12)}
-    html[data-theme="dark"]{--choice:#8ab6d8;--choice-soft:rgba(138,182,216,.12);--android:#77c495;--android-soft:rgba(119,196,149,.12)}
-    body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(76px)}
-    body::before{width:34rem;height:34rem;left:-14rem;top:-13rem;background:var(--choice-soft)}
-    body::after{width:29rem;height:29rem;right:-13rem;bottom:-14rem;background:var(--android-soft)}
-    .choice-card{width:min(560px,100%)}
-    .choice-grid{display:grid;gap:13px;margin-top:20px}
-    .device-card{display:grid;gap:9px;padding:18px;border:1px solid var(--line);border-radius:21px;background:var(--surface-soft)}
-    .device-head{display:flex;align-items:center;gap:11px}
-    .device-icon{display:grid;place-items:center;width:45px;height:45px;border-radius:15px;font-size:22px;font-weight:900}
-    .android-icon{background:var(--android-soft);color:var(--android)}
-    .ios-icon{background:var(--choice-soft);color:var(--choice)}
-    .device-title{font-size:17px;font-weight:900}
-    .device-desc{color:var(--muted);font-size:12px;line-height:1.65;font-weight:650}
-    .android-button{background:var(--android)!important;color:#fff!important;border-color:transparent!important}
-    .notice{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft);color:var(--muted);font-size:11px;line-height:1.65;font-weight:650}
-    .hidden{display:none!important}
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="refresh" content="0;url=/ios-or-android/">
+  <link rel="canonical" href="/ios-or-android/">
+  <title>이동 중 · 2-12 출석</title>
+  <script>location.replace('/ios-or-android/'+location.search+location.hash);</script>
 </head>
-<body class="auth-page">
-  <main id="mainCard" class="auth-card choice-card hidden">
-    <div class="brand-chip">최초 1회 설정</div>
-    <h1>어떤 휴대전화를 사용하나요?</h1>
-    <p class="subtext">학생 로그인 후 이 기기에서 한 번만 확인합니다.</p>
-
-    <div class="choice-grid">
-      <section class="device-card">
-        <div class="device-head">
-          <div class="device-icon android-icon">A</div>
-          <div><div class="device-title">Android</div><div class="device-desc">자동 출석 앱을 설치합니다.</div></div>
-        </div>
-        <div class="device-desc">학교 접근 시 백그라운드에서 자동 출석을 시도할 수 있습니다. 설치 후 위치 권한을 항상 허용하고 배터리 제한을 해제하세요.</div>
-        <button class="btn btn-block android-button" type="button" onclick="chooseAndroid()">Android 앱 설치 페이지로 이동</button>
-      </section>
-
-      <section class="device-card">
-        <div class="device-head">
-          <div class="device-icon ios-icon">i</div>
-          <div><div class="device-title">iPhone</div><div class="device-desc">기존 학생 웹앱을 사용합니다.</div></div>
-        </div>
-        <div class="device-desc">아이폰은 학교에 도착한 뒤 홈 화면의 출석 웹앱을 한 번 열어야 출석 인증을 시작할 수 있습니다.</div>
-        <button class="btn btn-soft btn-block" type="button" onclick="chooseIos()">iPhone 도움말로 이동</button>
-      </section>
-    </div>
-
-    <div class="notice">선택 결과는 이 브라우저에 저장되며 다음 로그인부터는 이 화면을 건너뜁니다. 브라우저 데이터나 앱 데이터를 삭제하면 다시 표시될 수 있습니다.</div>
-  </main>
-
-  <div id="loadingOverlay" class="loading-overlay show" aria-hidden="false"><div class="loading-card"><div class="spinner"></div><div class="loading-title">학생 계정 확인 중입니다</div><div class="loading-sub">잠시만 기다려주세요.</div></div></div>
-
-  <script>
-    const PLATFORM_CHOICE_KEY="attendanceStudentPlatformChoiceV1";
-    const ANDROID_BUILD_URL="https://expo.dev/accounts/jiukeum/projects/Attendance212/builds/ca000b67-6031-4167-8b22-3c4a8284616e";
-
-    function readChoice(){
-      try{return localStorage.getItem(PLATFORM_CHOICE_KEY)||""}
-      catch(error){return ""}
-    }
-
-    function saveChoice(platform){
-      try{
-        localStorage.setItem(PLATFORM_CHOICE_KEY,JSON.stringify({platform:platform,selectedAt:Date.now()}));
-        return true;
-      }catch(error){
-        return false;
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded",async function(){
-      AttendanceApp.Theme.init();
-      const session=await StudentAttendance.Session.validate();
-      if(!session){location.replace("/student/login/");return}
-      if(readChoice()){location.replace("/student/identity/");return}
-      document.getElementById("loadingOverlay").setAttribute("aria-hidden","true");
-      document.getElementById("loadingOverlay").classList.remove("show");
-      document.getElementById("mainCard").classList.remove("hidden");
-    });
-
-    function chooseAndroid(){
-      saveChoice("android");
-      location.href=ANDROID_BUILD_URL;
-    }
-
-    function chooseIos(){
-      saveChoice("ios");
-      location.href="/student/help/?platform=ios";
-    }
-  </script>
+<body>
+  <p><a href="/ios-or-android/">사용 기기 선택 화면으로 이동</a></p>
 </body>
 </html>
