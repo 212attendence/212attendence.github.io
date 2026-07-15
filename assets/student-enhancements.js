@@ -1,6 +1,14 @@
 (function(window){
   "use strict";
 
+  const STUDENT_PATH=location.pathname.indexOf("/student/")===0;
+  const LEGACY_PERMISSION_KEY="attendanceCombinedPermissionAskedV1";
+  const PUSH_REGISTERED_KEY="attendancePushRegisteredV1";
+
+  if(STUDENT_PATH){
+    try{localStorage.setItem(LEGACY_PERMISSION_KEY,"managed-by-privacy-onboarding") }catch(error){}
+  }
+
   function setFavicon(){
     ["icon","shortcut icon","apple-touch-icon"].forEach(function(rel){
       var link=document.querySelector('link[rel="'+rel+'"]')||document.createElement("link");
@@ -13,6 +21,51 @@
   function ensureLatestStudentClient(){
     if(window.StudentAttendance&&String(window.StudentAttendance.version||"")>="1.3.0")return;
     try{var request=new XMLHttpRequest();request.open("GET","/assets/student.js?v=32",false);request.send(null);if((request.status>=200&&request.status<300)||request.status===0)window.eval(request.responseText)}catch(error){console.error("Student client refresh failed",error)}
+  }
+
+  function currentConsent(){
+    try{var session=window.StudentAttendance&&StudentAttendance.Session.current();return session&&StudentAttendance.Consent.current(session.studentId)}catch(error){return null}
+  }
+  function pushAllowed(){var consent=currentConsent();return Boolean(consent&&consent.requiredAccepted&&consent.pushOptional)}
+
+  function enforceOptionalNotificationConsent(){
+    if(!STUDENT_PATH)return;
+    var overlay=document.getElementById("combinedPermissionOverlay");if(overlay)overlay.remove();
+
+    if(window.AttendanceApp&&typeof AttendanceApp.jsonp==="function"&&!AttendanceApp.__studentPrivacyJsonpWrapped){
+      var originalJsonp=AttendanceApp.jsonp.bind(AttendanceApp);
+      AttendanceApp.jsonp=function(url,options){
+        var text=String(url||"");
+        if((text.indexOf("action=pushClientConfigJsonp")>=0||text.indexOf("action=saveStudentPushTokenJsonp")>=0)&&!pushAllowed()){
+          return Promise.resolve({ok:false,code:"PUSH_CONSENT_REQUIRED",message:"알림 선택 동의가 필요합니다."});
+        }
+        return originalJsonp(url,options);
+      };
+      AttendanceApp.__studentPrivacyJsonpWrapped=true;
+    }
+
+    if(window.AttendanceRoleApp&&!AttendanceRoleApp.__studentPrivacyWrapped){
+      var originalRegister=AttendanceRoleApp.registerPushToken&&AttendanceRoleApp.registerPushToken.bind(AttendanceRoleApp);
+      var originalLocal=AttendanceRoleApp.showLocalNotification&&AttendanceRoleApp.showLocalNotification.bind(AttendanceRoleApp);
+      AttendanceRoleApp.registerPushToken=async function(){if(!pushAllowed())return false;return originalRegister?originalRegister():false};
+      AttendanceRoleApp.showLocalNotification=async function(title,body,targetUrl){if(!pushAllowed())return false;return originalLocal?originalLocal(title,body,targetUrl):false};
+      AttendanceRoleApp.requestCombinedPermissions=async function(){return {notification:"managed-by-privacy",location:"managed-by-onboarding"}};
+      AttendanceRoleApp.__studentPrivacyWrapped=true;
+    }
+
+    if(window.StudentAttendance&&StudentAttendance.Consent&&!StudentAttendance.Consent.__notificationWrapped){
+      var originalSave=StudentAttendance.Consent.save.bind(StudentAttendance.Consent);
+      StudentAttendance.Consent.save=function(value){
+        var saved=originalSave(value),consent=currentConsent();
+        if(consent&&consent.pushOptional){
+          setTimeout(function(){if(window.AttendanceRoleApp)AttendanceRoleApp.registerPushToken()},50);
+        }else{
+          try{localStorage.removeItem(PUSH_REGISTERED_KEY)}catch(error){}
+        }
+        return saved;
+      };
+      StudentAttendance.Consent.__notificationWrapped=true;
+    }
   }
 
   function ensureResilience(){
@@ -46,5 +99,5 @@
     section.appendChild(grid);main.appendChild(section);
   }
 
-  document.addEventListener("DOMContentLoaded",function(){ensureLatestStudentClient();setFavicon();ensureResilience();addNetworkBanner();addSupportPanel()});
+  document.addEventListener("DOMContentLoaded",function(){ensureLatestStudentClient();enforceOptionalNotificationConsent();setFavicon();ensureResilience();addNetworkBanner();addSupportPanel()});
 })(window);
