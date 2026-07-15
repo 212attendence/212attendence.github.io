@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="2-12 학생 출석">
+  <title>지원하지 않는 기기 · 2-12 출석</title>
+  <link rel="manifest" href="/student/manifest.json?v=24">
+  <link rel="icon" href="/student/favicon.png?v=22">
+  <link rel="apple-touch-icon" href="/student/favicon.png?v=22">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="/student/assets/app.css?v=22">
+  <script src="/student/assets/app.js?v=28" defer></script>
+  <style>
+    :root{--pc:#7a4f32;--pc-soft:rgba(122,79,50,.12)}
+    html[data-theme="dark"]{--pc:#d9a77e;--pc-soft:rgba(217,167,126,.13)}
+    body::before{content:"";position:fixed;z-index:-1;width:32rem;height:32rem;left:-13rem;top:-14rem;border-radius:50%;background:var(--pc-soft);filter:blur(72px)}
+    .pc-card{width:min(520px,100%);text-align:center}
+    .pc-icon{display:grid;place-items:center;width:68px;height:68px;margin:2px auto 18px;border-radius:22px;background:var(--pc-soft);color:var(--pc);font-size:31px;font-weight:900}
+    .countdown{margin-top:18px;color:var(--muted);font-size:12px;font-weight:750}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card pc-card">
+    <div class="pc-icon">PC</div>
+    <div class="brand-chip">학생 출석</div>
+    <h1>지원하지 않는 기기입니다.</h1>
+    <p class="subtext">대시보드로 이동합니다.</p>
+    <div id="countdown" class="countdown">2초 후 이동합니다.</div>
+    <div class="actions-stack" style="margin-top:18px">
+      <a class="btn btn-primary btn-block" href="/student/identity/">지금 대시보드로 이동</a>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded",function(){
+      AttendanceApp.Theme.init();
+      let remaining=2;
+      const countdown=document.getElementById("countdown");
+      const timer=setInterval(function(){
+        remaining-=1;
+        if(remaining>0){
+          countdown.textContent=remaining+"초 후 이동합니다.";
+          return;
+        }
+        clearInterval(timer);
+        location.replace("/student/identity/");
+      },1000);
+    });
+  </script>
+</body>
+</html>
