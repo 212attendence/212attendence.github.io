@@ -32,7 +32,6 @@
     .device-title{font-size:17px;font-weight:900}
     .device-desc{color:var(--muted);font-size:12px;line-height:1.65;font-weight:650}
     .android-button{background:var(--android)!important;color:#fff!important;border-color:transparent!important}
-    .android-button[disabled]{opacity:.58;cursor:wait}
     .notice{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:17px;background:var(--surface-soft);color:var(--muted);font-size:11px;line-height:1.65;font-weight:650}
     .hidden{display:none!important}
   </style>
@@ -49,8 +48,8 @@
           <div class="device-icon android-icon">A</div>
           <div><div class="device-title">Android 사용자</div><div class="device-desc">자동 출석 앱을 설치합니다.</div></div>
         </div>
-        <div class="device-desc">학교 접근 시 백그라운드에서 자동 출석을 시도할 수 있습니다. 설치 후 위치 권한을 항상 허용하고 배터리 제한을 해제하세요.</div>
-        <button id="androidDownloadBtn" class="btn btn-block android-button" type="button" onclick="chooseAndroid()">Android 앱 바로 다운로드</button>
+        <div class="device-desc">앱 다운로드 페이지에서 설치 파일을 받을 수 있습니다. 설치 후 위치 권한을 항상 허용하고 배터리 제한을 해제하세요.</div>
+        <button class="btn btn-block android-button" type="button" onclick="chooseAndroid()">앱 다운로드하기</button>
       </section>
 
       <section class="device-card">
@@ -63,15 +62,13 @@
       </section>
     </div>
 
-    <div class="notice">Android 버튼을 누르면 별도 설치 페이지로 이동하지 않고 APK 다운로드가 바로 시작됩니다. 선택 결과는 이 브라우저에 저장되어 다음 로그인부터 이 화면을 건너뜁니다.</div>
+    <div class="notice">선택 결과는 이 브라우저에 저장되어 다음 로그인부터 이 화면을 건너뜁니다. 브라우저 데이터나 앱 데이터를 삭제하면 다시 표시될 수 있습니다.</div>
   </main>
 
   <div id="loadingOverlay" class="loading-overlay show" aria-hidden="false"><div class="loading-card"><div class="spinner"></div><div class="loading-title">학생 계정 확인 중입니다</div><div class="loading-sub">잠시만 기다려주세요.</div></div></div>
 
   <script>
     const PLATFORM_CHOICE_KEY="attendanceStudentPlatformChoiceV1";
-    const ANDROID_BUILD_ID="ca000b67-6031-4167-8b22-3c4a8284616e";
-    const EXPO_GRAPHQL_URL="https://api.expo.dev/graphql";
 
     function isSupportedMobileDevice(){
       const userAgent=navigator.userAgent||"";
@@ -106,40 +103,9 @@
       document.getElementById("mainCard").classList.remove("hidden");
     });
 
-    async function getAndroidArtifactUrl(){
-      const response=await fetch(EXPO_GRAPHQL_URL,{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({
-          query:"query BuildsByIdQuery($buildId: ID!) { builds { byId(buildId: $buildId) { id artifacts { applicationArchiveUrl buildUrl } } } }",
-          variables:{buildId:ANDROID_BUILD_ID}
-        })
-      });
-      if(!response.ok)throw new Error("다운로드 서버에 연결하지 못했습니다.");
-      const result=await response.json();
-      if(result.errors&&result.errors.length)throw new Error(result.errors[0].message||"다운로드 주소를 확인하지 못했습니다.");
-      const artifacts=result&&result.data&&result.data.builds&&result.data.builds.byId&&result.data.builds.byId.artifacts;
-      const url=artifacts&&(artifacts.applicationArchiveUrl||artifacts.buildUrl);
-      if(!url)throw new Error("APK 다운로드 주소가 없습니다.");
-      return url;
-    }
-
-    async function chooseAndroid(){
-      const button=document.getElementById("androidDownloadBtn");
-      if(button.disabled)return;
-      button.disabled=true;
-      button.textContent="다운로드 준비 중...";
-      try{
-        const artifactUrl=await getAndroidArtifactUrl();
-        saveChoice("android");
-        button.textContent="다운로드 시작 중...";
-        location.href=artifactUrl;
-        setTimeout(function(){button.disabled=false;button.textContent="Android 앱 다시 다운로드"},2500);
-      }catch(error){
-        button.disabled=false;
-        button.textContent="Android 앱 바로 다운로드";
-        AttendanceApp.UI.toast(error.message||"APK 다운로드를 시작하지 못했습니다.",4200);
-      }
+    function chooseAndroid(){
+      saveChoice("android");
+      location.href="/student/app/android/";
     }
 
     function chooseIos(){
