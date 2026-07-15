@@ -10,6 +10,10 @@ if (privacyResponse) return privacyResponse;
 var studentResponse = handleStudentAuthAction_(action, e);
 if (studentResponse) return studentResponse;
 
+/* doPost(e) 함수 시작 부분 */
+var passwordPostResponse = handleStudentPasswordPost_(e);
+if (passwordPostResponse) return passwordPostResponse;
+
 /* 기존 setup() 함수 마지막 */
 setupStudentAuth_();
 setupStudentPrivacyResilience_();
