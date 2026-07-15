@@ -5,34 +5,82 @@
   const SESSION_KEY = "attendanceStudentSessionV1";
   const PENDING_KEY = "attendanceStudentPendingRequestV1";
   const CONSENT_KEY = "attendanceStudentConsentV2";
+  const BOOLEAN_FIELDS = [
+    "requiredAccepted", "privacyRequired", "locationRequired", "accountRequired", "deviceRequired", "policyRequired",
+    "pushOptional", "diagnosticsOptional", "updatesOptional", "rememberOptional", "backgroundLocationOptional", "guardianConfirmed"
+  ];
 
-  function readJson(key) {
-    try { return JSON.parse(localStorage.getItem(key) || "null"); }
+  function parseJson(value) {
+    try { return JSON.parse(value || "null"); }
     catch (error) { return null; }
   }
-
-  function writeJson(key, value) {
+  function readLocalJson(key) {
+    try { return parseJson(localStorage.getItem(key)); }
+    catch (error) { return null; }
+  }
+  function readSessionJson(key) {
+    try { return parseJson(sessionStorage.getItem(key)); }
+    catch (error) { return null; }
+  }
+  function writeLocalJson(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); return true; }
     catch (error) { return false; }
+  }
+  function writeSessionJson(key, value) {
+    try { sessionStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (error) { return false; }
+  }
+  function removeStorage(storage, key) {
+    try { storage.removeItem(key); } catch (error) {}
+  }
+  function strictBool(value) {
+    if (value === true || value === 1) return true;
+    const text = String(value == null ? "" : value).trim().toLowerCase();
+    return text === "1" || text === "true" || text === "yes" || text === "y" || text === "동의" || text === "active";
+  }
+  function normalizeConsent(value) {
+    const result = Object.assign({}, value || {});
+    BOOLEAN_FIELDS.forEach(function (key) { result[key] = strictBool(result[key]); });
+    return result;
   }
 
   const Session = {
     current() {
-      const value = readJson(SESSION_KEY);
-      return value && value.token ? value : null;
+      const temporary = readSessionJson(SESSION_KEY);
+      if (temporary && temporary.token) return Object.assign({}, temporary, { persistent: false });
+      const persistent = readLocalJson(SESSION_KEY);
+      return persistent && persistent.token ? Object.assign({}, persistent, { persistent: true }) : null;
     },
     save(response) {
       if (!response || !response.studentToken) return false;
-      return writeJson(SESSION_KEY, {
+      const value = {
         token: String(response.studentToken),
         studentId: String(response.studentId || ""),
         name: String(response.name || ""),
         fingerId: String(response.fingerId || ""),
         savedAt: Date.now()
-      });
+      };
+      removeStorage(localStorage, SESSION_KEY);
+      return writeSessionJson(SESSION_KEY, value);
+    },
+    setPersistence(enabled) {
+      const session = this.current();
+      if (!session) return false;
+      const value = {
+        token: session.token,
+        studentId: session.studentId || "",
+        name: session.name || "",
+        fingerId: session.fingerId || "",
+        savedAt: session.savedAt || Date.now()
+      };
+      writeSessionJson(SESSION_KEY, value);
+      if (enabled) return writeLocalJson(SESSION_KEY, value);
+      removeStorage(localStorage, SESSION_KEY);
+      return true;
     },
     clear() {
-      try { localStorage.removeItem(SESSION_KEY); } catch (error) {}
+      removeStorage(localStorage, SESSION_KEY);
+      removeStorage(sessionStorage, SESSION_KEY);
     },
     async validate() {
       const session = this.current();
@@ -43,13 +91,15 @@
           this.clear();
           return null;
         }
-        if (result.name || result.studentId) {
-          writeJson(SESSION_KEY, Object.assign({}, session, {
-            name: String(result.name || session.name || ""),
-            studentId: String(result.studentId || session.studentId || ""),
-            fingerId: String(result.fingerId || session.fingerId || "")
-          }));
-        }
+        const updated = {
+          token: session.token,
+          studentId: String(result.studentId || session.studentId || ""),
+          name: String(result.name || session.name || ""),
+          fingerId: String(result.fingerId || session.fingerId || ""),
+          savedAt: session.savedAt || Date.now()
+        };
+        writeSessionJson(SESSION_KEY, updated);
+        if (session.persistent) writeLocalJson(SESSION_KEY, updated);
         return this.current();
       } catch (error) {
         return session;
@@ -58,40 +108,43 @@
   };
 
   const Pending = {
-    current() { return readJson(PENDING_KEY); },
-    save(value) { return writeJson(PENDING_KEY, value || null); },
-    clear() { try { localStorage.removeItem(PENDING_KEY); } catch (error) {} }
+    current() { return readLocalJson(PENDING_KEY); },
+    save(value) { return writeLocalJson(PENDING_KEY, value || null); },
+    clear() { removeStorage(localStorage, PENDING_KEY); }
   };
 
   const Consent = {
     current(studentId) {
-      const store = readJson(CONSENT_KEY) || {};
+      const store = readLocalJson(CONSENT_KEY) || {};
       const key = String(studentId || "");
       const value = key ? store[key] : null;
-      return value && value.status !== "WITHDRAWN" ? value : null;
+      if (!value || String(value.status || "").toUpperCase() === "WITHDRAWN") return null;
+      return normalizeConsent(value);
     },
     save(value) {
       if (!value || !value.studentId) return false;
-      const store = readJson(CONSENT_KEY) || {};
-      store[String(value.studentId)] = Object.assign({}, value, { savedAt: Date.now() });
-      return writeJson(CONSENT_KEY, store);
+      const normalized = normalizeConsent(value);
+      const store = readLocalJson(CONSENT_KEY) || {};
+      store[String(normalized.studentId)] = Object.assign({}, normalized, { savedAt: Date.now() });
+      const saved = writeLocalJson(CONSENT_KEY, store);
+      Session.setPersistence(normalized.rememberOptional);
+      return saved;
     },
     clear(studentId) {
-      const store = readJson(CONSENT_KEY) || {};
+      const store = readLocalJson(CONSENT_KEY) || {};
       if (studentId) delete store[String(studentId)];
       else Object.keys(store).forEach(function (key) { delete store[key]; });
-      return writeJson(CONSENT_KEY, store);
+      return writeLocalJson(CONSENT_KEY, store);
     },
     async fetch(session) {
       if (!session || !session.token) return null;
       const result = await api("studentPrivacyStatusJsonp", { studentToken: session.token }, 22000);
       if (!result || !result.ok || !result.consent) return null;
-      const consent = Object.assign({}, result.consent, {
+      const consent = normalizeConsent(Object.assign({}, result.consent, {
         studentId: String(result.consent.studentId || session.studentId || ""),
         name: String(result.consent.name || session.name || ""),
-        fingerId: String(result.consent.fingerId || session.fingerId || ""),
-        requiredAccepted: Boolean(result.consent.requiredAccepted)
-      });
+        fingerId: String(result.consent.fingerId || session.fingerId || "")
+      }));
       this.save(consent);
       return consent;
     },
@@ -130,12 +183,7 @@
   }
 
   function getPosition(options) {
-    const config = Object.assign({
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 0
-    }, options || {});
-
+    const config = Object.assign({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }, options || {});
     return new Promise(function (resolve, reject) {
       if (!navigator.geolocation) {
         reject(Object.assign(new Error("이 기기는 위치 기능을 지원하지 않습니다."), { code: "UNSUPPORTED" }));
@@ -146,27 +194,16 @@
   }
 
   async function getPositionWithRetry() {
-    try {
-      return await getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-    } catch (error) {
+    try { return await getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); }
+    catch (error) {
       if (isPermissionDenied(error) || isUnsupported(error)) throw error;
       return getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
     }
   }
 
-  function isPermissionDenied(error) {
-    return Boolean(error && Number(error.code) === 1);
-  }
-
-  function isUnsupported(error) {
-    return Boolean(error && error.code === "UNSUPPORTED");
-  }
-
-  function isTransientGpsError(error) {
-    const code = Number(error && error.code);
-    return code === 2 || code === 3;
-  }
-
+  function isPermissionDenied(error) { return Boolean(error && Number(error.code) === 1); }
+  function isUnsupported(error) { return Boolean(error && error.code === "UNSUPPORTED"); }
+  function isTransientGpsError(error) { const code = Number(error && error.code); return code === 2 || code === 3; }
   function gpsErrorReason(error) {
     if (!error) return "unknown";
     if (isPermissionDenied(error)) return "denied";
@@ -175,7 +212,6 @@
     if (isUnsupported(error)) return "unsupported";
     return "unknown";
   }
-
   function gpsErrorMessage(error) {
     if (isPermissionDenied(error)) return "위치 권한이 차단되어 있습니다. 브라우저 또는 기기 설정에서 위치를 허용하세요.";
     if (Number(error && error.code) === 2) return "위치를 일시적으로 확인하지 못했습니다. 위치 서비스와 Wi-Fi를 확인한 뒤 다시 시도하세요.";
@@ -183,11 +219,7 @@
     if (isUnsupported(error)) return "이 기기 또는 브라우저는 위치 기능을 지원하지 않습니다.";
     return error && error.message ? error.message : "위치 정보를 확인하지 못했습니다. 다시 시도하세요.";
   }
-
-  function shouldOpenGpsError(error) {
-    return isPermissionDenied(error) || isUnsupported(error);
-  }
-
+  function shouldOpenGpsError(error) { return isPermissionDenied(error) || isUnsupported(error); }
   function goGpsError(error) {
     if (!shouldOpenGpsError(error)) return false;
     location.replace("/student/error/gps/?reason=" + encodeURIComponent(gpsErrorReason(error)));
@@ -195,7 +227,7 @@
   }
 
   window.StudentAttendance = {
-    version: "1.2.0",
+    version: "1.3.0",
     api: api,
     Session: Session,
     Pending: Pending,
