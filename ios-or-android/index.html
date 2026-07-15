@@ -71,6 +71,14 @@
     const PLATFORM_CHOICE_KEY="attendanceStudentPlatformChoiceV1";
     const ANDROID_BUILD_URL="https://expo.dev/accounts/jiukeum/projects/Attendance212/builds/ca000b67-6031-4167-8b22-3c4a8284616e";
 
+    function isSupportedMobileDevice(){
+      const userAgent=navigator.userAgent||"";
+      const android=/Android/i.test(userAgent);
+      const iphone=/iPhone|iPod/i.test(userAgent);
+      const ipad=/iPad/i.test(userAgent)||(/Macintosh/i.test(userAgent)&&Number(navigator.maxTouchPoints||0)>1);
+      return android||iphone||ipad;
+    }
+
     function readChoice(){
       try{return localStorage.getItem(PLATFORM_CHOICE_KEY)||""}
       catch(error){return ""}
@@ -87,6 +95,7 @@
 
     document.addEventListener("DOMContentLoaded",async function(){
       AttendanceApp.Theme.init();
+      if(!isSupportedMobileDevice()){location.replace("/student/err/pc/");return}
       const session=await StudentAttendance.Session.validate();
       if(!session){location.replace("/student/login/");return}
       if(readChoice()){location.replace("/student/identity/");return}
