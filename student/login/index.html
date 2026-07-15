@@ -62,7 +62,7 @@
 
     function nextStudentPage(approved){
       const query=approved?"?approved=1":"";
-      return hasPlatformChoice()?"/student/identity/"+query:"/ios-orandroid/"+query;
+      return hasPlatformChoice()?"/student/identity/"+query:"/ios-or-android/"+query;
     }
 
     document.addEventListener("DOMContentLoaded",async function(){
