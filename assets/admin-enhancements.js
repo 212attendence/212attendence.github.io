@@ -5,6 +5,10 @@
     if(window.AttendanceFailover||document.querySelector('script[src*="/assets/resilience.js"]'))return;
     var script=document.createElement("script");script.src="/assets/resilience.js?v=1";script.defer=true;document.head.appendChild(script);
   }
+  function loadScript(src){
+    if(document.querySelector('script[src="'+src+'"]'))return;
+    var script=document.createElement("script");script.src=src;script.defer=true;document.head.appendChild(script);
+  }
   function addLink(container,label,href,className){
     if(!container||container.querySelector('[href="'+href+'"]'))return;
     var link=document.createElement("a");link.className=className||"btn btn-soft";link.href=href;link.textContent=label;container.appendChild(link);
@@ -23,6 +27,7 @@
     if(location.pathname!=="/accounts-s/"&&location.pathname!=="/accounts-s/index.html")return;
     var actions=document.querySelector(".top-actions");
     addLink(actions,"앱 배포","/admin/app-release/","btn btn-soft");
+    loadScript("/assets/accounts-password-post.js?v=1");
   }
   document.addEventListener("DOMContentLoaded",function(){setFavicon();ensureResilience();enhanceDashboard();enhanceAccounts()});
 })(window);
