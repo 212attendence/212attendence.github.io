@@ -1,27 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>페이지를 찾을 수 없습니다</title>
-  <link rel="icon" href="/favicon.png?v=21">
-  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
-  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
-  <link rel="stylesheet" href="/assets/app.css?v=21">
-  <script src="/assets/app.js?v=21" defer></script>
+  <base href="/"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow,noarchive"><title>페이지 복구 중 · 2-12 출석</title>
+  <link rel="icon" href="/favicon.png?v=31"><link rel="apple-touch-icon" href="/favicon.png?v=31"><meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)"><meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin><link rel="stylesheet" href="/assets/app.css?v=21"><script src="/assets/app.js?v=30" defer></script><script src="/assets/resilience.js?v=1" defer></script>
 </head>
-<body class="auth-page">
-  <main class="auth-card">
-    <div class="brand-chip">404</div>
-    <h1>페이지를 찾을 수 없습니다</h1>
-    <p class="subtext">주소가 변경되었거나 존재하지 않는 화면입니다.</p>
-    <div class="actions-stack">
-      <a class="btn btn-primary btn-block" href="/">학생·관리자 선택 화면</a>
-      <a class="btn btn-soft btn-block" href="/student/login/">학생 로그인</a>
-      <a class="btn btn-soft btn-block" href="/admin/login/">관리자 로그인</a>
-    </div>
-  </main>
-  <script>document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init()});</script>
-</body>
-</html>
+<body class="auth-page"><main class="auth-card"><div class="brand-chip">자동 경로 복구</div><h1>요청한 페이지를 찾지 못했습니다.</h1><p id="message" class="subtext">사용 가능한 복구 페이지를 확인하고 있습니다.</p><div class="actions-stack"><a class="btn btn-primary btn-block" href="/">처음 화면</a><a class="btn btn-soft btn-block" href="/student/recovery/">학생 복구 센터</a><a class="btn btn-soft btn-block" href="/admin/system-health/">관리자 시스템 상태</a></div></main>
+<script>document.addEventListener("DOMContentLoaded",function(){AttendanceApp.Theme.init();const from=location.pathname+location.search+location.hash,isStudent=location.pathname.indexOf("/student/")===0,isAdmin=location.pathname.indexOf("/admin/")===0||location.pathname.indexOf("/accounts-s/")===0,target=isStudent?"/student/recovery/?reason=not-found&from="+encodeURIComponent(from):isAdmin?"/admin/system-health/?from=not-found&path="+encodeURIComponent(from):"/";document.getElementById("message").textContent="잘못된 주소 "+from+" · 복구 페이지로 이동합니다.";AttendanceFailover.redirect("PAGE_NOT_FOUND",target,"요청한 페이지를 찾지 못했습니다: "+from,650)})</script></body></html>
