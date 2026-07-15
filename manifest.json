@@ -1,11 +1,11 @@
 {
-  "id": "./",
+  "id": "/",
   "name": "2-12 출석 시스템",
   "short_name": "2-12 출석",
   "description": "학생 위치 출석 및 관리자 대시보드",
   "lang": "ko-KR",
-  "start_url": "./?v=21",
-  "scope": "./",
+  "start_url": "/?v=30",
+  "scope": "/",
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
@@ -22,13 +22,13 @@
   ],
   "icons": [
     {
-      "src": "./favicon.png?v=21",
+      "src": "/favicon.png?v=30",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png?v=21",
+      "src": "/favicon.png?v=30",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "maskable"
@@ -38,10 +38,10 @@
     {
       "name": "학생 로그인",
       "short_name": "학생",
-      "url": "./student/login/",
+      "url": "/student/login/",
       "icons": [
         {
-          "src": "./favicon.png?v=21",
+          "src": "/favicon.png?v=30",
           "sizes": "300x300",
           "type": "image/png"
         }
@@ -50,10 +50,10 @@
     {
       "name": "관리자 대시보드",
       "short_name": "관리자",
-      "url": "./admin/login/?v=21&next=/admin/dashboard/",
+      "url": "/admin/login/?next=/admin/dashboard/",
       "icons": [
         {
-          "src": "./favicon.png?v=21",
+          "src": "/favicon.png?v=30",
           "sizes": "300x300",
           "type": "image/png"
         }
@@ -62,10 +62,10 @@
     {
       "name": "학생 도움말",
       "short_name": "학생 도움말",
-      "url": "./student/help/",
+      "url": "/student/help/",
       "icons": [
         {
-          "src": "./favicon.png?v=21",
+          "src": "/favicon.png?v=30",
           "sizes": "300x300",
           "type": "image/png"
         }
