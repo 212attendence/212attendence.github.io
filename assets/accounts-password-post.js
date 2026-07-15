@@ -7,6 +7,10 @@
   function currentAdminToken(){
     try{const session=AttendanceApp.Session.current();return session&&session.sessionToken||""}catch(error){return ""}
   }
+  function isAllowedOrigin(origin){
+    if(origin==="https://script.google.com")return true;
+    try{return /\.googleusercontent\.com$/.test(new URL(origin).hostname)}catch(error){return false}
+  }
   function postPassword(values,timeoutMs){
     return new Promise(function(resolve,reject){
       const responseToken="PW-"+Date.now()+"-"+Math.random().toString(36).slice(2),frame=document.createElement("iframe"),form=document.createElement("form");
@@ -16,7 +20,7 @@
       let finished=false;
       function cleanup(){window.removeEventListener("message",onMessage);clearTimeout(timer);setTimeout(function(){form.remove();frame.remove()},50)}
       function done(error,data){if(finished)return;finished=true;cleanup();error?reject(error):resolve(data)}
-      function onMessage(event){if(!/\.googleusercontent\.com$/.test(new URL(event.origin).hostname)&&event.origin!=="https://script.google.com")return;const data=event.data||{};if(data.channel!==CHANNEL||data.responseToken!==responseToken)return;const payload=data.payload||{};if(!payload.ok)done(new Error(payload.message||"비밀번호를 설정하지 못했습니다."));else done(null,payload)}
+      function onMessage(event){if(!isAllowedOrigin(event.origin))return;const data=event.data||{};if(data.channel!==CHANNEL||data.responseToken!==responseToken)return;const payload=data.payload||{};if(!payload.ok)done(new Error(payload.message||"비밀번호를 설정하지 못했습니다."));else done(null,payload)}
       window.addEventListener("message",onMessage);document.body.appendChild(frame);document.body.appendChild(form);const timer=setTimeout(function(){done(new Error("비밀번호 설정 응답 시간이 초과되었습니다."))},timeoutMs||30000);form.submit();
     });
   }
