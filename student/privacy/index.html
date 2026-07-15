@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>개인정보 동의 관리 · 2-12 출석</title>
+  <link rel="manifest" href="/student/manifest.json?v=30">
+  <link rel="icon" type="image/png" sizes="300x300" href="/favicon.png?v=30">
+  <link rel="apple-touch-icon" sizes="300x300" href="/favicon.png?v=30">
+  <meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme:dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" crossorigin>
+  <link rel="stylesheet" href="/student/assets/app.css?v=22">
+  <script src="/student/assets/app.js?v=30" defer></script>
+  <script src="/student/assets/student.js?v=31" defer></script>
+  <script src="/assets/resilience.js?v=1" defer></script>
+  <style>
+    :root{--student:#315f84;--student-soft:rgba(49,95,132,.12);--bad:#b6423a}html[data-theme="dark"]{--student:#8ab6d8;--student-soft:rgba(138,182,216,.12);--bad:#e47e76}
+    .privacy-card{width:min(760px,100%)}.summary,.item{margin-top:12px;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft)}.summary strong,.item strong{font-size:14px}.summary p,.item p{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6;font-weight:650}.item label{display:flex;align-items:flex-start;gap:10px}.item input{width:20px;height:20px;margin-top:1px}.tag{padding:3px 7px;margin-left:6px;border-radius:999px;background:var(--student-soft);color:var(--student);font-size:10px;font-weight:900}.danger-note{margin-top:14px;padding:12px;border:1px solid color-mix(in srgb,var(--bad) 25%,var(--line));border-radius:15px;color:var(--muted);font-size:11px;line-height:1.6}.hidden{display:none!important}
+  </style>
+</head>
+<body class="auth-page">
+  <main class="auth-card privacy-card">
+    <div class="brand-chip">학생 개인정보</div><h1>동의 내용 확인 및 변경</h1><p class="subtext">필수 항목은 출석 기능 제공에 필요하며 선택 항목은 언제든 변경할 수 있습니다.</p>
+    <section id="summary" class="summary"><strong>동의 상태 확인 중</strong><p>학생 계정별 저장 기록을 불러옵니다.</p></section>
+    <section class="item"><label><input id="pushOptional" type="checkbox"><span><strong>출석·로그인 알림 <span class="tag">선택</span></strong><p>로그인 승인, 출석 완료와 앱 업데이트 알림을 받습니다.</p></span></label></section>
+    <section class="item"><label><input id="diagnosticsOptional" type="checkbox"><span><strong>오류 진단 정보 전송 <span class="tag">선택</span></strong><p>오류 종류, 페이지와 기기 환경을 관리자에게 전송합니다.</p></span></label></section>
+    <section class="item"><label><input id="updatesOptional" type="checkbox"><span><strong>앱 업데이트 안내 <span class="tag">선택</span></strong><p>Android 앱 새 버전과 필수 업데이트 내용을 안내받습니다.</p></span></label></section>
+    <section class="item"><label><input id="rememberOptional" type="checkbox"><span><strong>이 기기 로그인 유지 <span class="tag">선택</span></strong><p>관리자 해제 또는 로그아웃 전까지 승인된 로그인을 유지합니다.</p></span></label></section>
+    <section class="item"><label><input id="backgroundLocationOptional" type="checkbox"><span><strong>Android 백그라운드 위치 출석 <span class="tag">선택</span></strong><p>Android 앱에서 학교 접근 시 자동 출석을 시도합니다.</p></span></label></section>
+    <div class="actions-stack"><button id="saveBtn" class="btn btn-primary btn-block" type="button" onclick="saveOptions()">선택 항목 저장</button><a class="btn btn-soft btn-block" href="/student/check/">기기 점검</a><a class="btn btn-soft btn-block" href="/student/identity/">학생 대시보드</a><button class="btn btn-danger btn-block" type="button" onclick="withdrawConsent()">필수 동의 철회 및 로그아웃</button></div>
+    <div class="danger-note">필수 동의를 철회하면 위치 출석과 학생 로그인을 더 이상 사용할 수 없으며 현재 로그인 기기가 해제됩니다. 다시 사용하려면 최초 설정을 다시 완료해야 합니다.</div>
+  </main>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-card"><div class="spinner"></div><div id="loadingTitle" class="loading-title">개인정보 설정 확인 중입니다</div><div id="loadingSub" class="loading-sub">잠시만 기다려주세요.</div></div></div><div id="toast" class="toast">알림</div>
+<script>
+  let session=null,current=null,busy=false;
+  document.addEventListener("DOMContentLoaded",async function(){AttendanceApp.Theme.init();AttendanceApp.UI.loading("개인정보 설정 확인 중입니다","학생 계정별 동의 기록을 불러옵니다.");try{session=await StudentAttendance.Session.validate();if(!session){AttendanceFailover.redirect("SESSION_REQUIRED","/student/err/session/?from=privacy","개인정보 설정에서 학생 세션을 확인하지 못했습니다.");return}const result=await StudentAttendance.api("studentPrivacyStatusJsonp",{studentToken:session.token},25000);if(!result||!result.ok||!result.consent){location.replace("/student/onboarding/?next=/student/privacy/");return}current=result.consent;render()}catch(error){AttendanceFailover.redirect("PRIVACY_STATUS_FAILED","/student/err/server/?from=privacy",error.message||String(error))}finally{AttendanceApp.UI.stopLoading()}});
+  function render(){["pushOptional","diagnosticsOptional","updatesOptional","rememberOptional","backgroundLocationOptional"].forEach(function(id){document.getElementById(id).checked=Boolean(current&&current[id])});document.getElementById("summary").innerHTML='<strong>'+AttendanceApp.UI.escapeHtml(current.status||"ACTIVE")+' · '+AttendanceApp.UI.escapeHtml(current.consentVersion||"-")+'</strong><p>최근 동의: '+AttendanceApp.UI.escapeHtml(current.consentedAt||current.updatedAt||"-")+' · 학생 ID '+AttendanceApp.UI.escapeHtml(session.studentId||"-")+'</p>'}
+  function values(){return {studentToken:session.token,consentVersion:current.consentVersion||"2026-07-15-v1",privacyRequired:"1",locationRequired:"1",accountRequired:"1",deviceRequired:"1",policyRequired:"1",pushOptional:document.getElementById("pushOptional").checked?"1":"0",diagnosticsOptional:document.getElementById("diagnosticsOptional").checked?"1":"0",updatesOptional:document.getElementById("updatesOptional").checked?"1":"0",rememberOptional:document.getElementById("rememberOptional").checked?"1":"0",backgroundLocationOptional:document.getElementById("backgroundLocationOptional").checked?"1":"0",ageBand:current.ageBand||"14_PLUS",guardianConfirmed:current.guardianConfirmed?"1":"0",guardianName:current.guardianName||"",source:"student-web-privacy-settings"}}
+  async function saveOptions(){if(busy||!session)return;busy=true;AttendanceApp.UI.loading("선택 항목 저장 중입니다","변경한 개인정보 설정을 반영합니다.");try{const payload=values(),result=await StudentAttendance.api("studentSavePrivacyConsentJsonp",payload,30000);if(!result||!result.ok)throw new Error(result&&result.message||"저장하지 못했습니다.");current=Object.assign({},current,payload,{pushOptional:payload.pushOptional==="1",diagnosticsOptional:payload.diagnosticsOptional==="1",updatesOptional:payload.updatesOptional==="1",rememberOptional:payload.rememberOptional==="1",backgroundLocationOptional:payload.backgroundLocationOptional==="1"});StudentAttendance.Consent.save(Object.assign({},current,{studentId:session.studentId,requiredAccepted:true}));render();AttendanceApp.UI.toast("선택 항목을 저장했습니다.")}catch(error){AttendanceApp.UI.toast(error.message||String(error),4400)}finally{busy=false;AttendanceApp.UI.stopLoading()}}
+  async function withdrawConsent(){if(busy||!session||!confirm("필수 개인정보 동의를 철회하고 이 기기 로그인을 해제할까요?"))return;busy=true;AttendanceApp.UI.loading("동의 철회 중입니다","로그인 기기를 해제합니다.");try{const result=await StudentAttendance.api("studentWithdrawPrivacyConsentJsonp",{studentToken:session.token},30000);if(!result||!result.ok)throw new Error(result&&result.message||"동의를 철회하지 못했습니다.");StudentAttendance.Consent.clear(session.studentId);StudentAttendance.Session.clear();location.replace("/student/login/?privacy=withdrawn")}catch(error){AttendanceApp.UI.toast(error.message||String(error),4400)}finally{busy=false;AttendanceApp.UI.stopLoading()}}
+</script>
+</body>
+</html>
