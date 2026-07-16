@@ -1,0 +1,41 @@
+name: Build single Apps Script file
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps-script/student-auth-addon.gs"
+      - "apps-script/FINAL-StudentPrivacy-Code.gs.txt"
+      - "tools/build-single-apps-script.mjs"
+      - ".github/workflows/build-single-apps-script.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate all-in-one file
+        run: node tools/build-single-apps-script.mjs
+
+      - name: Commit generated file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps-script/FINAL-Student-All-In-One.gs
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+          else
+            git commit -m "Generate all-in-one Apps Script file"
+            git push
+          fi
