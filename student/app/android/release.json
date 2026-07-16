@@ -6,6 +6,7 @@
   "versionCode": 1,
   "buildId": "ca000b67-6031-4167-8b22-3c4a8284616e",
   "releasedAt": "2026-07-15T00:00:00+09:00",
+  "verifiedAt": "2026-07-16T00:00:00+09:00",
   "required": false,
   "minimumVersionCode": 1,
   "notice": "Android 자동 출석 앱 최초 배포 버전입니다.",
@@ -19,5 +20,6 @@
   "diagnosticPage": "https://212attendence.github.io/student/check/",
   "supportPage": "https://212attendence.github.io/student/help/",
   "fileName": "2-12-attendance-v1.0.0.apk",
-  "sha256": ""
+  "fileSizeBytes": 104140413,
+  "sha256": "c872abaa4c3f1f032c6b5f9864acaa9e1a2d7e836e9521bf556e3117e6596000"
 }
