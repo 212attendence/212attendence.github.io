@@ -108,10 +108,9 @@
       }
       window.addEventListener("message",onMessage);document.body.appendChild(frame);document.body.appendChild(form);
       const pollTimer=setInterval(recover,3000);
-      const localFallbackTimer=setTimeout(async function(){
+      const localFallbackTimer=setTimeout(function(){
         if(finished||action!=="studentSavePrivacyConsentPost")return;
-        await recover();
-        if(finished)return;
+        recover().catch(function(){});
         compatibilityFallback(action,fields).catch(function(){});
         done(null,{ok:true,localOnly:true,pendingServerSync:true,consent:pendingConsent(fields)});
       },7000);
