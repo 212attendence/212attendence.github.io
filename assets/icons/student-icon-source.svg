@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dff5ff"/><stop offset="1" stop-color="#91d8f7"/></linearGradient>
+  <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#208aef"/><stop offset="1" stop-color="#075fc3"/></linearGradient>
+  <filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#164a72" flood-opacity=".22"/></filter>
+</defs>
+<rect x="12" y="12" width="488" height="488" rx="92" fill="url(#bg)" stroke="#77c9ef" stroke-width="4"/>
+<ellipse cx="256" cy="374" rx="157" ry="24" fill="none" stroke="#57c4ef" stroke-width="8"/>
+<g filter="url(#s)">
+  <path d="M154 270h204v104H154z" fill="#f9fcff" stroke="#1275cf" stroke-width="6"/>
+  <path d="M132 280l124-82 124 82-20 28-104-68-104 68z" fill="#1478d4"/>
+  <path d="M215 255h82v119h-82z" fill="#eaf7ff" stroke="#1275cf" stroke-width="6"/>
+  <circle cx="256" cy="284" r="14" fill="#208aef"/>
+  <path d="M237 374v-42c0-12 9-21 19-21s19 9 19 21v42z" fill="#07519c"/>
+  <g fill="#5fb8ea"><path d="M174 315h22v28h-22z"/><path d="M316 315h22v28h-22z"/><path d="M174 356h22v18h-22z"/><path d="M316 356h22v18h-22z"/></g>
+  <g fill="#52b96b"><circle cx="117" cy="349" r="28"/><circle cx="395" cy="349" r="28"/></g>
+</g>
+<g filter="url(#s)">
+  <path d="M256 48c-66 0-116 49-116 110 0 78 116 157 116 157s116-79 116-157c0-61-50-110-116-110z" fill="url(#pin)" stroke="#fff" stroke-width="8"/>
+  <path d="M205 157l33 33 70-73" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<rect x="166" y="421" width="180" height="62" rx="31" fill="url(#pin)" stroke="#fff" stroke-width="3"/>
+<text x="256" y="462" text-anchor="middle" font-family="'Noto Sans CJK KR','Noto Sans KR','Malgun Gothic',sans-serif" font-size="34" font-weight="900" fill="#fff">학생용</text>
+</svg>
