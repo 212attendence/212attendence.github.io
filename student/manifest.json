@@ -1,27 +1,28 @@
 {
-  "id": "/student-pwa-v2",
+  "id": "/student-pwa-v3",
   "name": "2-12 학생 출석",
   "short_name": "학생 출석",
   "description": "해강중학교 학생 위치 출석 인증 앱",
   "lang": "ko-KR",
-  "start_url": "/student/identity/?source=student-pwa",
+  "start_url": "/student/identity/?source=student-pwa&icon=32",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#f7f7f4",
-  "theme_color": "#315f84",
+  "background_color": "#dff5ff",
+  "theme_color": "#208aef",
   "orientation": "any",
   "categories": ["education", "productivity", "utilities"],
   "icons": [
-    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"any"},
-    {"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png","purpose":"maskable"}
+    {"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml","purpose":"any"},
+    {"src":"/assets/icons/student-icon-192.png?v=32","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"/assets/icons/student-icon-512.png?v=32","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ],
   "shortcuts": [
-    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
-    {"name":"기기 점검","short_name":"기기 점검","url":"/student/check/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
-    {"name":"개인정보 동의 관리","short_name":"개인정보","url":"/student/privacy/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
-    {"name":"Android 앱 다운로드","short_name":"앱 다운로드","url":"/student/app/android/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]},
-    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/favicon.png?v=31","sizes":"300x300","type":"image/png"}]}
+    {"name":"출석 인증","short_name":"출석","url":"/student/identity/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"기기 점검","short_name":"기기 점검","url":"/student/check/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"개인정보 동의 관리","short_name":"개인정보","url":"/student/privacy/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"Android 앱 다운로드","short_name":"앱 다운로드","url":"/student/app/android/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"학생 도움말","short_name":"도움말","url":"/student/help/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]},
+    {"name":"학생 로그인","short_name":"로그인","url":"/student/login/","icons":[{"src":"/assets/icons/student-icon-source.svg?v=32","sizes":"any","type":"image/svg+xml"}]}
   ]
 }
