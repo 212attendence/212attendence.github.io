@@ -21,19 +21,34 @@ self.addEventListener("activate", function (event) {
   event.waitUntil(self.clients.claim());
 });
 
+function notificationRole(data, target) {
+  const explicit = String(data.role || data.recipientRole || "").toLowerCase();
+  if (explicit === "student" || explicit === "admin") return explicit;
+  try {
+    return new URL(target).pathname.indexOf("/student/") === 0 ? "student" : "admin";
+  } catch (error) {
+    return "admin";
+  }
+}
+
 messaging.onBackgroundMessage(function (payload) {
   const data = payload.data || {};
   const title = data.title || "2-12 출석 알림";
   const body = data.body || "출석 상태가 업데이트되었습니다.";
   const target = new URL(data.url || "./admin/dashboard/?resume=1", self.registration.scope).href;
+  const role = notificationRole(data, target);
+  const iconPath = role === "student"
+    ? "./assets/icons/student-icon-192.png?v=32"
+    : "./assets/icons/admin-icon-192.png?v=32";
+  const icon = new URL(iconPath, self.registration.scope).href;
 
   return self.registration.showNotification(title, {
     body: body,
-    icon: new URL("./favicon.png?v=21", self.registration.scope).href,
-    badge: new URL("./favicon.png?v=21", self.registration.scope).href,
+    icon: icon,
+    badge: icon,
     tag: data.tag || "attendance-update",
     renotify: Boolean(data.renotify === "true"),
-    data: { url: target }
+    data: { url: target, role: role }
   });
 });
 
