@@ -1,0 +1,46 @@
+name: Build role web icons
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/icons/*-icon-source.svg"
+      - "tools/build-web-icons.mjs"
+      - ".github/workflows/build-web-icons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Korean font and renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          npm install --no-save sharp
+
+      - name: Generate PNG and Apple touch icons
+        run: node tools/build-web-icons.mjs
+
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/icons/*-icon-*.png assets/icons/*-favicon-64.png student/apple-touch-icon.png admin/apple-touch-icon.png
+          if git diff --cached --quiet; then
+            echo "No icon changes."
+          else
+            git commit -m "Generate student and administrator web icons"
+            git push
+          fi
