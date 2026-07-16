@@ -1,0 +1,911 @@
+/*
+ * 2-12 출석 시스템 - 학생 개인정보 권한/동의/복구 최종 코드
+ * 버전: 2026-07-16-v2
+ *
+ * 필수 선행 파일:
+ *   student-auth-addon.gs
+ *
+ * 이 파일 하나에 아래 기능이 포함됩니다.
+ * - 학생 개인정보 동의 저장/조회/철회
+ * - 위치 포함 필수 5개 동의 강제 검증
+ * - 선택 5개 권한 저장
+ * - 계정별 학생개인정보권한 시트
+ * - 학생개인정보동의로그 시트
+ * - 시스템오류알림 시트 및 관리자 알림
+ * - 관리자 직접 비밀번호 설정
+ * - 개인정보/비밀번호 POST 응답
+ */
+
+var STUDENT_PRIVACY_PERMISSION_SHEET = '학생개인정보권한';
+var STUDENT_PRIVACY_AUDIT_SHEET = '학생개인정보동의로그';
+var STUDENT_FALLBACK_EVENT_SHEET = '시스템오류알림';
+var STUDENT_PRIVACY_ADMIN_EMAIL = 'junho.eum.travel@gmail.com';
+var STUDENT_PRIVACY_CURRENT_VERSION = '2026-07-16-v2';
+
+var STUDENT_PRIVACY_PERMISSION_HEADERS = [
+  'updatedAt', 'studentId', 'name', 'fingerId', 'status', 'consentVersion', 'requiredAccepted',
+  'privacyRequired', 'locationRequired', 'accountRequired', 'deviceRequired', 'policyRequired',
+  'pushOptional', 'diagnosticsOptional', 'updatesOptional', 'rememberOptional', 'backgroundLocationOptional',
+  'ageBand', 'guardianConfirmed', 'guardianName', 'consentedAt', 'withdrawnAt', 'source',
+  'deviceName', 'userAgent', 'clientTime', 'clientTimezone'
+];
+
+var STUDENT_PRIVACY_AUDIT_HEADERS = [
+  'timestamp', 'eventType', 'studentId', 'name', 'fingerId', 'status', 'consentVersion', 'requiredAccepted',
+  'privacyRequired', 'locationRequired', 'accountRequired', 'deviceRequired', 'policyRequired',
+  'pushOptional', 'diagnosticsOptional', 'updatesOptional', 'rememberOptional', 'backgroundLocationOptional',
+  'ageBand', 'guardianConfirmed', 'guardianName', 'source', 'deviceName', 'userAgent',
+  'clientTime', 'clientTimezone'
+];
+
+var STUDENT_FALLBACK_EVENT_HEADERS = [
+  'createdAt', 'eventId', 'errorType', 'message', 'sourcePage', 'fallbackUrl',
+  'studentId', 'studentName', 'online', 'deviceName', 'userAgent',
+  'clientTimezone', 'status', 'notifiedAt'
+];
+
+/* ---------- doGet 연결점 ---------- */
+
+function handleStudentPrivacyAction_(action, e) {
+  var handlers = {
+    studentSavePrivacyConsentJsonp: studentSavePrivacyConsentJsonp_,
+    studentPrivacyStatusJsonp: studentPrivacyStatusJsonp_,
+    studentWithdrawPrivacyConsentJsonp: studentWithdrawPrivacyConsentJsonp_,
+    adminPrivacyPermissionsJsonp: adminPrivacyPermissionsJsonp_,
+    adminSetStudentPasswordJsonp: adminSetStudentPasswordJsonp_,
+    studentFallbackEventJsonp: studentFallbackEventJsonp_,
+    adminFallbackEventsJsonp: adminFallbackEventsJsonp_
+  };
+
+  if (!handlers[action]) return null;
+
+  try {
+    return studentJsonp_(e, handlers[action](e));
+  } catch (error) {
+    return studentJsonp_(e, {
+      ok: false,
+      code: error && error.code || 'STUDENT_PRIVACY_SERVER_ERROR',
+      message: error && error.message || String(error)
+    });
+  }
+}
+
+/* ---------- doPost 연결점 ---------- */
+
+function handleStudentSecurePost_(e) {
+  var p = e && e.parameter || {};
+  var action = String(p.action || '');
+
+  if (action === 'adminSetStudentPasswordPost') {
+    return studentSecurePostExecute_(
+      e,
+      'attendance-admin-password-post',
+      adminSetStudentPasswordJsonp_
+    );
+  }
+
+  if (action === 'studentSavePrivacyConsentPost') {
+    return studentSecurePostExecute_(
+      e,
+      'attendance-student-privacy-post',
+      studentSavePrivacyConsentJsonp_
+    );
+  }
+
+  if (action === 'studentWithdrawPrivacyConsentPost') {
+    return studentSecurePostExecute_(
+      e,
+      'attendance-student-privacy-post',
+      studentWithdrawPrivacyConsentJsonp_
+    );
+  }
+
+  return null;
+}
+
+/* 이전 함수명 호환 */
+function handleStudentPasswordPost_(e) {
+  return handleStudentSecurePost_(e);
+}
+
+/* ---------- 최초 설치 ---------- */
+
+function setupStudentPrivacyResilience_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  studentEnsureSheet_(
+    ss,
+    STUDENT_PRIVACY_PERMISSION_SHEET,
+    STUDENT_PRIVACY_PERMISSION_HEADERS
+  );
+  studentEnsureSheet_(
+    ss,
+    STUDENT_PRIVACY_AUDIT_SHEET,
+    STUDENT_PRIVACY_AUDIT_HEADERS
+  );
+  studentEnsureSheet_(
+    ss,
+    STUDENT_FALLBACK_EVENT_SHEET,
+    STUDENT_FALLBACK_EVENT_HEADERS
+  );
+
+  return true;
+}
+
+/* 수동 실행용 최종 설치 함수 */
+function setupStudentPrivacyFinal_() {
+  setupStudentAuth_();
+  setupStudentPrivacyResilience_();
+
+  return {
+    ok: true,
+    version: STUDENT_PRIVACY_CURRENT_VERSION,
+    sheets: [
+      STUDENT_PRIVACY_PERMISSION_SHEET,
+      STUDENT_PRIVACY_AUDIT_SHEET,
+      STUDENT_FALLBACK_EVENT_SHEET
+    ]
+  };
+}
+
+/* ---------- 학생 개인정보 동의 ---------- */
+
+function studentSavePrivacyConsentJsonp_(e) {
+  setupStudentPrivacyResilience_();
+
+  var p = e && e.parameter || {};
+  var session = studentFindSession_(String(p.studentToken || ''));
+
+  if (!session) {
+    return studentFail_(
+      'STUDENT_AUTH_REQUIRED',
+      '학생 로그인이 필요합니다.'
+    );
+  }
+
+  var requiredKeys = [
+    'privacyRequired',
+    'locationRequired',
+    'accountRequired',
+    'deviceRequired',
+    'policyRequired'
+  ];
+
+  var requiredAccepted = requiredKeys.every(function (key) {
+    return privacyStrictTrue_(p[key]);
+  });
+
+  if (!requiredAccepted) {
+    return studentFail_(
+      'PRIVACY_REQUIRED_CONSENT_MISSING',
+      '위치 정보를 포함한 모든 필수 항목에 동의해야 합니다.'
+    );
+  }
+
+  var now = new Date();
+  var existing = privacyFindPermission_(session.studentId);
+  var consentedAt =
+    existing && existing.consentedAt
+      ? existing.consentedAt
+      : now;
+
+  var record = {
+    updatedAt: now,
+    studentId: String(session.studentId || ''),
+    name: String(session.name || ''),
+    fingerId: String(session.fingerId || ''),
+    status: 'ACTIVE',
+    consentVersion: privacyClean_(
+      p.consentVersion || STUDENT_PRIVACY_CURRENT_VERSION,
+      60
+    ),
+
+    requiredAccepted: true,
+    privacyRequired: true,
+    locationRequired: true,
+    accountRequired: true,
+    deviceRequired: true,
+    policyRequired: true,
+
+    pushOptional: privacyStrictTrue_(p.pushOptional),
+    diagnosticsOptional: privacyStrictTrue_(p.diagnosticsOptional),
+    updatesOptional: privacyStrictTrue_(p.updatesOptional),
+    rememberOptional: privacyStrictTrue_(p.rememberOptional),
+    backgroundLocationOptional: privacyStrictTrue_(
+      p.backgroundLocationOptional
+    ),
+
+    /* 연령 선택 기능은 화면에서 제거됨. 기존 시트 호환값만 유지 */
+    ageBand: '14_PLUS',
+    guardianConfirmed: false,
+    guardianName: '',
+
+    consentedAt: consentedAt,
+    withdrawnAt: '',
+    source: privacyClean_(p.source || 'student-web', 80),
+    deviceName: privacyClean_(p.deviceName, 100),
+    userAgent: privacyClean_(p.userAgent, 180),
+    clientTime: privacyClean_(p.clientTime, 80),
+    clientTimezone: privacyClean_(p.clientTimezone, 80)
+  };
+
+  privacyUpsertPermission_(record);
+  privacyAppendAudit_('CONSENT_SAVE', record);
+
+  return {
+    ok: true,
+    consent: privacyPublicConsent_(record)
+  };
+}
+
+function studentPrivacyStatusJsonp_(e) {
+  setupStudentPrivacyResilience_();
+
+  var p = e && e.parameter || {};
+  var session = studentFindSession_(String(p.studentToken || ''));
+
+  if (!session) {
+    return studentFail_(
+      'STUDENT_AUTH_REQUIRED',
+      '학생 로그인이 필요합니다.'
+    );
+  }
+
+  var record = privacyFindPermission_(session.studentId);
+
+  return {
+    ok: true,
+    consent: record ? privacyPublicConsent_(record) : null
+  };
+}
+
+function studentWithdrawPrivacyConsentJsonp_(e) {
+  setupStudentPrivacyResilience_();
+
+  var p = e && e.parameter || {};
+  var session = studentFindSession_(String(p.studentToken || ''));
+
+  if (!session) {
+    return studentFail_(
+      'STUDENT_AUTH_REQUIRED',
+      '학생 로그인이 필요합니다.'
+    );
+  }
+
+  var record = privacyFindPermission_(session.studentId);
+
+  if (!record) {
+    return studentFail_(
+      'PRIVACY_CONSENT_NOT_FOUND',
+      '저장된 개인정보 동의를 찾지 못했습니다.'
+    );
+  }
+
+  var now = new Date();
+
+  studentUpdateRow_(
+    studentSheet_(STUDENT_PRIVACY_PERMISSION_SHEET),
+    record._row,
+    {
+      updatedAt: now,
+      status: 'WITHDRAWN',
+      requiredAccepted: false,
+      privacyRequired: false,
+      locationRequired: false,
+      accountRequired: false,
+      deviceRequired: false,
+      policyRequired: false,
+      withdrawnAt: now,
+      source: 'student-web-withdrawal'
+    }
+  );
+
+  var refreshed = privacyFindPermission_(session.studentId);
+  privacyAppendAudit_('CONSENT_WITHDRAW', refreshed);
+  studentDeactivateSessions_(session.studentId);
+
+  return {
+    ok: true,
+    status: 'WITHDRAWN',
+    studentId: String(session.studentId || '')
+  };
+}
+
+/* ---------- 관리자 개인정보 권한 현황 ---------- */
+
+function adminPrivacyPermissionsJsonp_(e) {
+  setupStudentPrivacyResilience_();
+  studentRequireAdmin_(e);
+
+  var permissions = {};
+
+  studentRows_(
+    studentSheet_(STUDENT_PRIVACY_PERMISSION_SHEET)
+  ).forEach(function (row) {
+    permissions[String(row.studentId || '')] = row;
+  });
+
+  var result = studentRows_(
+    studentSheet_(STUDENT_ACCOUNT_SHEET)
+  ).map(function (account) {
+    var permission =
+      permissions[String(account.studentId || '')] || null;
+
+    if (!permission) {
+      return {
+        studentId: String(account.studentId || ''),
+        name: String(account.name || ''),
+        fingerId: String(account.fingerId || ''),
+        status: 'MISSING',
+        requiredAccepted: false,
+        privacyRequired: false,
+        locationRequired: false,
+        accountRequired: false,
+        deviceRequired: false,
+        policyRequired: false,
+        pushOptional: false,
+        diagnosticsOptional: false,
+        updatesOptional: false,
+        rememberOptional: false,
+        backgroundLocationOptional: false
+      };
+    }
+
+    var output = privacyPublicConsent_(permission);
+    output.name = String(account.name || output.name || '');
+    output.fingerId = String(
+      account.fingerId || output.fingerId || ''
+    );
+
+    return output;
+  });
+
+  result.sort(function (a, b) {
+    var fingerA = Number(a.fingerId);
+    var fingerB = Number(b.fingerId);
+
+    if (
+      isFinite(fingerA) &&
+      isFinite(fingerB) &&
+      fingerA !== fingerB
+    ) {
+      return fingerA - fingerB;
+    }
+
+    return String(a.name || a.studentId).localeCompare(
+      String(b.name || b.studentId),
+      'ko'
+    );
+  });
+
+  return {
+    ok: true,
+    count: result.length,
+    permissions: result
+  };
+}
+
+/* ---------- 관리자 학생 비밀번호 직접 설정 ---------- */
+
+function adminSetStudentPasswordJsonp_(e) {
+  setupStudentPrivacyResilience_();
+
+  var admin = studentRequireAdmin_(e) || {};
+  var p = e && e.parameter || {};
+  var studentId = privacyClean_(p.studentId, 40);
+  var password = String(p.password || '');
+  var account = studentFindAccount_(studentId);
+
+  if (!account) {
+    return studentFail_(
+      'STUDENT_ACCOUNT_NOT_FOUND',
+      '학생계정을 찾지 못했습니다.'
+    );
+  }
+
+  if (
+    password.length < 8 ||
+    password.length > 64 ||
+    !/[A-Za-z]/.test(password) ||
+    !/[0-9]/.test(password)
+  ) {
+    return studentFail_(
+      'STUDENT_PASSWORD_POLICY',
+      '비밀번호는 영문과 숫자를 포함해 8~64자로 설정하세요.'
+    );
+  }
+
+  studentUpdateRow_(
+    studentSheet_(STUDENT_ACCOUNT_SHEET),
+    account._row,
+    {
+      initialPassword: '',
+      passwordHash: studentPasswordHash_(password),
+      updatedAt: new Date()
+    }
+  );
+
+  var deactivated = studentDeactivateSessions_(studentId);
+
+  privacyAppendSecurityEvent_(
+    'ADMIN_PASSWORD_SET',
+    studentId,
+    account.name,
+    {
+      admin: String(
+        admin.name ||
+        admin.email ||
+        admin.adminId ||
+        'ADMIN'
+      ),
+      deactivatedSessions: deactivated
+    }
+  );
+
+  return {
+    ok: true,
+    studentId: studentId,
+    name: String(account.name || ''),
+    deactivatedSessions: deactivated
+  };
+}
+
+/* ---------- 백업 경로 및 오류 알림 ---------- */
+
+function studentFallbackEventJsonp_(e) {
+  setupStudentPrivacyResilience_();
+
+  var p = e && e.parameter || {};
+  var studentId = privacyClean_(p.studentId, 40);
+  var studentName = privacyClean_(p.studentName, 80);
+  var token = String(p.studentToken || '');
+
+  if (token) {
+    try {
+      var session = studentFindSession_(token);
+
+      if (session) {
+        studentId = String(session.studentId || studentId);
+        studentName = String(session.name || studentName);
+      }
+    } catch (error) {}
+  }
+
+  var eventId = privacyClean_(
+    p.eventId || ('FB-' + new Date().getTime()),
+    80
+  );
+  var errorType = privacyClean_(p.errorType || 'UNKNOWN', 80);
+  var message = privacyClean_(
+    p.message || '오류 내용 없음',
+    500
+  );
+  var sourcePage = privacyClean_(p.sourcePage, 500);
+  var fallbackUrl = privacyClean_(p.fallbackUrl, 500);
+  var now = new Date();
+
+  var notificationKey =
+    'STUDENT_FALLBACK_NOTIFY_' +
+    studentHash_(errorType + '|' + sourcePage).slice(0, 32);
+
+  var cache = CacheService.getScriptCache();
+  var shouldNotify = !cache.get(notificationKey);
+  var status = shouldNotify ? 'NOTIFIED' : 'RATE_LIMITED';
+  var notifiedAt = shouldNotify ? now : '';
+
+  if (shouldNotify) {
+    cache.put(notificationKey, '1', 600);
+
+    var title = '2-12 출석 백업 시스템 작동';
+    var body =
+      '[' +
+      errorType +
+      '] ' +
+      (studentName || studentId || '비로그인 사용자') +
+      ' · ' +
+      message.slice(0, 120);
+
+    studentTryPushAdmin_({
+      title: title,
+      body: body,
+      url:
+        'https://212attendence.github.io/admin/system-health/'
+    });
+
+    try {
+      MailApp.sendEmail({
+        to: STUDENT_PRIVACY_ADMIN_EMAIL,
+        subject: title + ' - ' + errorType,
+        htmlBody:
+          '<h2>' +
+          privacyHtml_(title) +
+          '</h2>' +
+          '<p><strong>오류 유형:</strong> ' +
+          privacyHtml_(errorType) +
+          '</p>' +
+          '<p><strong>학생:</strong> ' +
+          privacyHtml_(
+            studentName || studentId || '비로그인'
+          ) +
+          '</p>' +
+          '<p><strong>내용:</strong> ' +
+          privacyHtml_(message) +
+          '</p>' +
+          '<p><strong>발생 페이지:</strong> ' +
+          privacyHtml_(sourcePage) +
+          '</p>' +
+          '<p><strong>백업 경로:</strong> ' +
+          privacyHtml_(fallbackUrl) +
+          '</p>' +
+          '<p><a href="https://212attendence.github.io/admin/system-health/">' +
+          '시스템 상태 열기</a></p>'
+      });
+    } catch (mailError) {
+      status = 'PUSH_ONLY';
+    }
+  }
+
+  studentAppendObject_(
+    studentSheet_(STUDENT_FALLBACK_EVENT_SHEET),
+    STUDENT_FALLBACK_EVENT_HEADERS,
+    {
+      createdAt: now,
+      eventId: eventId,
+      errorType: errorType,
+      message: message,
+      sourcePage: sourcePage,
+      fallbackUrl: fallbackUrl,
+      studentId: studentId,
+      studentName: studentName,
+      online: privacyClean_(p.online, 10),
+      deviceName: privacyClean_(p.deviceName, 100),
+      userAgent: privacyClean_(p.userAgent, 180),
+      clientTimezone: privacyClean_(p.clientTimezone, 80),
+      status: status,
+      notifiedAt: notifiedAt
+    }
+  );
+
+  return {
+    ok: true,
+    eventId: eventId,
+    notified: shouldNotify,
+    status: status
+  };
+}
+
+function adminFallbackEventsJsonp_(e) {
+  setupStudentPrivacyResilience_();
+  studentRequireAdmin_(e);
+
+  var rows = studentRows_(
+    studentSheet_(STUDENT_FALLBACK_EVENT_SHEET)
+  );
+
+  rows.sort(function (a, b) {
+    return (
+      new Date(b.createdAt).getTime() -
+      new Date(a.createdAt).getTime()
+    );
+  });
+
+  var since = Date.now() - 24 * 60 * 60 * 1000;
+
+  var last24Hours = rows.filter(function (row) {
+    var time = new Date(row.createdAt).getTime();
+    return isFinite(time) && time >= since;
+  }).length;
+
+  return {
+    ok: true,
+    count: rows.length,
+    last24Hours: last24Hours,
+    events: rows.slice(0, 100).map(function (row) {
+      return {
+        createdAt: privacyDateText_(row.createdAt),
+        eventId: String(row.eventId || ''),
+        errorType: String(row.errorType || ''),
+        message: String(row.message || ''),
+        sourcePage: String(row.sourcePage || ''),
+        fallbackUrl: String(row.fallbackUrl || ''),
+        studentId: String(row.studentId || ''),
+        studentName: String(row.studentName || ''),
+        deviceName: String(row.deviceName || ''),
+        status: String(row.status || '')
+      };
+    })
+  };
+}
+
+/* ---------- 개인정보 내부 헬퍼 ---------- */
+
+function privacyFindPermission_(studentId) {
+  return studentFindBy_(
+    studentSheet_(STUDENT_PRIVACY_PERMISSION_SHEET),
+    'studentId',
+    String(studentId || '')
+  );
+}
+
+function privacyUpsertPermission_(record) {
+  var sheet = studentSheet_(STUDENT_PRIVACY_PERMISSION_SHEET);
+  var existing = privacyFindPermission_(record.studentId);
+
+  if (existing) {
+    studentUpdateRow_(sheet, existing._row, record);
+  } else {
+    studentAppendObject_(
+      sheet,
+      STUDENT_PRIVACY_PERMISSION_HEADERS,
+      record
+    );
+  }
+}
+
+function privacyAppendAudit_(eventType, record) {
+  if (!record) return;
+
+  studentAppendObject_(
+    studentSheet_(STUDENT_PRIVACY_AUDIT_SHEET),
+    STUDENT_PRIVACY_AUDIT_HEADERS,
+    {
+      timestamp: new Date(),
+      eventType: eventType,
+      studentId: record.studentId,
+      name: record.name,
+      fingerId: record.fingerId,
+      status: record.status,
+      consentVersion: record.consentVersion,
+      requiredAccepted: privacyStrictTrue_(
+        record.requiredAccepted
+      ),
+      privacyRequired: privacyStrictTrue_(
+        record.privacyRequired
+      ),
+      locationRequired: privacyStrictTrue_(
+        record.locationRequired
+      ),
+      accountRequired: privacyStrictTrue_(
+        record.accountRequired
+      ),
+      deviceRequired: privacyStrictTrue_(
+        record.deviceRequired
+      ),
+      policyRequired: privacyStrictTrue_(
+        record.policyRequired
+      ),
+      pushOptional: privacyStrictTrue_(record.pushOptional),
+      diagnosticsOptional: privacyStrictTrue_(
+        record.diagnosticsOptional
+      ),
+      updatesOptional: privacyStrictTrue_(
+        record.updatesOptional
+      ),
+      rememberOptional: privacyStrictTrue_(
+        record.rememberOptional
+      ),
+      backgroundLocationOptional: privacyStrictTrue_(
+        record.backgroundLocationOptional
+      ),
+      ageBand: '14_PLUS',
+      guardianConfirmed: false,
+      guardianName: '',
+      source: record.source,
+      deviceName: record.deviceName,
+      userAgent: record.userAgent,
+      clientTime: record.clientTime,
+      clientTimezone: record.clientTimezone
+    }
+  );
+}
+
+function privacyAppendSecurityEvent_(
+  eventType,
+  studentId,
+  name,
+  details
+) {
+  studentAppendObject_(
+    studentSheet_(STUDENT_FALLBACK_EVENT_SHEET),
+    STUDENT_FALLBACK_EVENT_HEADERS,
+    {
+      createdAt: new Date(),
+      eventId: eventType + '-' + new Date().getTime(),
+      errorType: eventType,
+      message: JSON.stringify(details || {}),
+      sourcePage: '/accounts-s/',
+      fallbackUrl: '/admin/system-health/',
+      studentId: studentId,
+      studentName: name,
+      online: '1',
+      deviceName: 'ADMIN',
+      userAgent: '',
+      clientTimezone:
+        Session.getScriptTimeZone() || 'Asia/Seoul',
+      status: 'AUDIT',
+      notifiedAt: ''
+    }
+  );
+}
+
+function privacyPublicConsent_(row) {
+  return {
+    studentId: String(row.studentId || ''),
+    name: String(row.name || ''),
+    fingerId: String(row.fingerId || ''),
+    status: String(row.status || 'MISSING'),
+    consentVersion: String(row.consentVersion || ''),
+
+    requiredAccepted:
+      privacyStrictTrue_(row.requiredAccepted) &&
+      String(row.status || '').toUpperCase() === 'ACTIVE',
+
+    privacyRequired: privacyStrictTrue_(
+      row.privacyRequired
+    ),
+    locationRequired: privacyStrictTrue_(
+      row.locationRequired
+    ),
+    accountRequired: privacyStrictTrue_(
+      row.accountRequired
+    ),
+    deviceRequired: privacyStrictTrue_(
+      row.deviceRequired
+    ),
+    policyRequired: privacyStrictTrue_(
+      row.policyRequired
+    ),
+
+    pushOptional: privacyStrictTrue_(row.pushOptional),
+    diagnosticsOptional: privacyStrictTrue_(
+      row.diagnosticsOptional
+    ),
+    updatesOptional: privacyStrictTrue_(
+      row.updatesOptional
+    ),
+    rememberOptional: privacyStrictTrue_(
+      row.rememberOptional
+    ),
+    backgroundLocationOptional: privacyStrictTrue_(
+      row.backgroundLocationOptional
+    ),
+
+    ageBand: '14_PLUS',
+    guardianConfirmed: false,
+    guardianName: '',
+
+    consentedAt: privacyDateText_(row.consentedAt),
+    withdrawnAt: privacyDateText_(row.withdrawnAt),
+    updatedAt: privacyDateText_(row.updatedAt),
+    source: String(row.source || '')
+  };
+}
+
+function privacyStrictTrue_(value) {
+  if (value === true || value === 1) return true;
+
+  var text = String(
+    value == null ? '' : value
+  ).trim().toLowerCase();
+
+  return (
+    text === '1' ||
+    text === 'true' ||
+    text === 'yes' ||
+    text === 'y' ||
+    text === '동의' ||
+    text === 'active'
+  );
+}
+
+function privacyClean_(value, maxLength) {
+  return String(value == null ? '' : value)
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim()
+    .slice(0, maxLength || 300);
+}
+
+function privacyDateText_(value) {
+  if (!value) return '';
+
+  var date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  if (!isFinite(date.getTime())) {
+    return String(value || '');
+  }
+
+  return Utilities.formatDate(
+    date,
+    Session.getScriptTimeZone() || 'Asia/Seoul',
+    'yyyy-MM-dd HH:mm:ss'
+  );
+}
+
+function privacyHtml_(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ---------- POST 응답 헬퍼 ---------- */
+
+function studentSecurePostExecute_(e, channel, handler) {
+  var p = e && e.parameter || {};
+  var responseToken = privacyClean_(p.responseToken, 100);
+  var responseOrigin = privacySafeOrigin_(p.responseOrigin);
+  var payload;
+
+  try {
+    payload = handler(e);
+  } catch (error) {
+    payload = {
+      ok: false,
+      code:
+        error && error.code ||
+        'STUDENT_SECURE_POST_ERROR',
+      message:
+        error && error.message ||
+        String(error)
+    };
+  }
+
+  return privacyPostMessageResponse_(
+    responseOrigin,
+    responseToken,
+    channel,
+    payload
+  );
+}
+
+function privacySafeOrigin_(value) {
+  var origin = String(value || '');
+
+  if (origin === 'https://212attendence.github.io') {
+    return origin;
+  }
+
+  return 'https://212attendence.github.io';
+}
+
+function privacyPostMessageResponse_(
+  origin,
+  responseToken,
+  channel,
+  payload
+) {
+  var data = {
+    channel: String(
+      channel || 'attendance-secure-post'
+    ),
+    responseToken: String(responseToken || ''),
+    payload:
+      payload ||
+      {
+        ok: false,
+        message: '응답이 없습니다.'
+      }
+  };
+
+  var html =
+    '<!DOCTYPE html><html><head>' +
+    '<meta charset="UTF-8"></head><body>' +
+    '<script>' +
+    'window.parent.postMessage(' +
+    JSON.stringify(data).replace(/</g, '\\u003c') +
+    ',' +
+    JSON.stringify(origin) +
+    ');' +
+    '<\/script></body></html>';
+
+  return HtmlService
+    .createHtmlOutput(html)
+    .setXFrameOptionsMode(
+      HtmlService.XFrameOptionsMode.ALLOWALL
+    );
+}
