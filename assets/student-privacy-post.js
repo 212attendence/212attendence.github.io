@@ -53,8 +53,8 @@
       form.method="POST";form.action=APPS_SCRIPT_URL;form.target=frame.name;form.style.display="none";
       const fields=Object.assign({action:action,responseToken:responseToken,responseOrigin:location.origin,deviceName:navigator.userAgentData&&navigator.userAgentData.platform||navigator.platform||"",screenSize:window.innerWidth+"x"+window.innerHeight,clientTime:new Date().toISOString(),clientTimezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"",userAgent:(navigator.userAgent||"").slice(0,180)},values||{});
       Object.keys(fields).forEach(function(key){const input=document.createElement("input");input.type="hidden";input.name=key;input.value=String(fields[key]==null?"":fields[key]);form.appendChild(input)});
-      let finished=false,checking=false;
-      function cleanup(){window.removeEventListener("message",onMessage);clearTimeout(timer);clearInterval(pollTimer);setTimeout(function(){form.remove();frame.remove()},50)}
+      let finished=false,checking=false,fallbackRunning=false;
+      function cleanup(){window.removeEventListener("message",onMessage);clearTimeout(timer);clearTimeout(fastFallbackTimer);clearInterval(pollTimer);setTimeout(function(){form.remove();frame.remove()},50)}
       function done(error,data){if(finished)return;finished=true;cleanup();error?reject(error):resolve(data)}
       function onMessage(event){if(!isAllowedOrigin(event.origin))return;const data=event.data||{};if(data.channel!==CHANNEL||data.responseToken!==responseToken)return;const payload=data.payload||{};if(!payload.ok)done(new Error(payload.message||"개인정보 설정을 처리하지 못했습니다."));else done(null,payload)}
       async function recover(){
@@ -65,14 +65,23 @@
           if(verified){done(null,verified);return}
         }finally{checking=false}
       }
+      async function runFallback(){
+        if(finished||fallbackRunning)return;
+        fallbackRunning=true;
+        try{
+          await recover();
+          if(finished)return;
+          const fallback=await compatibilityFallback(action,fields);
+          if(fallback){done(null,fallback);return}
+        }finally{fallbackRunning=false}
+      }
       window.addEventListener("message",onMessage);document.body.appendChild(frame);document.body.appendChild(form);
       const pollTimer=setInterval(recover,3500);
+      const fastFallbackTimer=setTimeout(runFallback,8000);
       const timer=setTimeout(async function(){
         if(finished)return;
-        await recover();
+        await runFallback();
         if(finished)return;
-        const fallback=await compatibilityFallback(action,fields);
-        if(fallback){done(null,fallback);return}
         done(new Error("개인정보 설정 서버와 연결하지 못했습니다. 페이지를 새로고침한 뒤 다시 저장하세요."));
       },Math.max(Number(timeoutMs||0),60000));
       form.submit();
