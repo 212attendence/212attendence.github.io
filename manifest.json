@@ -4,7 +4,7 @@
   "short_name": "2-12 출석",
   "description": "학생 위치 출석 및 관리자 대시보드",
   "lang": "ko-KR",
-  "start_url": "/?v=30",
+  "start_url": "/?v=32",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -22,13 +22,13 @@
   ],
   "icons": [
     {
-      "src": "/favicon.png?v=30",
+      "src": "/favicon.png?v=32",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.png?v=30",
+      "src": "/favicon.png?v=32",
       "sizes": "300x300",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,9 +41,9 @@
       "url": "/student/login/",
       "icons": [
         {
-          "src": "/favicon.png?v=30",
-          "sizes": "300x300",
-          "type": "image/png"
+          "src": "/assets/icons/student-icon-source.svg?v=32",
+          "sizes": "any",
+          "type": "image/svg+xml"
         }
       ]
     },
@@ -53,9 +53,9 @@
       "url": "/admin/login/?next=/admin/dashboard/",
       "icons": [
         {
-          "src": "/favicon.png?v=30",
-          "sizes": "300x300",
-          "type": "image/png"
+          "src": "/assets/icons/admin-icon-source.svg?v=32",
+          "sizes": "any",
+          "type": "image/svg+xml"
         }
       ]
     },
@@ -65,9 +65,9 @@
       "url": "/student/help/",
       "icons": [
         {
-          "src": "/favicon.png?v=30",
-          "sizes": "300x300",
-          "type": "image/png"
+          "src": "/assets/icons/student-icon-source.svg?v=32",
+          "sizes": "any",
+          "type": "image/svg+xml"
         }
       ]
     }
