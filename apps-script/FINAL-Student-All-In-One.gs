@@ -3,6 +3,7 @@
  * 생성일: 2026-07-17
  *
  * 이 파일 하나에 포함된 기능
+ * - 독립 실행 가능한 doGet(e), doPost(e)
  * - 학생계정 및 관리자 승인 로그인
  * - 학생 세션
  * - GPS 출석: 해강중학교 지정 좌표 반경 100m
@@ -12,18 +13,16 @@
  * - 개인정보 및 비밀번호 보안 POST 처리
  *
  * 설치
- * 1. 예전 student-auth/privacy/password 확장 파일은 삭제한다.
- * 2. 이 파일 하나만 Apps Script에 붙여 넣는다.
- * 3. 함수 목록에서 INSTALL_2_12_STUDENT_SYSTEM 을 선택해 실행한다.
- * 4. 기존 Code.gs의 doGet/doPost 연결부가 없으면 파일 맨 아래 안내대로 연결한다.
- * 5. 웹 앱을 새 버전으로 재배포한다.
+ * 1. Apps Script의 기존 코드를 모두 지우고 이 파일 전체를 붙여 넣는다.
+ * 2. 함수 목록에서 INSTALL_2_12_STUDENT_SYSTEM 을 선택해 실행한다.
+ * 3. 배포 > 배포 관리 > 새 버전으로 웹 앱을 재배포한다.
+ * 4. 실행 사용자는 나, 액세스 권한은 모든 사용자로 설정한다.
  */
 
 var STUDENT_SYSTEM_SPREADSHEET_ID = '1l2pyOTzEKNn2xAbro7T88T2kdR3hswcaE5YBVClK0U';
+var STUDENT_SYSTEM_VERSION = '2026-07-17-standalone-v1';
 
-/**
- * 바운드/독립형 Apps Script 모두에서 사용할 스프레드시트를 반환한다.
- */
+/** 바운드/독립형 Apps Script 모두에서 사용할 스프레드시트를 반환한다. */
 function studentOpenSpreadsheet_() {
   var active = SpreadsheetApp.getActiveSpreadsheet();
   if (active) return active;
@@ -31,9 +30,68 @@ function studentOpenSpreadsheet_() {
 }
 
 /**
- * Apps Script 함수 선택창에 표시되는 공개 설치 함수.
- * 이 함수를 한 번 실행하면 필요한 모든 시트를 생성한다.
+ * 웹 앱 GET 진입점.
+ * 이 파일 하나만 붙여 넣어도 학생 로그인·출석·개인정보 JSONP API가 동작한다.
  */
+function doGet(e) {
+  var p = e && e.parameter || {};
+  var action = String(p.action || '').trim();
+
+  try {
+    if (!action || action === 'health' || action === 'healthJsonp') {
+      return studentJsonp_(e, {
+        ok: true,
+        service: '2-12-student-system',
+        version: STUDENT_SYSTEM_VERSION,
+        spreadsheetId: STUDENT_SYSTEM_SPREADSHEET_ID
+      });
+    }
+
+    var privacyResponse = handleStudentPrivacyAction_(action, e);
+    if (privacyResponse) return privacyResponse;
+
+    var studentResponse = handleStudentAuthAction_(action, e);
+    if (studentResponse) return studentResponse;
+
+    return studentJsonp_(e, {
+      ok: false,
+      code: 'ACTION_NOT_SUPPORTED',
+      message: '지원하지 않는 서버 요청입니다: ' + action
+    });
+  } catch (error) {
+    return studentJsonp_(e, {
+      ok: false,
+      code: error && error.code || 'SERVER_ERROR',
+      message: error && error.message || String(error)
+    });
+  }
+}
+
+/** 웹 앱 POST 진입점. */
+function doPost(e) {
+  try {
+    var securePostResponse = handleStudentSecurePost_(e);
+    if (securePostResponse) return securePostResponse;
+
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        ok: false,
+        code: 'POST_ACTION_NOT_SUPPORTED',
+        message: '지원하지 않는 POST 요청입니다.'
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        ok: false,
+        code: error && error.code || 'POST_SERVER_ERROR',
+        message: error && error.message || String(error)
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/** Apps Script 함수 선택창에 표시되는 공개 설치 함수. */
 function INSTALL_2_12_STUDENT_SYSTEM() {
   var result = setupStudentPrivacyFinal_();
   SpreadsheetApp.flush();
@@ -63,9 +121,20 @@ function CHECK_2_12_STUDENT_SYSTEM() {
   });
   return {
     ok: required.every(function (name) { return Boolean(found[name]); }),
+    version: STUDENT_SYSTEM_VERSION,
     spreadsheetId: ss.getId(),
     createdSheets: required.filter(function (name) { return Boolean(found[name]); }),
     missingSheets: required.filter(function (name) { return !found[name]; })
+  };
+}
+
+/** 배포 후 함수 실행창에서 서버 로직을 직접 점검하는 함수 */
+function TEST_2_12_STUDENT_SERVER() {
+  var response = studentFeaturePingJsonp_({ parameter: {} });
+  return {
+    ok: Boolean(response && response.ok),
+    version: STUDENT_SYSTEM_VERSION,
+    response: response
   };
 }
 
@@ -1758,17 +1827,14 @@ function privacyPostMessageResponse_(
 }
 
 /* ==========================================================================
- * Code.gs 연결 안내
+ * 배포 확인
  * ==========================================================================
- * 기존 doGet(e)에서 action을 만든 직후:
+ * 1. INSTALL_2_12_STUDENT_SYSTEM 실행
+ * 2. CHECK_2_12_STUDENT_SYSTEM 실행
+ * 3. 배포 > 배포 관리 > 수정 > 새 버전 > 배포
+ * 4. 실행 사용자: 나
+ * 5. 액세스 권한: 모든 사용자
  *
- *   var privacyResponse = handleStudentPrivacyAction_(action, e);
- *   if (privacyResponse) return privacyResponse;
- *   var studentResponse = handleStudentAuthAction_(action, e);
- *   if (studentResponse) return studentResponse;
- *
- * 기존 doPost(e) 시작 부분:
- *
- *   var securePostResponse = handleStudentSecurePost_(e);
- *   if (securePostResponse) return securePostResponse;
+ * 웹 앱 주소 뒤에 아래를 붙여 열었을 때 callback({ok:true,...}); 가 보이면 정상이다.
+ * ?action=studentFeaturePingJsonp&callback=callback
  */
