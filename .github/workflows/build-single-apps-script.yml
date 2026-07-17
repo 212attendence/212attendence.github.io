@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "apps-script/student-auth-addon.gs"
+      - "apps-script/admin-compat-addon.gs"
       - "apps-script/FINAL-StudentPrivacy-Code.gs.txt"
       - "tools/build-single-apps-script.mjs"
       - ".github/workflows/build-single-apps-script.yml"
