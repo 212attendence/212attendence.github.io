@@ -1,26 +1,26 @@
 /*
  * 2-12 출석 시스템 전체 기능 통합 단일 파일
- * 생성일: 2026-07-17
+ * 생성일: 2026-07-18
  *
  * 포함 기능
+ * - 서버 V6 학생 승인 결과 전달
+ * - 기존 사용자·설정 시트 학생 수 동기화
+ * - WebAuthn 패스키 등록·로그인·삭제
  * - 관리자 ID/비밀번호 및 Google 로그인
  * - 14일 관리자 세션과 관리자 권한 확인
- * - 관리자 대시보드 기본 API
- * - 학생계정 및 관리자 승인 로그인
- * - 학생 세션과 GPS 출석
- * - 개인정보 필수·선택 동의 및 권한 시트
- * - 개인정보 및 비밀번호 보안 POST
+ * - 학생계정, GPS 출석, 개인정보 동의
  *
  * 설치
  * 1. Apps Script의 기존 코드를 모두 지운다.
  * 2. 이 파일 전체를 Code.gs 한 파일에 붙여 넣는다.
  * 3. INSTALL_2_12_STUDENT_SYSTEM 을 실행한다.
- * 4. 배포 관리에서 기존 웹 앱을 새 버전으로 재배포한다.
- * 5. 실행 사용자: 나 / 액세스 권한: 모든 사용자
+ * 4. TEST_2_12_V6_SERVER 를 실행한다.
+ * 5. 배포 관리에서 기존 웹 앱을 새 버전으로 재배포한다.
+ * 6. 실행 사용자: 나 / 액세스 권한: 모든 사용자
  */
 
 var STUDENT_SYSTEM_SPREADSHEET_ID = '1l2pyOTzEKNn2xAbro7T88T2kdR3hswcaE5YBVClK0U';
-var STUDENT_SYSTEM_VERSION = '2026-07-17-full-server-v2';
+var STUDENT_SYSTEM_VERSION = '2026-07-18-server-v6.1';
 
 function studentOpenSpreadsheet_() {
   var active = SpreadsheetApp.getActiveSpreadsheet();
@@ -2302,8 +2302,955 @@ function privacyPostMessageResponse_(
     );
 }
 
+/* ==========================================================================
+ * 서버 V6 승인·시트 동기화·패스키 모듈
+ * ========================================================================== */
+
+/*
+ * 2-12 출석 시스템 서버 V6 안정화 모듈
+ * - 학생 승인 결과 전달 보강
+ * - 기존 사용자/설정 시트 인원 동기화
+ * - WebAuthn 패스키 등록/로그인/삭제
+ * - dashboard ping/version 호환
+ */
+
+var V6_SERVER_VERSION = '2026-07-18-server-v6.1';
+var V6_PASSKEY_REQUEST_TTL_SEC = 300;
+var V6_ALLOWED_ORIGIN = 'https://212attendence.github.io';
+var V6_RP_ID = '212attendence.github.io';
+var V6_RP_NAME = '2-12 출석 관리자';
+
+/* 마지막에 대입하여 기존 통합 파일의 버전 검사를 V6로 통일한다. */
+STUDENT_SYSTEM_VERSION = V6_SERVER_VERSION;
+ADMIN_COMPAT_VERSION = V6_SERVER_VERSION;
+
+function doGet(e) {
+  var p = e && e.parameter || {};
+  var action = String(p.action || '').trim();
+  try {
+    if (!action || action === 'health' || action === 'healthJsonp' || action === 'ping') {
+      return studentJsonp_(e, v6PublicStatus_());
+    }
+
+    var adminResponse = handleAdminCompatAction_(action, e);
+    if (adminResponse) return adminResponse;
+
+    var privacyResponse = handleStudentPrivacyAction_(action, e);
+    if (privacyResponse) return privacyResponse;
+
+    var studentResponse = handleStudentAuthAction_(action, e);
+    if (studentResponse) return studentResponse;
+
+    return studentJsonp_(e, {
+      ok: false,
+      code: 'ACTION_NOT_SUPPORTED',
+      message: '지원하지 않는 서버 요청입니다: ' + action,
+      version: V6_SERVER_VERSION
+    });
+  } catch (error) {
+    return studentJsonp_(e, {
+      ok: false,
+      code: error && error.code || 'SERVER_ERROR',
+      message: error && error.message || String(error),
+      version: V6_SERVER_VERSION
+    });
+  }
+}
+
+function v6PublicStatus_() {
+  var diagnostics = v6RosterDiagnostics_();
+  return {
+    ok: true,
+    service: '2-12-full-system',
+    version: V6_SERVER_VERSION,
+    serverVersion: V6_SERVER_VERSION,
+    serverV6: true,
+    spreadsheetId: STUDENT_SYSTEM_SPREADSHEET_ID,
+    registeredStudentCount: diagnostics.registeredStudentCount,
+    rosterSource: diagnostics.source
+  };
+}
+
+function handleAdminCompatAction_(action, e) {
+  var handlers = {
+    ping: function () { return v6PublicStatus_(); },
+    adminLoginChallengeJsonp: adminCompatLoginChallenge_,
+    dashboardLoginProofJsonp: adminCompatLoginProof_,
+    dashboardLoginJsonp: adminCompatLegacyLogin_,
+    googleLoginJsonp: adminCompatGoogleLogin_,
+    reauthJsonp: adminCompatReauth_,
+    adminLoginEventJsonp: adminCompatLoginEvent_,
+    serverStatusJsonp: adminCompatServerStatus_,
+    diagnosticsJsonp: adminCompatServerStatus_,
+    logSchemaStatusJsonp: adminCompatLogSchemaStatus_,
+    todayLogs: adminCompatTodayLogs_,
+    logsByDate: adminCompatLogsByDate_,
+    getDashboardSettingsJsonp: adminCompatGetSettings_,
+    saveDashboardSettingsJsonp: adminCompatSaveSettings_,
+    pushClientConfigJsonp: adminCompatPushConfig_,
+    savePushTokenJsonp: adminCompatSavePushToken_,
+    saveStudentPushTokenJsonp: adminCompatSaveStudentPushToken_,
+    testPushJsonp: adminCompatTestPush_,
+    passkeyRegisterOptionsJsonp: v6PasskeyRegisterOptions_,
+    passkeyRegisterVerifyJsonp: v6PasskeyRegisterVerify_,
+    passkeyLoginOptionsJsonp: v6PasskeyLoginOptions_,
+    passkeyLoginVerifyJsonp: v6PasskeyLoginVerify_,
+    deletePasskeyJsonp: v6DeletePasskey_
+  };
+  if (!handlers[action]) return null;
+  try {
+    adminCompatSetup_();
+    return studentJsonp_(e, handlers[action](e && e.parameter || {}));
+  } catch (error) {
+    return studentJsonp_(e, {
+      ok: false,
+      code: error && error.code || 'ADMIN_V6_SERVER_ERROR',
+      message: error && error.message || String(error),
+      version: V6_SERVER_VERSION
+    });
+  }
+}
+
+function INSTALL_2_12_STUDENT_SYSTEM() {
+  adminCompatSetup_();
+  var student = setupStudentPrivacyFinal_();
+  v6EnsurePasskeySheet_();
+  var roster = v6RosterDiagnostics_();
+  SpreadsheetApp.flush();
+  return {
+    ok: true,
+    version: V6_SERVER_VERSION,
+    serverV6: true,
+    student: student,
+    admin: true,
+    registeredStudentCount: roster.registeredStudentCount,
+    rosterSource: roster.source
+  };
+}
+
+function TEST_2_12_V6_SERVER() {
+  var status = v6PublicStatus_();
+  var ss = studentOpenSpreadsheet_();
+  return {
+    ok: status.ok && String(status.version).indexOf('server-v6') >= 0,
+    version: status.version,
+    spreadsheetId: ss.getId(),
+    registeredStudentCount: status.registeredStudentCount,
+    rosterSource: status.rosterSource,
+    passkeySheet: Boolean(ss.getSheetByName(ADMIN_COMPAT_PASSKEY_SHEET))
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * 학생 승인 안정화
+ * -------------------------------------------------------------------------- */
+
+function adminDecideStudentRequestJsonp_(e) {
+  setupStudentAuth_();
+  var admin = studentRequireAdmin_(e) || {};
+  var p = e && e.parameter || {};
+  var requestId = String(p.requestId || '').trim();
+  var rawDecision = String(p.decision || p.status || p.result || '').trim().toUpperCase();
+  var decision = '';
+  if (rawDecision === 'APPROVED' || rawDecision === 'APPROVE' || rawDecision === 'ACCEPT' || rawDecision === '1' || rawDecision === '승인') decision = 'APPROVED';
+  if (rawDecision === 'DENIED' || rawDecision === 'DENY' || rawDecision === 'REJECT' || rawDecision === '0' || rawDecision === '거절') decision = 'DENIED';
+  if (!requestId) return studentFail_('REQUEST_ID_REQUIRED', '로그인 요청 ID가 없습니다.');
+  if (!decision) return studentFail_('DECISION_INVALID', '승인 또는 거절을 선택하세요.');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sheet = studentSheet_(STUDENT_REQUEST_SHEET);
+    var request = studentFindBy_(sheet, 'requestId', requestId);
+    if (!request) return studentFail_('STUDENT_REQUEST_NOT_FOUND', '로그인 요청을 찾지 못했습니다.');
+    var current = String(request.status || 'PENDING').trim().toUpperCase();
+    if (current === decision) {
+      return { ok: true, status: decision, requestId: requestId, alreadyProcessed: true, version: V6_SERVER_VERSION };
+    }
+    if (current !== 'PENDING') return studentFail_('STUDENT_REQUEST_ALREADY_DECIDED', '이미 처리된 요청입니다.');
+
+    var token = '';
+    if (decision === 'APPROVED') {
+      request.status = 'APPROVED';
+      token = studentIssueSession_(request);
+      PropertiesService.getScriptProperties().setProperty('STUDENT_APPROVAL_TOKEN_' + requestId, token);
+      PropertiesService.getScriptProperties().setProperty('STUDENT_APPROVAL_RESULT_' + requestId, JSON.stringify({
+        status: 'APPROVED',
+        studentToken: token,
+        studentId: String(request.studentId || ''),
+        name: String(request.name || ''),
+        fingerId: String(request.fingerId || ''),
+        secretHash: String(request.secretHash || ''),
+        decidedAt: Date.now()
+      }));
+    }
+
+    studentUpdateRow_(sheet, request._row, {
+      status: decision,
+      decidedAt: new Date(),
+      decidedBy: String(admin.name || admin.email || admin.adminId || 'ADMIN')
+    });
+    SpreadsheetApp.flush();
+    return { ok: true, status: decision, requestId: requestId, approved: decision === 'APPROVED', version: V6_SERVER_VERSION };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function studentRequestStatusJsonp_(e) {
+  setupStudentAuth_();
+  var p = e && e.parameter || {};
+  var requestId = String(p.requestId || '').trim();
+  var requestSecret = String(p.requestSecret || '').trim();
+  if (!requestId || !requestSecret) return studentFail_('STUDENT_REQUEST_REQUIRED', '로그인 요청 정보가 없습니다.');
+  var suppliedSecretHash = studentHash_(requestSecret);
+  var props = PropertiesService.getScriptProperties();
+  var savedResultRaw = props.getProperty('STUDENT_APPROVAL_RESULT_' + requestId);
+  if (savedResultRaw) {
+    try {
+      var savedResult = JSON.parse(savedResultRaw);
+      if (studentConstantEqual_(String(savedResult.secretHash || ''), suppliedSecretHash)) {
+        var savedToken = String(savedResult.studentToken || '');
+        if (savedToken && studentFindSession_(savedToken)) {
+          return {
+            ok: true,
+            status: 'APPROVED',
+            approved: true,
+            studentToken: savedToken,
+            studentId: savedResult.studentId,
+            name: savedResult.name,
+            fingerId: savedResult.fingerId,
+            version: V6_SERVER_VERSION
+          };
+        }
+      }
+    } catch (ignore) {}
+  }
+
+  var request = studentFindBy_(studentSheet_(STUDENT_REQUEST_SHEET), 'requestId', requestId);
+  if (!request || !studentConstantEqual_(String(request.secretHash || ''), suppliedSecretHash)) {
+    return studentFail_('STUDENT_REQUEST_NOT_FOUND', '로그인 요청을 찾지 못했습니다.');
+  }
+  var status = String(request.status || 'PENDING').trim().toUpperCase();
+  var age = Date.now() - new Date(request.createdAt).getTime();
+  if (age > STUDENT_REQUEST_TTL_MS && status === 'PENDING') {
+    studentUpdateRow_(studentSheet_(STUDENT_REQUEST_SHEET), request._row, { status: 'EXPIRED' });
+    SpreadsheetApp.flush();
+    status = 'EXPIRED';
+  }
+  if (status !== 'APPROVED') return { ok: true, status: status, name: request.name, version: V6_SERVER_VERSION };
+
+  var propertyKey = 'STUDENT_APPROVAL_TOKEN_' + requestId;
+  var token = String(props.getProperty(propertyKey) || '');
+  if (!token || !studentFindSession_(token)) {
+    token = studentIssueSession_(request);
+    props.setProperty(propertyKey, token);
+  }
+  props.setProperty('STUDENT_APPROVAL_RESULT_' + requestId, JSON.stringify({
+    status: 'APPROVED',
+    studentToken: token,
+    studentId: String(request.studentId || ''),
+    name: String(request.name || ''),
+    fingerId: String(request.fingerId || ''),
+    secretHash: String(request.secretHash || ''),
+    decidedAt: request.decidedAt instanceof Date ? request.decidedAt.getTime() : Date.now()
+  }));
+  return {
+    ok: true,
+    status: 'APPROVED',
+    approved: true,
+    studentToken: token,
+    studentId: request.studentId,
+    name: request.name,
+    fingerId: request.fingerId,
+    version: V6_SERVER_VERSION
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * 기존 시트 학생 수/명단 동기화
+ * -------------------------------------------------------------------------- */
+
+function v6NormalizeHeader_(value) {
+  return String(value == null ? '' : value).trim().toLowerCase().replace(/[\s_\-()./\\]/g, '');
+}
+
+function v6HeaderIndex_(headers, aliases) {
+  var normalized = headers.map(v6NormalizeHeader_);
+  for (var i = 0; i < aliases.length; i++) {
+    var index = normalized.indexOf(v6NormalizeHeader_(aliases[i]));
+    if (index >= 0) return index;
+  }
+  return -1;
+}
+
+function v6RowsFromSheet_(sheet) {
+  if (!sheet || sheet.getLastRow() < 2 || sheet.getLastColumn() < 1) return [];
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0].map(String);
+  var nameIndex = v6HeaderIndex_(headers, ['name', '이름', '학생이름', '성명', '학생명']);
+  var fingerIndex = v6HeaderIndex_(headers, ['fingerId', 'fingerID', '지문ID', '지문번호', '지문']);
+  var studentIdIndex = v6HeaderIndex_(headers, ['studentId', '학생ID', '아이디', '학번']);
+  var activeIndex = v6HeaderIndex_(headers, ['active', '활성', '사용', '활성여부', '상태']);
+  if (nameIndex < 0 && fingerIndex < 0 && studentIdIndex < 0) return [];
+  return values.slice(1).map(function (row) {
+    var activeValue = activeIndex >= 0 ? row[activeIndex] : true;
+    return {
+      name: nameIndex >= 0 ? String(row[nameIndex] || '').trim() : '',
+      fingerId: fingerIndex >= 0 ? String(row[fingerIndex] || '').trim() : '',
+      studentId: studentIdIndex >= 0 ? String(row[studentIdIndex] || '').trim() : '',
+      active: adminCompatTrue_(activeValue)
+    };
+  }).filter(function (row) { return row.active && (row.name || row.fingerId || row.studentId); });
+}
+
+function v6RosterData_() {
+  var ss = studentOpenSpreadsheet_();
+  var sheetNames = ['사용자', '학생명단', '학생목록', '학생', '학생계정'];
+  var rows = [];
+  var source = '';
+  for (var i = 0; i < sheetNames.length; i++) {
+    var sheet = ss.getSheetByName(sheetNames[i]);
+    var found = v6RowsFromSheet_(sheet);
+    if (found.length) {
+      rows = found;
+      source = sheetNames[i];
+      break;
+    }
+  }
+  var unique = {};
+  rows = rows.filter(function (row) {
+    var key = row.fingerId ? 'F:' + row.fingerId : row.studentId ? 'S:' + row.studentId : 'N:' + row.name;
+    if (unique[key]) return false;
+    unique[key] = true;
+    return true;
+  });
+  return { rows: rows, source: source || '없음' };
+}
+
+function v6ConfiguredStudentCount_() {
+  var ss = studentOpenSpreadsheet_();
+  var maxCount = 0;
+  var keyAliases = ['studentCount', 'registeredStudentCount', 'totalStudents', 'userCount', '학생수', '전체학생수', '재적인원', '등록학생수', '학급인원'];
+  var normalizedAliases = keyAliases.map(v6NormalizeHeader_);
+  var settingSheet = ss.getSheetByName('설정');
+  if (settingSheet && settingSheet.getLastRow() > 0) {
+    var values = settingSheet.getDataRange().getDisplayValues();
+    for (var r = 0; r < values.length; r++) {
+      for (var c = 0; c < values[r].length; c++) {
+        if (normalizedAliases.indexOf(v6NormalizeHeader_(values[r][c])) < 0) continue;
+        var candidates = [];
+        if (c + 1 < values[r].length) candidates.push(values[r][c + 1]);
+        if (r + 1 < values.length && c < values[r + 1].length) candidates.push(values[r + 1][c]);
+        candidates.forEach(function (candidate) {
+          var number = Number(String(candidate || '').replace(/[^0-9.\-]/g, ''));
+          if (isFinite(number)) maxCount = Math.max(maxCount, Math.max(0, Math.round(number)));
+        });
+      }
+    }
+  }
+  ['학생수', '학급인원'].forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
+    if (!sheet || sheet.getLastRow() < 1) return;
+    var values = sheet.getDataRange().getDisplayValues();
+    values.forEach(function (row) { row.forEach(function (cell) {
+      var number = Number(String(cell || '').replace(/[^0-9.\-]/g, ''));
+      if (isFinite(number)) maxCount = Math.max(maxCount, Math.max(0, Math.round(number)));
+    }); });
+  });
+  return maxCount;
+}
+
+function v6RosterDiagnostics_() {
+  var roster = v6RosterData_();
+  var configured = v6ConfiguredStudentCount_();
+  var accountCount = 0;
+  try {
+    accountCount = studentRows_(studentSheet_(STUDENT_ACCOUNT_SHEET)).filter(function (row) { return studentTruthy_(row.active); }).length;
+  } catch (ignore) {}
+  return {
+    rows: roster.rows,
+    source: roster.source,
+    rosterCount: roster.rows.length,
+    configuredCount: configured,
+    accountCount: accountCount,
+    registeredStudentCount: Math.max(roster.rows.length, configured, accountCount)
+  };
+}
+
+function adminCompatRoster_() {
+  return v6RosterData_().rows.map(function (row) {
+    return { name: row.name || row.studentId || '', fingerId: row.fingerId || '', studentId: row.studentId || '' };
+  });
+}
+
+function adminCompatTodayLogs_(params) {
+  var auth = requireAuth_(params);
+  if (!auth.ok) return auth;
+  var timezone = adminCompatGetSetting_('timezone', 'Asia/Seoul');
+  var today = Utilities.formatDate(new Date(), timezone, 'yyyy-MM-dd');
+  var diagnostics = v6RosterDiagnostics_();
+  var roster = diagnostics.rows;
+  var raw = adminCompatLogsForDate_(today, timezone);
+  var byFinger = {};
+  raw.forEach(function (row) {
+    var key = String(row.fingerId || '');
+    if (key && !byFinger[key]) byFinger[key] = row;
+  });
+  var logs = roster.map(function (user) {
+    var found = byFinger[String(user.fingerId || '')];
+    return found || { timestamp: '', time: '-', status: '미출석', fingerId: user.fingerId, name: user.name || user.studentId, message: '' };
+  });
+  var rosterFinger = {};
+  roster.forEach(function (user) { if (user.fingerId) rosterFinger[String(user.fingerId)] = true; });
+  raw.forEach(function (row) {
+    if (!row.fingerId || !rosterFinger[String(row.fingerId)]) logs.push(row);
+  });
+  var total = Math.max(diagnostics.registeredStudentCount, logs.length);
+  var summary = { total: total, present: 0, late: 0, absent: 0, notYet: 0 };
+  logs.forEach(function (row) {
+    var status = String(row.status || '');
+    if (status.indexOf('지각') >= 0) summary.late++;
+    else if (status.indexOf('출석') >= 0 && status.indexOf('미출석') < 0) summary.present++;
+    else if (status.indexOf('결석') >= 0) summary.absent++;
+    else summary.notYet++;
+  });
+  summary.notYet += Math.max(0, total - logs.length);
+  return {
+    ok: true,
+    date: today,
+    logs: logs,
+    summary: summary,
+    registeredStudentCount: total,
+    studentCount: total,
+    rosterCount: diagnostics.rosterCount,
+    configuredStudentCount: diagnostics.configuredCount,
+    rosterSource: diagnostics.source,
+    version: V6_SERVER_VERSION,
+    serverVersion: V6_SERVER_VERSION
+  };
+}
+
+function adminCompatLogsByDate_(params) {
+  var auth = requireAuth_(params);
+  if (!auth.ok) return auth;
+  var date = String(params.date || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return studentFail_('DATE_REQUIRED', '조회 날짜를 yyyy-MM-dd 형식으로 입력하세요.');
+  return {
+    ok: true,
+    date: date,
+    logs: adminCompatLogsForDate_(date, adminCompatGetSetting_('timezone', 'Asia/Seoul')),
+    sourceSheet: ADMIN_COMPAT_LOGS_SHEET,
+    version: V6_SERVER_VERSION,
+    serverVersion: V6_SERVER_VERSION
+  };
+}
+
+function adminCompatServerStatus_(params) {
+  var auth = requireAuth_(params);
+  if (!auth.ok && String(params.public || '') !== '1') return auth;
+  var ss = studentOpenSpreadsheet_();
+  var diagnostics = v6RosterDiagnostics_();
+  return {
+    ok: true,
+    version: V6_SERVER_VERSION,
+    serverVersion: V6_SERVER_VERSION,
+    serverV6: true,
+    spreadsheetId: ss.getId(),
+    spreadsheetName: ss.getName(),
+    schoolName: STUDENT_SCHOOL_NAME,
+    radiusM: STUDENT_SCHOOL_RADIUS_M,
+    registeredStudentCount: diagnostics.registeredStudentCount,
+    rosterCount: diagnostics.rosterCount,
+    configuredStudentCount: diagnostics.configuredCount,
+    rosterSource: diagnostics.source,
+    sheets: ss.getSheets().map(function (sheet) { return sheet.getName(); })
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * WebAuthn passkey
+ * -------------------------------------------------------------------------- */
+
+function v6EnsurePasskeySheet_() {
+  return studentEnsureSheet_(studentOpenSpreadsheet_(), ADMIN_COMPAT_PASSKEY_SHEET, ADMIN_COMPAT_PASSKEY_HEADERS);
+}
+
+function v6PasskeyRegisterOptions_(params) {
+  var auth = adminCompatRequire_(params);
+  v6EnsurePasskeySheet_();
+  var origin = v6ValidatedOrigin_(params.origin, params.hostname);
+  var requestId = v6RandomToken_(24);
+  var challenge = v6RandomToken_(32);
+  var identity = String(auth.email || auth.adminId || auth.name || 'admin');
+  var userId = v6B64Encode_(v6Sha256_(v6Utf8Bytes_(identity)));
+  var exclude = studentRows_(adminCompatSheet_(ADMIN_COMPAT_PASSKEY_SHEET)).filter(function (row) {
+    return adminCompatTrue_(row.active) && String(row.loginId || '') === identity;
+  }).map(function (row) { return { type: 'public-key', id: String(row.credentialId || '') }; }).filter(function (item) { return item.id; });
+  CacheService.getScriptCache().put('V6_PK_REG_' + requestId, JSON.stringify({
+    challenge: challenge,
+    origin: origin,
+    rpId: V6_RP_ID,
+    identity: identity,
+    loginType: auth.loginType || (auth.email ? 'google' : 'admin'),
+    loginId: identity,
+    displayName: auth.name || identity,
+    role: auth.role || 'ADMIN',
+    userId: userId,
+    createdAt: Date.now()
+  }), V6_PASSKEY_REQUEST_TTL_SEC);
+  return {
+    ok: true,
+    requestId: requestId,
+    version: V6_SERVER_VERSION,
+    publicKey: {
+      challenge: challenge,
+      rp: { name: V6_RP_NAME, id: V6_RP_ID },
+      user: { id: userId, name: identity, displayName: auth.name || identity },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+      timeout: 60000,
+      attestation: 'none',
+      authenticatorSelection: { authenticatorAttachment: 'platform', residentKey: 'preferred', requireResidentKey: false, userVerification: 'required' },
+      excludeCredentials: exclude
+    }
+  };
+}
+
+function v6PasskeyRegisterVerify_(params) {
+  var auth = adminCompatRequire_(params);
+  var requestId = String(params.requestId || '').trim();
+  var raw = CacheService.getScriptCache().get('V6_PK_REG_' + requestId);
+  if (!raw) return studentFail_('PASSKEY_REQUEST_EXPIRED', '패스키 등록 요청이 만료되었습니다. 다시 시도하세요.');
+  var request = JSON.parse(raw);
+  var credential = v6ParseJson_(params.credential, '패스키 등록 응답을 읽지 못했습니다.');
+  var clientDataBytes = v6B64Decode_(credential && credential.response && credential.response.clientDataJSON);
+  var clientData = v6ParseJson_(v6BytesToUtf8_(clientDataBytes), '패스키 등록 확인값이 올바르지 않습니다.');
+  v6CheckClientData_(clientData, 'webauthn.create', request.challenge, request.origin);
+  var attestationBytes = v6B64Decode_(credential && credential.response && credential.response.attestationObject);
+  var parsed = v6ParseAttestation_(attestationBytes, request.rpId);
+  var credentialId = String(credential.id || credential.rawId || v6B64Encode_(parsed.credentialId));
+  if (!credentialId) return studentFail_('PASSKEY_CREDENTIAL_REQUIRED', '패스키 ID가 없습니다.');
+
+  var sheet = v6EnsurePasskeySheet_();
+  studentRows_(sheet).forEach(function (row) {
+    if (String(row.credentialId || '') === credentialId && adminCompatTrue_(row.active)) {
+      studentUpdateRow_(sheet, row._row, { active: false, lastUsedAt: new Date() });
+    }
+  });
+  studentAppendObject_(sheet, ADMIN_COMPAT_PASSKEY_HEADERS, {
+    createdAt: new Date(),
+    credentialId: credentialId,
+    userId: request.userId,
+    loginType: request.loginType,
+    loginId: request.loginId,
+    displayName: request.displayName,
+    role: request.role,
+    publicKeyX: v6B64Encode_(parsed.x),
+    publicKeyY: v6B64Encode_(parsed.y),
+    alg: parsed.alg,
+    signCount: parsed.signCount,
+    deviceName: String(params.deviceName || '').slice(0, 120),
+    userAgent: String(params.userAgent || '').slice(0, 180),
+    active: true,
+    lastUsedAt: new Date()
+  });
+  CacheService.getScriptCache().remove('V6_PK_REG_' + requestId);
+  SpreadsheetApp.flush();
+  return { ok: true, credentialId: credentialId, registered: true, version: V6_SERVER_VERSION, name: auth.name || request.displayName };
+}
+
+function v6PasskeyLoginOptions_(params) {
+  v6EnsurePasskeySheet_();
+  var credentialId = String(params.credentialId || '').trim();
+  if (!credentialId) return studentFail_('PASSKEY_CREDENTIAL_REQUIRED', '등록된 패스키 정보가 없습니다.');
+  var row = studentRows_(adminCompatSheet_(ADMIN_COMPAT_PASSKEY_SHEET)).filter(function (item) {
+    return adminCompatTrue_(item.active) && String(item.credentialId || '') === credentialId;
+  })[0] || null;
+  if (!row) return studentFail_('PASSKEY_NOT_FOUND', '서버에 등록된 패스키를 찾지 못했습니다. 다른 방법으로 로그인한 뒤 다시 등록하세요.');
+  var origin = v6ValidatedOrigin_(params.origin, params.hostname);
+  var requestId = v6RandomToken_(24);
+  var challenge = v6RandomToken_(32);
+  CacheService.getScriptCache().put('V6_PK_LOGIN_' + requestId, JSON.stringify({
+    challenge: challenge,
+    origin: origin,
+    rpId: V6_RP_ID,
+    credentialId: credentialId,
+    loginType: String(row.loginType || 'passkey'),
+    loginId: String(row.loginId || ''),
+    displayName: String(row.displayName || row.loginId || '관리자'),
+    role: String(row.role || 'ADMIN'),
+    publicKeyX: String(row.publicKeyX || ''),
+    publicKeyY: String(row.publicKeyY || ''),
+    signCount: Number(row.signCount || 0),
+    row: row._row,
+    createdAt: Date.now()
+  }), V6_PASSKEY_REQUEST_TTL_SEC);
+  return {
+    ok: true,
+    requestId: requestId,
+    version: V6_SERVER_VERSION,
+    publicKey: {
+      challenge: challenge,
+      timeout: 60000,
+      rpId: V6_RP_ID,
+      allowCredentials: [{ type: 'public-key', id: credentialId }],
+      userVerification: 'required'
+    }
+  };
+}
+
+function v6PasskeyLoginVerify_(params) {
+  var requestId = String(params.requestId || '').trim();
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get('V6_PK_LOGIN_' + requestId);
+  if (!raw) return studentFail_('PASSKEY_REQUEST_EXPIRED', '패스키 로그인 요청이 만료되었습니다. 다시 시도하세요.');
+  var request = JSON.parse(raw);
+  var credential = v6ParseJson_(params.credential, '패스키 로그인 응답을 읽지 못했습니다.');
+  var credentialId = String(credential.id || credential.rawId || '').trim();
+  if (!credentialId || credentialId !== request.credentialId) return studentFail_('PASSKEY_CREDENTIAL_MISMATCH', '등록된 패스키와 응답이 일치하지 않습니다.');
+  var response = credential.response || {};
+  var clientDataBytes = v6B64Decode_(response.clientDataJSON);
+  var clientData = v6ParseJson_(v6BytesToUtf8_(clientDataBytes), '패스키 로그인 확인값이 올바르지 않습니다.');
+  v6CheckClientData_(clientData, 'webauthn.get', request.challenge, request.origin);
+  var authenticatorData = v6B64Decode_(response.authenticatorData);
+  var signature = v6B64Decode_(response.signature);
+  var auth = v6ParseAuthenticatorData_(authenticatorData, request.rpId, false);
+  if ((auth.flags & 1) === 0 || (auth.flags & 4) === 0) return studentFail_('PASSKEY_USER_VERIFICATION_REQUIRED', '기기 사용자 확인이 완료되지 않았습니다.');
+  var signedData = authenticatorData.concat(v6Sha256_(clientDataBytes));
+  var verified = v6VerifyEcdsaP256_(signedData, signature, v6B64Decode_(request.publicKeyX), v6B64Decode_(request.publicKeyY));
+  if (!verified) return studentFail_('PASSKEY_SIGNATURE_INVALID', '패스키 서명을 확인하지 못했습니다.');
+  if (request.signCount > 0 && auth.signCount > 0 && auth.signCount <= request.signCount) {
+    return studentFail_('PASSKEY_COUNTER_REPLAY', '패스키 사용 횟수 검증에 실패했습니다. 패스키를 다시 등록하세요.');
+  }
+  var sheet = adminCompatSheet_(ADMIN_COMPAT_PASSKEY_SHEET);
+  if (request.row) studentUpdateRow_(sheet, Number(request.row), { signCount: auth.signCount, lastUsedAt: new Date(), active: true });
+  var session = adminCompatCreateSession_({
+    loginType: 'passkey',
+    adminId: request.loginType === 'admin' ? request.loginId : '',
+    email: request.loginType === 'google' ? request.loginId : '',
+    name: request.displayName || request.loginId,
+    role: request.role || 'ADMIN'
+  });
+  cache.remove('V6_PK_LOGIN_' + requestId);
+  adminCompatAppendLoginLog_(request.loginId, request.role, '패스키 로그인 성공', params);
+  return {
+    ok: true,
+    message: '패스키 로그인 성공',
+    sessionToken: session.token,
+    sessionExpiresAt: new Date(session.expiresAt).toISOString(),
+    sessionExpiresAtMs: session.expiresAt,
+    name: request.displayName || request.loginId,
+    email: request.loginType === 'google' ? request.loginId : '',
+    role: request.role || 'ADMIN',
+    version: V6_SERVER_VERSION
+  };
+}
+
+function v6DeletePasskey_(params) {
+  var auth = adminCompatRequire_(params);
+  var credentialId = String(params.credentialId || '').trim();
+  if (!credentialId) return studentFail_('PASSKEY_CREDENTIAL_REQUIRED', '삭제할 패스키 정보가 없습니다.');
+  var sheet = v6EnsurePasskeySheet_();
+  var changed = 0;
+  studentRows_(sheet).forEach(function (row) {
+    if (String(row.credentialId || '') === credentialId && adminCompatTrue_(row.active)) {
+      studentUpdateRow_(sheet, row._row, { active: false, lastUsedAt: new Date() });
+      changed++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return { ok: true, deleted: changed > 0, count: changed, credentialId: credentialId, name: auth.name || '', version: V6_SERVER_VERSION };
+}
+
+function v6ValidatedOrigin_(origin, hostname) {
+  var normalizedOrigin = String(origin || '').trim().replace(/\/$/, '');
+  var normalizedHost = String(hostname || '').trim().toLowerCase();
+  if (normalizedOrigin !== V6_ALLOWED_ORIGIN || normalizedHost !== V6_RP_ID) {
+    var error = new Error('허용되지 않은 사이트에서 패스키를 요청했습니다.');
+    error.code = 'PASSKEY_ORIGIN_INVALID';
+    throw error;
+  }
+  return normalizedOrigin;
+}
+
+function v6CheckClientData_(clientData, expectedType, expectedChallenge, expectedOrigin) {
+  if (!clientData || String(clientData.type || '') !== expectedType) throw v6Error_('PASSKEY_TYPE_INVALID', '패스키 요청 종류가 올바르지 않습니다.');
+  if (!studentConstantEqual_(String(clientData.challenge || ''), String(expectedChallenge || ''))) throw v6Error_('PASSKEY_CHALLENGE_INVALID', '패스키 요청 확인값이 일치하지 않습니다.');
+  if (String(clientData.origin || '').replace(/\/$/, '') !== String(expectedOrigin || '').replace(/\/$/, '')) throw v6Error_('PASSKEY_ORIGIN_INVALID', '패스키 요청 사이트가 일치하지 않습니다.');
+}
+
+function v6ParseAttestation_(bytes, rpId) {
+  var decoded = v6CborRead_(bytes, 0).value;
+  var authData = decoded && decoded.authData;
+  if (!Array.isArray(authData)) throw v6Error_('PASSKEY_ATTESTATION_INVALID', '패스키 등록 데이터를 읽지 못했습니다.');
+  var parsed = v6ParseAuthenticatorData_(authData, rpId, true);
+  if (!parsed.credentialId || !parsed.cose) throw v6Error_('PASSKEY_PUBLIC_KEY_MISSING', '패스키 공개키를 읽지 못했습니다.');
+  var cose = parsed.cose;
+  var kty = Number(cose['1']);
+  var alg = Number(cose['3']);
+  var crv = Number(cose['-1']);
+  var x = cose['-2'];
+  var y = cose['-3'];
+  if (kty !== 2 || alg !== -7 || crv !== 1 || !Array.isArray(x) || !Array.isArray(y)) throw v6Error_('PASSKEY_ALGORITHM_UNSUPPORTED', '지원하지 않는 패스키 공개키 형식입니다.');
+  return { credentialId: parsed.credentialId, x: x, y: y, alg: alg, signCount: parsed.signCount };
+}
+
+function v6ParseAuthenticatorData_(bytes, rpId, requireAttested) {
+  if (!Array.isArray(bytes) || bytes.length < 37) throw v6Error_('PASSKEY_AUTH_DATA_INVALID', '패스키 인증 데이터가 너무 짧습니다.');
+  var expectedRpHash = v6Sha256_(v6Utf8Bytes_(rpId));
+  var actualRpHash = bytes.slice(0, 32);
+  if (!v6BytesEqual_(expectedRpHash, actualRpHash)) throw v6Error_('PASSKEY_RP_ID_INVALID', '패스키 사이트 식별값이 일치하지 않습니다.');
+  var flags = bytes[32] & 255;
+  var signCount = v6ReadUint32_(bytes, 33);
+  var result = { flags: flags, signCount: signCount };
+  if (requireAttested) {
+    if ((flags & 64) === 0 || bytes.length < 55) throw v6Error_('PASSKEY_ATTESTED_DATA_MISSING', '패스키 등록 공개키가 없습니다.');
+    var offset = 53;
+    var credentialLength = ((bytes[offset] & 255) << 8) | (bytes[offset + 1] & 255);
+    offset += 2;
+    if (credentialLength <= 0 || offset + credentialLength > bytes.length) throw v6Error_('PASSKEY_CREDENTIAL_INVALID', '패스키 ID 길이가 올바르지 않습니다.');
+    result.credentialId = bytes.slice(offset, offset + credentialLength);
+    offset += credentialLength;
+    var coseResult = v6CborRead_(bytes, offset);
+    result.cose = coseResult.value;
+  }
+  return result;
+}
+
+function v6CborRead_(bytes, start) {
+  var offset = start || 0;
+  if (offset >= bytes.length) throw v6Error_('CBOR_EOF', '패스키 CBOR 데이터가 끝났습니다.');
+  var initial = bytes[offset++] & 255;
+  var major = initial >> 5;
+  var additional = initial & 31;
+  var lengthInfo = v6CborLength_(bytes, offset, additional);
+  var length = lengthInfo.value;
+  offset = lengthInfo.offset;
+  if (major === 0) return { value: length, offset: offset };
+  if (major === 1) return { value: -1 - length, offset: offset };
+  if (major === 2) return { value: bytes.slice(offset, offset + length), offset: offset + length };
+  if (major === 3) return { value: v6BytesToUtf8_(bytes.slice(offset, offset + length)), offset: offset + length };
+  if (major === 4) {
+    var array = [];
+    for (var i = 0; i < length; i++) { var item = v6CborRead_(bytes, offset); array.push(item.value); offset = item.offset; }
+    return { value: array, offset: offset };
+  }
+  if (major === 5) {
+    var map = {};
+    for (var m = 0; m < length; m++) {
+      var keyItem = v6CborRead_(bytes, offset); offset = keyItem.offset;
+      var valueItem = v6CborRead_(bytes, offset); offset = valueItem.offset;
+      map[String(keyItem.value)] = valueItem.value;
+    }
+    return { value: map, offset: offset };
+  }
+  if (major === 6) return v6CborRead_(bytes, offset);
+  if (major === 7) {
+    if (additional === 20) return { value: false, offset: offset };
+    if (additional === 21) return { value: true, offset: offset };
+    if (additional === 22 || additional === 23) return { value: null, offset: offset };
+  }
+  throw v6Error_('CBOR_UNSUPPORTED', '지원하지 않는 패스키 CBOR 형식입니다.');
+}
+
+function v6CborLength_(bytes, offset, additional) {
+  if (additional < 24) return { value: additional, offset: offset };
+  if (additional === 24) return { value: bytes[offset] & 255, offset: offset + 1 };
+  if (additional === 25) return { value: ((bytes[offset] & 255) << 8) | (bytes[offset + 1] & 255), offset: offset + 2 };
+  if (additional === 26) return { value: v6ReadUint32_(bytes, offset), offset: offset + 4 };
+  throw v6Error_('CBOR_LENGTH_UNSUPPORTED', '너무 큰 패스키 CBOR 길이는 지원하지 않습니다.');
+}
+
+function v6VerifyEcdsaP256_(data, derSignature, xBytes, yBytes) {
+  if (typeof BigInt !== 'function') throw v6Error_('BIGINT_REQUIRED', 'Apps Script V8 런타임을 사용해야 패스키를 검증할 수 있습니다.');
+  var signature = v6ParseDerSignature_(derSignature);
+  var curve = v6P256_();
+  if (signature.r <= 0 || signature.r >= curve.n || signature.s <= 0 || signature.s >= curve.n) return false;
+  var q = { x: v6BytesToBigInt_(xBytes), y: v6BytesToBigInt_(yBytes), z: BigInt(1) };
+  if (!v6PointValid_(q, curve)) return false;
+  var z = v6BytesToBigInt_(v6Sha256_(data)) % curve.n;
+  var w = v6ModInverse_(signature.s, curve.n);
+  var u1 = v6Mod_(z * w, curve.n);
+  var u2 = v6Mod_(signature.r * w, curve.n);
+  var g = { x: curve.gx, y: curve.gy, z: BigInt(1) };
+  var point = v6PointAdd_(v6PointMultiply_(g, u1, curve), v6PointMultiply_(q, u2, curve), curve);
+  if (point.z === BigInt(0)) return false;
+  var affine = v6ToAffine_(point, curve);
+  return v6Mod_(affine.x, curve.n) === signature.r;
+}
+
+function v6P256_() {
+  var p = BigInt('0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF');
+  return {
+    p: p,
+    a: p - BigInt(3),
+    b: BigInt('0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B'),
+    n: BigInt('0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551'),
+    gx: BigInt('0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296'),
+    gy: BigInt('0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5')
+  };
+}
+
+function v6PointValid_(point, curve) {
+  if (point.x < 0 || point.x >= curve.p || point.y < 0 || point.y >= curve.p) return false;
+  return v6Mod_(point.y * point.y - (point.x * point.x * point.x + curve.a * point.x + curve.b), curve.p) === BigInt(0);
+}
+
+function v6PointMultiply_(point, scalar, curve) {
+  var result = { x: BigInt(0), y: BigInt(1), z: BigInt(0) };
+  var addend = point;
+  var k = scalar;
+  while (k > 0) {
+    if ((k & BigInt(1)) === BigInt(1)) result = v6PointAdd_(result, addend, curve);
+    addend = v6PointDouble_(addend, curve);
+    k >>= BigInt(1);
+  }
+  return result;
+}
+
+function v6PointDouble_(point, curve) {
+  if (point.z === BigInt(0) || point.y === BigInt(0)) return { x: BigInt(0), y: BigInt(1), z: BigInt(0) };
+  var p = curve.p;
+  var xx = v6Mod_(point.x * point.x, p);
+  var yy = v6Mod_(point.y * point.y, p);
+  var yyyy = v6Mod_(yy * yy, p);
+  var zz = v6Mod_(point.z * point.z, p);
+  var s = v6Mod_(BigInt(2) * (v6Mod_((point.x + yy) * (point.x + yy), p) - xx - yyyy), p);
+  var m = v6Mod_(BigInt(3) * xx + curve.a * v6Mod_(zz * zz, p), p);
+  var x3 = v6Mod_(m * m - BigInt(2) * s, p);
+  var y3 = v6Mod_(m * (s - x3) - BigInt(8) * yyyy, p);
+  var z3 = v6Mod_(BigInt(2) * point.y * point.z, p);
+  return { x: x3, y: y3, z: z3 };
+}
+
+function v6PointAdd_(p1, p2, curve) {
+  if (p1.z === BigInt(0)) return p2;
+  if (p2.z === BigInt(0)) return p1;
+  var p = curve.p;
+  var z1z1 = v6Mod_(p1.z * p1.z, p);
+  var z2z2 = v6Mod_(p2.z * p2.z, p);
+  var u1 = v6Mod_(p1.x * z2z2, p);
+  var u2 = v6Mod_(p2.x * z1z1, p);
+  var s1 = v6Mod_(p1.y * p2.z * z2z2, p);
+  var s2 = v6Mod_(p2.y * p1.z * z1z1, p);
+  if (u1 === u2) return s1 === s2 ? v6PointDouble_(p1, curve) : { x: BigInt(0), y: BigInt(1), z: BigInt(0) };
+  var h = v6Mod_(u2 - u1, p);
+  var i = v6Mod_((BigInt(2) * h) * (BigInt(2) * h), p);
+  var j = v6Mod_(h * i, p);
+  var r = v6Mod_(BigInt(2) * (s2 - s1), p);
+  var v = v6Mod_(u1 * i, p);
+  var x3 = v6Mod_(r * r - j - BigInt(2) * v, p);
+  var y3 = v6Mod_(r * (v - x3) - BigInt(2) * s1 * j, p);
+  var z3 = v6Mod_(((p1.z + p2.z) * (p1.z + p2.z) - z1z1 - z2z2) * h, p);
+  return { x: x3, y: y3, z: z3 };
+}
+
+function v6ToAffine_(point, curve) {
+  var zInv = v6ModInverse_(point.z, curve.p);
+  var z2 = v6Mod_(zInv * zInv, curve.p);
+  return { x: v6Mod_(point.x * z2, curve.p), y: v6Mod_(point.y * z2 * zInv, curve.p) };
+}
+
+function v6ModInverse_(value, modulus) {
+  var a = v6Mod_(value, modulus);
+  var b = modulus;
+  var x0 = BigInt(1), x1 = BigInt(0);
+  while (b !== BigInt(0)) {
+    var q = a / b;
+    var t = a % b; a = b; b = t;
+    t = x0 - q * x1; x0 = x1; x1 = t;
+  }
+  return v6Mod_(x0, modulus);
+}
+
+function v6Mod_(value, modulus) { var result = value % modulus; return result < 0 ? result + modulus : result; }
+
+function v6ParseDerSignature_(bytes) {
+  var offset = 0;
+  if ((bytes[offset++] & 255) !== 48) throw v6Error_('PASSKEY_SIGNATURE_FORMAT', '패스키 서명 형식이 올바르지 않습니다.');
+  var sequenceLength = v6DerLength_(bytes, offset); offset = sequenceLength.offset;
+  if ((bytes[offset++] & 255) !== 2) throw v6Error_('PASSKEY_SIGNATURE_FORMAT', '패스키 서명 R 값이 없습니다.');
+  var rLength = v6DerLength_(bytes, offset); offset = rLength.offset;
+  var rBytes = bytes.slice(offset, offset + rLength.value); offset += rLength.value;
+  if ((bytes[offset++] & 255) !== 2) throw v6Error_('PASSKEY_SIGNATURE_FORMAT', '패스키 서명 S 값이 없습니다.');
+  var sLength = v6DerLength_(bytes, offset); offset = sLength.offset;
+  var sBytes = bytes.slice(offset, offset + sLength.value);
+  while (rBytes.length > 1 && rBytes[0] === 0) rBytes.shift();
+  while (sBytes.length > 1 && sBytes[0] === 0) sBytes.shift();
+  return { r: v6BytesToBigInt_(rBytes), s: v6BytesToBigInt_(sBytes) };
+}
+
+function v6DerLength_(bytes, offset) {
+  var first = bytes[offset++] & 255;
+  if (first < 128) return { value: first, offset: offset };
+  var count = first & 127;
+  var value = 0;
+  for (var i = 0; i < count; i++) value = value * 256 + (bytes[offset++] & 255);
+  return { value: value, offset: offset };
+}
+
+function v6BytesToBigInt_(bytes) {
+  if (!bytes || !bytes.length) return BigInt(0);
+  var hex = bytes.map(function (byte) { return ('0' + (byte & 255).toString(16)).slice(-2); }).join('');
+  return BigInt('0x' + hex);
+}
+
+function v6RandomToken_(length) {
+  var material = Utilities.getUuid() + '|' + Utilities.getUuid() + '|' + Date.now() + '|' + Math.random();
+  var bytes = v6Sha256_(v6Utf8Bytes_(material));
+  var token = v6B64Encode_(bytes);
+  while (token.length < length) token += v6B64Encode_(v6Sha256_(v6Utf8Bytes_(token + material)));
+  return token.slice(0, length);
+}
+
+function v6B64Decode_(value) {
+  var text = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+  while (text.length % 4) text += '=';
+  try { return Utilities.base64Decode(text).map(function (byte) { return byte & 255; }); }
+  catch (error) { throw v6Error_('BASE64_INVALID', '패스키 인코딩을 읽지 못했습니다.'); }
+}
+
+function v6B64Encode_(bytes) {
+  return Utilities.base64EncodeWebSafe(v6SignedBytes_(bytes)).replace(/=+$/g, '');
+}
+
+function v6Utf8Bytes_(text) {
+  return Utilities.newBlob(String(text || '')).getBytes().map(function (byte) { return byte & 255; });
+}
+
+function v6BytesToUtf8_(bytes) {
+  return Utilities.newBlob(v6SignedBytes_(bytes)).getDataAsString('UTF-8');
+}
+
+function v6Sha256_(bytes) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, v6SignedBytes_(bytes)).map(function (byte) { return byte & 255; });
+}
+
+function v6SignedBytes_(bytes) {
+  return (bytes || []).map(function (byte) { var value = byte & 255; return value > 127 ? value - 256 : value; });
+}
+
+function v6BytesEqual_(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  var mismatch = 0;
+  for (var i = 0; i < a.length; i++) mismatch |= (a[i] & 255) ^ (b[i] & 255);
+  return mismatch === 0;
+}
+
+function v6ReadUint32_(bytes, offset) {
+  return ((bytes[offset] & 255) * 16777216) + ((bytes[offset + 1] & 255) << 16) + ((bytes[offset + 2] & 255) << 8) + (bytes[offset + 3] & 255);
+}
+
+function v6ParseJson_(value, message) {
+  try { return typeof value === 'string' ? JSON.parse(value) : value; }
+  catch (error) { throw v6Error_('JSON_INVALID', message || 'JSON 형식이 올바르지 않습니다.'); }
+}
+
+function v6Error_(code, message) { var error = new Error(message); error.code = code; return error; }
+
 /*
  * 배포 후 확인 주소
+ * ?action=ping&callback=callback
  * ?action=studentFeaturePingJsonp&callback=callback
  * ?action=adminLoginChallengeJsonp&adminIdHash=test&callback=callback
  */
