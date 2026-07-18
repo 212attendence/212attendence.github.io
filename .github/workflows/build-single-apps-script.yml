@@ -7,6 +7,9 @@ on:
       - "apps-script/student-auth-addon.gs"
       - "apps-script/admin-compat-addon.gs"
       - "apps-script/FINAL-StudentPrivacy-Code.gs.txt"
+      - "apps-script/server-v6-core-addon.gs"
+      - "apps-script/server-v6-passkey-addon.gs"
+      - "apps-script/server-v6-passkey-crypto-addon.gs"
       - "tools/build-single-apps-script.mjs"
       - ".github/workflows/build-single-apps-script.yml"
   workflow_dispatch:
@@ -29,6 +32,9 @@ jobs:
       - name: Generate all-in-one file
         run: node tools/build-single-apps-script.mjs
 
+      - name: Validate generated JavaScript syntax
+        run: cp apps-script/FINAL-Student-All-In-One.gs /tmp/final-apps-script.js && node --check /tmp/final-apps-script.js
+
       - name: Commit generated file
         run: |
           git config user.name "github-actions[bot]"
@@ -37,6 +43,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated changes."
           else
-            git commit -m "Generate all-in-one Apps Script file"
+            git commit -m "Generate server V6 all-in-one Apps Script"
             git push
           fi
