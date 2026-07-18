@@ -5,12 +5,18 @@ const root = process.cwd();
 const authPath = path.join(root, 'apps-script', 'student-auth-addon.gs');
 const adminPath = path.join(root, 'apps-script', 'admin-compat-addon.gs');
 const privacyPath = path.join(root, 'apps-script', 'FINAL-StudentPrivacy-Code.gs.txt');
+const v6CorePath = path.join(root, 'apps-script', 'server-v6-core-addon.gs');
+const v6PasskeyPath = path.join(root, 'apps-script', 'server-v6-passkey-addon.gs');
+const v6CryptoPath = path.join(root, 'apps-script', 'server-v6-passkey-crypto-addon.gs');
 const outputPath = path.join(root, 'apps-script', 'FINAL-Student-All-In-One.gs');
 
-const [authSource, adminSource, privacySource] = await Promise.all([
+const [authSource, adminSource, privacySource, v6CoreSource, v6PasskeySource, v6CryptoSource] = await Promise.all([
   fs.readFile(authPath, 'utf8'),
   fs.readFile(adminPath, 'utf8'),
-  fs.readFile(privacyPath, 'utf8')
+  fs.readFile(privacyPath, 'utf8'),
+  fs.readFile(v6CorePath, 'utf8'),
+  fs.readFile(v6PasskeyPath, 'utf8'),
+  fs.readFile(v6CryptoPath, 'utf8')
 ]);
 
 const bindSpreadsheet = (source) => source.replaceAll(
@@ -39,30 +45,33 @@ const securedAuthSource = authSource.replace(
 const authCode = bindSpreadsheet(securedAuthSource);
 const adminCode = bindSpreadsheet(adminSource);
 const privacyCode = bindSpreadsheet(privacySource);
+const v6CoreCode = bindSpreadsheet(v6CoreSource);
+const v6PasskeyCode = bindSpreadsheet(v6PasskeySource);
+const v6CryptoCode = bindSpreadsheet(v6CryptoSource);
 
 const header = `/*
  * 2-12 출석 시스템 전체 기능 통합 단일 파일
- * 생성일: 2026-07-17
+ * 생성일: 2026-07-18
  *
  * 포함 기능
+ * - 서버 V6 학생 승인 결과 전달
+ * - 기존 사용자·설정 시트 학생 수 동기화
+ * - WebAuthn 패스키 등록·로그인·삭제
  * - 관리자 ID/비밀번호 및 Google 로그인
  * - 14일 관리자 세션과 관리자 권한 확인
- * - 관리자 대시보드 기본 API
- * - 학생계정 및 관리자 승인 로그인
- * - 학생 세션과 GPS 출석
- * - 개인정보 필수·선택 동의 및 권한 시트
- * - 개인정보 및 비밀번호 보안 POST
+ * - 학생계정, GPS 출석, 개인정보 동의
  *
  * 설치
  * 1. Apps Script의 기존 코드를 모두 지운다.
  * 2. 이 파일 전체를 Code.gs 한 파일에 붙여 넣는다.
  * 3. INSTALL_2_12_STUDENT_SYSTEM 을 실행한다.
- * 4. 배포 관리에서 기존 웹 앱을 새 버전으로 재배포한다.
- * 5. 실행 사용자: 나 / 액세스 권한: 모든 사용자
+ * 4. TEST_2_12_V6_SERVER 를 실행한다.
+ * 5. 배포 관리에서 기존 웹 앱을 새 버전으로 재배포한다.
+ * 6. 실행 사용자: 나 / 액세스 권한: 모든 사용자
  */
 
 var STUDENT_SYSTEM_SPREADSHEET_ID = '1l2pyOTzEKNn2xAbro7T88T2kdR3hswcaE5YBVClK0U';
-var STUDENT_SYSTEM_VERSION = '2026-07-17-full-server-v2';
+var STUDENT_SYSTEM_VERSION = '2026-07-18-server-v6.1';
 
 function studentOpenSpreadsheet_() {
   var active = SpreadsheetApp.getActiveSpreadsheet();
@@ -189,16 +198,20 @@ const adminDivider = `\n\n/* ===================================================
 const privacyDivider = `\n\n/* ==========================================================================
  * 개인정보·보안 POST·권한 시트 통합 모듈
  * ========================================================================== */\n\n`;
+const v6Divider = `\n\n/* ==========================================================================
+ * 서버 V6 승인·시트 동기화·패스키 모듈
+ * ========================================================================== */\n\n`;
 
 const footer = `
 
 /*
  * 배포 후 확인 주소
+ * ?action=ping&callback=callback
  * ?action=studentFeaturePingJsonp&callback=callback
  * ?action=adminLoginChallengeJsonp&adminIdHash=test&callback=callback
  */
 `;
 
-const output = header + authCode.trim() + adminDivider + adminCode.trim() + privacyDivider + privacyCode.trim() + footer;
+const output = header + authCode.trim() + adminDivider + adminCode.trim() + privacyDivider + privacyCode.trim() + v6Divider + v6CoreCode.trim() + '\n\n' + v6PasskeyCode.trim() + '\n\n' + v6CryptoCode.trim() + footer;
 await fs.writeFile(outputPath, output, 'utf8');
 console.log(`Generated ${path.relative(root, outputPath)}`);
