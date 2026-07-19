@@ -10,6 +10,10 @@
  * - 14일 관리자 세션과 관리자 권한 확인
  * - 학생계정, GPS 출석, 개인정보 동의
  *
+ * 중요
+ * - doGet, 관리자 라우터, 설치 함수는 V6 모듈에서 각각 한 번만 정의된다.
+ * - Apps Script 프로젝트에는 이 Code.gs 한 파일만 남긴다.
+ *
  * 설치
  * 1. Apps Script의 기존 코드를 모두 지운다.
  * 2. 이 파일 전체를 Code.gs 한 파일에 붙여 넣는다.
@@ -28,45 +32,7 @@ function studentOpenSpreadsheet_() {
   return SpreadsheetApp.openById(STUDENT_SYSTEM_SPREADSHEET_ID);
 }
 
-function doGet(e) {
-  var p = e && e.parameter || {};
-  var action = String(p.action || '').trim();
-
-  try {
-    if (!action || action === 'health' || action === 'healthJsonp') {
-      return studentJsonp_(e, {
-        ok: true,
-        service: '2-12-full-system',
-        version: STUDENT_SYSTEM_VERSION,
-        spreadsheetId: STUDENT_SYSTEM_SPREADSHEET_ID
-      });
-    }
-
-    var adminResponse = handleAdminCompatAction_(action, e);
-    if (adminResponse) return adminResponse;
-
-    var privacyResponse = handleStudentPrivacyAction_(action, e);
-    if (privacyResponse) return privacyResponse;
-
-    var studentResponse = handleStudentAuthAction_(action, e);
-    if (studentResponse) return studentResponse;
-
-    return studentJsonp_(e, {
-      ok: false,
-      code: 'ACTION_NOT_SUPPORTED',
-      message: '지원하지 않는 서버 요청입니다: ' + action,
-      version: STUDENT_SYSTEM_VERSION
-    });
-  } catch (error) {
-    return studentJsonp_(e, {
-      ok: false,
-      code: error && error.code || 'SERVER_ERROR',
-      message: error && error.message || String(error),
-      version: STUDENT_SYSTEM_VERSION
-    });
-  }
-}
-
+/* POST 진입점은 개인정보·비밀번호 보안 전송에만 사용한다. */
 function doPost(e) {
   try {
     var securePostResponse = handleStudentSecurePost_(e);
@@ -90,18 +56,6 @@ function doPost(e) {
   }
 }
 
-function INSTALL_2_12_STUDENT_SYSTEM() {
-  adminCompatSetup_();
-  var result = setupStudentPrivacyFinal_();
-  SpreadsheetApp.flush();
-  return {
-    ok: true,
-    version: STUDENT_SYSTEM_VERSION,
-    student: result,
-    admin: true
-  };
-}
-
 function setupStudentPrivacyFinal() {
   return INSTALL_2_12_STUDENT_SYSTEM();
 }
@@ -111,7 +65,7 @@ function CHECK_2_12_STUDENT_SYSTEM() {
   var required = [
     '설정', '사용자', '관리자', '전체로그', '로그인기록',
     '학생계정', '학생로그인요청', '학생세션', '학생출석로그',
-    '학생개인정보권한', '학생개인정보동의로그', '시스템오류알림'
+    '학생개인정보권한', '학생개인정보동의로그', '시스템오류알림', '패스키'
   ];
   var found = {};
   ss.getSheets().forEach(function (sheet) { found[sheet.getName()] = true; });
@@ -918,7 +872,7 @@ function studentHaversineM_(lat1, lng1, lat2, lng2) {
 }
 
 /* ==========================================================================
- * 관리자 로그인·세션·대시보드 호환 모듈
+ * 관리자 로그인·세션·대시보드 기반 모듈
  * ========================================================================== */
 
 /*
@@ -967,45 +921,6 @@ function adminCompatSetup_() {
     adminSheet.appendRow(['admin', '1234', true, '기본 관리자 - 운영 전 변경', 'ADMIN']);
   }
   return true;
-}
-
-function handleAdminCompatAction_(action, e) {
-  var handlers = {
-    adminLoginChallengeJsonp: adminCompatLoginChallenge_,
-    dashboardLoginProofJsonp: adminCompatLoginProof_,
-    dashboardLoginJsonp: adminCompatLegacyLogin_,
-    googleLoginJsonp: adminCompatGoogleLogin_,
-    reauthJsonp: adminCompatReauth_,
-    adminLoginEventJsonp: adminCompatLoginEvent_,
-    serverStatusJsonp: adminCompatServerStatus_,
-    diagnosticsJsonp: adminCompatServerStatus_,
-    logSchemaStatusJsonp: adminCompatLogSchemaStatus_,
-    todayLogs: adminCompatTodayLogs_,
-    logsByDate: adminCompatLogsByDate_,
-    getDashboardSettingsJsonp: adminCompatGetSettings_,
-    saveDashboardSettingsJsonp: adminCompatSaveSettings_,
-    pushClientConfigJsonp: adminCompatPushConfig_,
-    savePushTokenJsonp: adminCompatSavePushToken_,
-    saveStudentPushTokenJsonp: adminCompatSaveStudentPushToken_,
-    testPushJsonp: adminCompatTestPush_,
-    passkeyRegisterOptionsJsonp: adminCompatPasskeyUnavailable_,
-    passkeyRegisterVerifyJsonp: adminCompatPasskeyUnavailable_,
-    passkeyLoginOptionsJsonp: adminCompatPasskeyUnavailable_,
-    passkeyLoginVerifyJsonp: adminCompatPasskeyUnavailable_,
-    deletePasskeyJsonp: adminCompatDeletePasskey_
-  };
-  if (!handlers[action]) return null;
-  try {
-    adminCompatSetup_();
-    return studentJsonp_(e, handlers[action](e && e.parameter || {}));
-  } catch (error) {
-    return studentJsonp_(e, {
-      ok: false,
-      code: error && error.code || 'ADMIN_COMPAT_SERVER_ERROR',
-      message: error && error.message || String(error),
-      version: ADMIN_COMPAT_VERSION
-    });
-  }
 }
 
 function adminCompatLoginChallenge_(params) {
@@ -2303,7 +2218,7 @@ function privacyPostMessageResponse_(
 }
 
 /* ==========================================================================
- * 서버 V6 승인·시트 동기화·패스키 모듈
+ * 서버 V6 단일 진입점·승인·시트 동기화·패스키 모듈
  * ========================================================================== */
 
 /*
