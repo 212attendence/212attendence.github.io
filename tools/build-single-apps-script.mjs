@@ -43,7 +43,14 @@ const securedAuthSource = authSource.replace(
 );
 
 const authCode = bindSpreadsheet(securedAuthSource);
-const adminCode = bindSpreadsheet(adminSource);
+
+// V6 모듈이 관리자 라우터를 단독으로 제공한다. 구형 라우터를 제거해
+// Apps Script 안에 같은 이름의 함수가 두 번 생기지 않도록 한다.
+const adminCode = bindSpreadsheet(adminSource).replace(
+  /function handleAdminCompatAction_\(action, e\) \{[\s\S]*?\n\}\n\nfunction adminCompatLoginChallenge_/,
+  'function adminCompatLoginChallenge_'
+);
+
 const privacyCode = bindSpreadsheet(privacySource);
 const v6CoreCode = bindSpreadsheet(v6CoreSource);
 const v6PasskeyCode = bindSpreadsheet(v6PasskeySource);
@@ -60,6 +67,10 @@ const header = `/*
  * - 관리자 ID/비밀번호 및 Google 로그인
  * - 14일 관리자 세션과 관리자 권한 확인
  * - 학생계정, GPS 출석, 개인정보 동의
+ *
+ * 중요
+ * - doGet, 관리자 라우터, 설치 함수는 V6 모듈에서 각각 한 번만 정의된다.
+ * - Apps Script 프로젝트에는 이 Code.gs 한 파일만 남긴다.
  *
  * 설치
  * 1. Apps Script의 기존 코드를 모두 지운다.
@@ -79,45 +90,7 @@ function studentOpenSpreadsheet_() {
   return SpreadsheetApp.openById(STUDENT_SYSTEM_SPREADSHEET_ID);
 }
 
-function doGet(e) {
-  var p = e && e.parameter || {};
-  var action = String(p.action || '').trim();
-
-  try {
-    if (!action || action === 'health' || action === 'healthJsonp') {
-      return studentJsonp_(e, {
-        ok: true,
-        service: '2-12-full-system',
-        version: STUDENT_SYSTEM_VERSION,
-        spreadsheetId: STUDENT_SYSTEM_SPREADSHEET_ID
-      });
-    }
-
-    var adminResponse = handleAdminCompatAction_(action, e);
-    if (adminResponse) return adminResponse;
-
-    var privacyResponse = handleStudentPrivacyAction_(action, e);
-    if (privacyResponse) return privacyResponse;
-
-    var studentResponse = handleStudentAuthAction_(action, e);
-    if (studentResponse) return studentResponse;
-
-    return studentJsonp_(e, {
-      ok: false,
-      code: 'ACTION_NOT_SUPPORTED',
-      message: '지원하지 않는 서버 요청입니다: ' + action,
-      version: STUDENT_SYSTEM_VERSION
-    });
-  } catch (error) {
-    return studentJsonp_(e, {
-      ok: false,
-      code: error && error.code || 'SERVER_ERROR',
-      message: error && error.message || String(error),
-      version: STUDENT_SYSTEM_VERSION
-    });
-  }
-}
-
+/* POST 진입점은 개인정보·비밀번호 보안 전송에만 사용한다. */
 function doPost(e) {
   try {
     var securePostResponse = handleStudentSecurePost_(e);
@@ -141,18 +114,6 @@ function doPost(e) {
   }
 }
 
-function INSTALL_2_12_STUDENT_SYSTEM() {
-  adminCompatSetup_();
-  var result = setupStudentPrivacyFinal_();
-  SpreadsheetApp.flush();
-  return {
-    ok: true,
-    version: STUDENT_SYSTEM_VERSION,
-    student: result,
-    admin: true
-  };
-}
-
 function setupStudentPrivacyFinal() {
   return INSTALL_2_12_STUDENT_SYSTEM();
 }
@@ -162,7 +123,7 @@ function CHECK_2_12_STUDENT_SYSTEM() {
   var required = [
     '설정', '사용자', '관리자', '전체로그', '로그인기록',
     '학생계정', '학생로그인요청', '학생세션', '학생출석로그',
-    '학생개인정보권한', '학생개인정보동의로그', '시스템오류알림'
+    '학생개인정보권한', '학생개인정보동의로그', '시스템오류알림', '패스키'
   ];
   var found = {};
   ss.getSheets().forEach(function (sheet) { found[sheet.getName()] = true; });
@@ -193,13 +154,13 @@ function TEST_2_12_ADMIN_SERVER() {
 `;
 
 const adminDivider = `\n\n/* ==========================================================================
- * 관리자 로그인·세션·대시보드 호환 모듈
+ * 관리자 로그인·세션·대시보드 기반 모듈
  * ========================================================================== */\n\n`;
 const privacyDivider = `\n\n/* ==========================================================================
  * 개인정보·보안 POST·권한 시트 통합 모듈
  * ========================================================================== */\n\n`;
 const v6Divider = `\n\n/* ==========================================================================
- * 서버 V6 승인·시트 동기화·패스키 모듈
+ * 서버 V6 단일 진입점·승인·시트 동기화·패스키 모듈
  * ========================================================================== */\n\n`;
 
 const footer = `
